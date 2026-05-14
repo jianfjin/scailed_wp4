@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture Spec — SCAILED WP4 Pathfinder System</title>
+<style>
+  :root {
+    --ivory:#FAF9F5;--paper:#FFFFFF;--slate:#141413;--clay:#D97757;--clay-d:#B85C3E;
+    --oat:#E3DACC;--olive:#788C5D;--g100:#F0EEE6;--g200:#E6E3DA;--g300:#D1CFC5;
+    --g500:#87867F;--g700:#3D3D3A;
+    --serif:ui-serif,Georgia,"Times New Roman",Times,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Monaco,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ivory);color:var(--slate);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 28px 120px}
+  header.masthead{padding:64px 0 44px;border-bottom:1.5px solid var(--g300);margin-bottom:12px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--g500);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:20px;height:1.5px;background:var(--clay)}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(30px,4.2vw,48px);line-height:1.08;letter-spacing:-.016em;margin:0 0 6px}
+  h1 em{font-style:italic;color:var(--clay)}
+  .intro{font-size:15px;color:var(--g700);max-width:600px;margin:16px 0 0}
+  .meta{font-family:var(--mono);font-size:10px;color:var(--g500);margin-top:18px;display:flex;gap:20px;flex-wrap:wrap}
+
+  section{margin-top:56px;scroll-margin-top:24px}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+  .sec-head .idx{font-family:var(--mono);font-size:13px;color:var(--clay);font-weight:600;width:28px;flex-shrink:0}
+  .sec-head h2{font-family:var(--serif);font-weight:500;font-size:24px;margin:0;letter-spacing:-.012em}
+  .sec-intro{font-size:13.5px;color:var(--g700);max-width:620px;margin:0 0 20px 42px}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0}
+  thead th{text-align:left;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--g500);padding:0 0 8px;border-bottom:1.5px solid var(--g300)}
+  tbody td{padding:10px 0;border-bottom:1px solid var(--g200);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+
+  .badge{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;display:inline-block}
+  .badge-critical{background:#FED7D7;color:#991B1B}
+  .badge-high{background:#FDE8E0;color:#B85C3E}
+  .badge-medium{background:#FEF3C7;color:#92400E}
+  .badge-low{background:#DCFCE7;color:#166534}
+  .badge-yes{background:#DCFCE7;color:#166534}
+  .badge-no{background:#FEE2E2;color:#991B1B}
+
+  pre{background:var(--slate);color:var(--ivory);padding:18px 22px;border-radius:10px;overflow-x:auto;font-size:13px;line-height:1.65;margin:12px 0}
+  pre code{background:none;padding:0;border-radius:0;color:inherit}
+  code{font-family:var(--mono);font-size:.88em;background:var(--g100);padding:2px 5px;border-radius:4px}
+  .code-lang{font-family:var(--mono);font-size:10px;color:var(--g500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;display:block}
+
+  .arch-diagram{overflow-x:auto;padding:20px 0;margin:16px 0}
+  .arch-diagram svg{min-width:700px}
+
+  .tabs{display:flex;gap:0;margin-bottom:0}
+  .tab{padding:8px 18px;cursor:pointer;border:1.5px solid var(--g300);border-bottom:none;border-radius:8px 8px 0 0;background:var(--g100);font-size:12px;font-family:var(--mono);transition:all .12s}
+  .tab.active{background:var(--paper);border-color:var(--clay);color:var(--clay);font-weight:600}
+  .tab-content{display:none;padding:20px;border:1.5px solid var(--g300);border-radius:0 8px 8px 8px;background:var(--paper)}
+  .tab-content.active{display:block}
+
+  .finding{border:1.5px solid var(--g200);border-radius:10px;padding:14px 18px;margin:10px 0;border-left:4px solid var(--clay)}
+  .finding.critical{border-left-color:#991B1B;background:#FFF5F5}
+  .finding h3{font-size:14px;margin:0 0 5px}
+  .finding p{font-size:13px;color:var(--g700);margin:0}
+
+  .note{background:var(--g100);border:1.5px solid var(--g200);border-radius:8px;padding:14px 18px;margin:14px 0;font-size:13px;color:var(--g700)}
+  .note strong{color:var(--clay)}
+
+  footer{margin-top:72px;border-top:1.5px solid var(--g300);padding-top:24px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--g500)}
+  footer .k{font-family:var(--serif);font-style:italic;color:var(--g700);font-size:14px}
+
+  @media print{body{background:white;font-size:10pt}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">Architecture Specification · v1.0 · 2026-05-13</div>
+  <h1>Pathfinder <em>System</em></h1>
+  <p class="intro">
+    Technical architecture for the SCAILED WP4 Pathfinder System — a constraint-aware graph search engine
+    wrapped in a questionnaire interface. Built for Epidata by DataWego under EU4Health grant.
+  </p>
+  <div class="meta">
+    <span>Python 3.12</span><span>FastAPI + Pydantic v2</span><span>PostgreSQL</span><span>Vue 3</span><span>Docker Compose</span>
+  </div>
+</header>
+
+<!-- 01 Overview -->
+<section id="overview">
+  <div class="sec-head"><span class="idx">01</span><h2>System Overview</h2></div>
+  <p class="sec-intro">Pathfinder helps biotech stakeholders locate themselves on the EHDS strategic roadmap and receive actionable, compliance-checked next steps.</p>
+
+  <table>
+    <thead><tr><th width="25%">Component</th><th width="37%">Is</th><th width="38%">Is Not</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Core Algorithm</strong></td><td>Constrained graph search (Dijkstra/A* on DAG)</td><td>LLM-generated recommendations</td></tr>
+      <tr><td><strong>Input</strong></td><td>Structured questionnaire + WP3 roadmap + WP8 legal rules</td><td>PDF parsing / natural language</td></tr>
+      <tr><td><strong>Output</strong></td><td>Auditable recommendation path with traceability</td><td>Unverifiable natural language paragraphs</td></tr>
+      <tr><td><strong>Interface</strong></td><td>Wizard-style questionnaire → map → action plan</td><td>Dashboard with 20 widgets</td></tr>
+      <tr><td><strong>Rule Engine</strong></td><td>Declarative YAML rules, hot-loadable</td><td>Hard-coded if-else chains</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 02 Architecture -->
+<section id="architecture">
+  <div class="sec-head"><span class="idx">02</span><h2>System Architecture</h2></div>
+  <p class="sec-intro">Three-layer monolith. Single Docker container. Deployed via <code>docker compose up -d</code>.</p>
+
+  <div class="arch-diagram">
+    <svg viewBox="0 0 800 380" style="width:100%;">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#87867F"/></marker>
+        <marker id="arr-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#D97757"/></marker>
+      </defs>
+      <!-- Frontend -->
+      <rect x="260" y="10" width="280" height="40" rx="8" fill="#FFFFFF" stroke="#D1CFC5" stroke-width="2"/>
+      <text x="400" y="35" text-anchor="middle" font-family="system-ui" font-size="13" fill="#141413" font-weight="500">Vue 3 SPA · Questionnaire Wizard</text>
+      <line x1="400" y1="50" x2="400" y2="80" stroke="#D97757" stroke-width="2" marker-end="url(#arr-c)"/>
+      <text x="412" y="70" font-family="monospace" font-size="9" fill="#D97757">REST · OpenAPI</text>
+      <!-- Backend box -->
+      <rect x="140" y="82" width="520" height="136" rx="10" fill="#FFFFFF" stroke="#141413" stroke-width="2.5"/>
+      <text x="400" y="106" text-anchor="middle" font-family="system-ui" font-size="14" fill="#141413" font-weight="600">FastAPI Backend</text>
+      <!-- Modules -->
+      <rect x="156" y="116" width="150" height="42" rx="6" fill="#F0EEE6" stroke="#E6E3DA" stroke-width="1"/>
+      <text x="231" y="133" text-anchor="middle" font-family="monospace" font-size="10" fill="#3D3D3A">Assessment Engine</text>
+      <text x="231" y="148" text-anchor="middle" font-family="monospace" font-size="8" fill="#87867F">core/assess.py</text>
+      <rect x="316" y="116" width="168" height="42" rx="6" fill="#E3DACC" stroke="#D97757" stroke-width="1.5"/>
+      <text x="400" y="133" text-anchor="middle" font-family="monospace" font-size="10" fill="#141413" font-weight="600">Recommendation Engine</text>
+      <text x="400" y="148" text-anchor="middle" font-family="monospace" font-size="8" fill="#87867F">core/solver.py</text>
+      <rect x="494" y="116" width="150" height="42" rx="6" fill="#F0EEE6" stroke="#E6E3DA" stroke-width="1"/>
+      <text x="569" y="133" text-anchor="middle" font-family="monospace" font-size="10" fill="#3D3D3A">Compliance Adapter</text>
+      <text x="569" y="148" text-anchor="middle" font-family="monospace" font-size="8" fill="#87867F">adapters/wp8.py</text>
+      <!-- Second row modules -->
+      <rect x="206" y="166" width="130" height="36" rx="6" fill="#F0EEE6" stroke="#E6E3DA" stroke-width="1"/>
+      <text x="271" y="189" text-anchor="middle" font-family="monospace" font-size="9" fill="#87867F">WP2/3 Adapters</text>
+      <rect x="346" y="166" width="108" height="36" rx="6" fill="#F0EEE6" stroke="#E6E3DA" stroke-width="1"/>
+      <text x="400" y="189" text-anchor="middle" font-family="monospace" font-size="9" fill="#87867F">Audit Logger</text>
+      <rect x="464" y="166" width="180" height="36" rx="6" fill="#F0EEE6" stroke="#E6E3DA" stroke-width="1"/>
+      <text x="554" y="189" text-anchor="middle" font-family="monospace" font-size="9" fill="#87867F">WP5/6/7 Adapters</text>
+      <!-- Arrow -->
+      <line x1="400" y1="218" x2="400" y2="250" stroke="#87867F" stroke-width="2" marker-end="url(#arr)"/>
+      <!-- DB -->
+      <rect x="260" y="252" width="280" height="44" rx="9" fill="#141413" stroke="#141413" stroke-width="2"/>
+      <text x="400" y="272" text-anchor="middle" font-family="monospace" font-size="12" fill="#FAF9F5">PostgreSQL</text>
+      <text x="400" y="286" text-anchor="middle" font-family="monospace" font-size="9" fill="#D1CFC5">JSONB · Audit Log · Rules Cache</text>
+      <!-- YAML rules side -->
+      <rect x="14" y="128" width="100" height="36" rx="6" fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.5" stroke-dasharray="4 2"/>
+      <text x="64" y="151" text-anchor="middle" font-family="monospace" font-size="9" fill="#87867F">rules/*.yaml</text>
+      <line x1="114" y1="146" x2="156" y2="137" stroke="#87867F" stroke-width="1.5" stroke-dasharray="4 3"/>
+    </svg>
+  </div>
+
+  <div class="note">
+    <strong>Architecture Decision:</strong> Monolith, not microservices. 9/9 council seats agree.
+    User base is &lt; 500 invited stakeholders. Docker Compose single container.
+    No K8s, no service mesh, no event bus.
+  </div>
+</section>
+
+<!-- 03 Tech Stack -->
+<section id="stack">
+  <div class="sec-head"><span class="idx">03</span><h2>Technology Stack</h2></div>
+  <p class="sec-intro">Every choice has a reason. No resume-driven development.</p>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchT(event,'layer-backend')">Backend</div>
+    <div class="tab" onclick="switchT(event,'layer-frontend')">Frontend</div>
+    <div class="tab" onclick="switchT(event,'layer-data')">Data</div>
+    <div class="tab" onclick="switchT(event,'layer-infra')">Infra</div>
+  </div>
+
+  <div id="layer-backend" class="tab-content active">
+    <table>
+      <thead><tr><th width="25%">Technology</th><th width="15%">Version</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td><strong>FastAPI</strong></td><td>latest</td><td>Async-native, auto OpenAPI/Swagger (D4 deliverable), Pydantic integration</td></tr>
+        <tr><td><strong>Pydantic</strong></td><td>v2</td><td>Type-safe models, JSON Schema generation, validation at API boundary</td></tr>
+        <tr><td><strong>NetworkX</strong></td><td>3.x</td><td>DAG validation, Dijkstra shortest path, topological sort. Pure Python.</td></tr>
+        <tr><td><strong>HTTPX</strong></td><td>latest</td><td>Async HTTP client for calling upstream WP services</td></tr>
+        <tr><td><strong>pytest</strong></td><td>latest</td><td>TDD with hypothesis for property-based rule testing</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="layer-frontend" class="tab-content">
+    <table>
+      <thead><tr><th width="25%">Technology</th><th width="15%">Version</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Vue 3</strong></td><td>3.x</td><td>v-model + SFC sufficient for questionnaire complexity. Gentler learning curve than React for non-frontend team.</td></tr>
+        <tr><td><strong>Vite</strong></td><td>latest</td><td>Fast dev server, native ESM, simple config</td></tr>
+        <tr><td><strong>D3.js</strong></td><td>—</td><td>If roadmap visualization needs interactive graph. Optional — Mermaid.js for static.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="layer-data" class="tab-content">
+    <table>
+      <thead><tr><th width="25%">Technology</th><th width="15%">Version</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td><strong>PostgreSQL</strong></td><td>16+</td><td>JSONB columns, ACID, array types for compliance_refs, GIN indexes. One DB, no polyglot persistence.</td></tr>
+        <tr><td><strong>SQLAlchemy + Alembic</strong></td><td>2.x</td><td>Migrations for schema evolution across WP3/WP8 updates</td></tr>
+        <tr><td><strong>YAML</strong></td><td>—</td><td>Rule file format. Externalized from code. Non-programmers (Epidata QA) can review.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="layer-infra" class="tab-content">
+    <table>
+      <thead><tr><th width="25%">Technology</th><th width="15%">Version</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Docker Compose</strong></td><td>—</td><td>Single-container deploy. CHARITE can <code>docker compose up -d</code> on any Linux host.</td></tr>
+        <tr><td><strong>Nginx</strong></td><td>—</td><td>Reverse proxy, HTTPS termination, static file serving</td></tr>
+        <tr><td><strong>GitHub Actions</strong></td><td>—</td><td>CI/CD. pytest on every push. Docker image build on tag.</td></tr>
+        <tr><td><strong>VM Spec</strong></td><td>—</td><td>4–8 vCPU, 16 GB RAM, 100 GB SSD. No GPU needed for V1.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    function switchT(evt, id) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      evt.target.classList.add('active');
+      document.getElementById(id).classList.add('active');
+    }
+  </script>
+</section>
+
+<!-- 04 Data Schema -->
+<section id="schema">
+  <div class="sec-head"><span class="idx">04</span><h2>Data Schema</h2></div>
+  <p class="sec-intro">Four core tables. Minimal. Extensible through JSONB.</p>
+
+  <p style="font-family:var(--serif);font-size:16px;font-weight:500;margin:20px 0 8px;">1. Roadmap Nodes <span style="font-family:var(--mono);font-size:11px;color:var(--g500);">(from WP3)</span></p>
+  <details open>
+    <summary style="cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--clay);padding:6px 0;">Show DDL</summary>
+    <pre><code>CREATE TABLE roadmap_nodes (
+    id              SERIAL PRIMARY KEY,
+    node_id         TEXT UNIQUE NOT NULL,       -- 'R2.3-A'
+    label           TEXT NOT NULL,              -- 'Establish DPO'
+    description     TEXT,
+    parent_node     TEXT,                       -- self-ref for DAG
+    prerequisites   TEXT[],                     -- ['R1.2', 'R2.1']
+    maturity_level  INT CHECK (maturity_level BETWEEN 1 AND 5),
+    effort_estimate TEXT,                       -- 'low'|'medium'|'high'
+    related_wp      TEXT,                       -- 'WP5'|'WP6'|'WP7'
+    x FLOAT, y FLOAT,                          -- visualization coords
+    metadata        JSONB,
+    schema_version  TEXT NOT NULL               -- 'v1.0-m3-freeze'
+);</code></pre>
+  </details>
+
+  <p style="font-family:var(--serif);font-size:16px;font-weight:500;margin:24px 0 8px;">2. Recommendation Rules <span style="font-family:var(--mono);font-size:11px;color:var(--g500);">(core IP)</span></p>
+  <details>
+    <summary style="cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--clay);padding:6px 0;">Show DDL</summary>
+    <pre><code>CREATE TABLE recommendation_rules (
+    id                SERIAL PRIMARY KEY,
+    rule_id           TEXT UNIQUE NOT NULL,     -- 'R-PHARMA-AI-001'
+    node_id           TEXT REFERENCES roadmap_nodes(node_id),
+    stakeholder_type  TEXT,
+    condition         JSONB NOT NULL,           -- {"answers":{"q2.1":{"gte":3}}}
+    action_title      TEXT NOT NULL,
+    action_text       TEXT NOT NULL,
+    compliance_ref    TEXT[],                   -- ['GDPR-Art.37','EHDS-Art.50']
+    priority          INT DEFAULT 0,
+    source_wp         TEXT,
+    source_doc_ref    TEXT,
+    created_at        TIMESTAMPTZ DEFAULT now(),
+    updated_at        TIMESTAMPTZ DEFAULT now(),
+    rule_version      TEXT NOT NULL
+);
+CREATE INDEX idx_rules_stakeholder ON recommendation_rules(stakeholder_type);
+CREATE INDEX idx_rules_node ON recommendation_rules(node_id);
+CREATE INDEX idx_rules_condition ON recommendation_rules USING GIN (condition);</code></pre>
+  </details>
+
+  <p style="font-family:var(--serif);font-size:16px;font-weight:500;margin:24px 0 8px;">3. Assessment Sessions</p>
+  <details>
+    <summary style="cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--clay);padding:6px 0;">Show DDL</summary>
+    <pre><code>CREATE TABLE assessment_sessions (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    stakeholder_type TEXT,
+    status          TEXT DEFAULT 'in_progress',
+    answers         JSONB,
+    current_node    TEXT REFERENCES roadmap_nodes(node_id),
+    recommendations JSONB,
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    completed_at    TIMESTAMPTZ
+);</code></pre>
+  </details>
+
+  <p style="font-family:var(--serif);font-size:16px;font-weight:500;margin:24px 0 8px;">4. Audit Log <span style="font-family:var(--mono);font-size:11px;color:var(--clay-d);">(immutable)</span></p>
+  <details>
+    <summary style="cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--clay);padding:6px 0;">Show DDL</summary>
+    <pre><code>CREATE TABLE audit_log (
+    id              SERIAL PRIMARY KEY,
+    session_id      UUID REFERENCES assessment_sessions(id),
+    event_type      TEXT NOT NULL,
+    event_data      JSONB NOT NULL,
+    timestamp       TIMESTAMPTZ DEFAULT now(),
+    ip_hash         TEXT,
+    user_agent_hash TEXT
+);
+-- Append-only: no updates, no deletes
+CREATE RULE audit_no_update AS ON UPDATE TO audit_log DO INSTEAD NOTHING;
+CREATE RULE audit_no_delete AS ON DELETE TO audit_log DO INSTEAD NOTHING;</code></pre>
+  </details>
+</section>
+
+<!-- 05 API Design -->
+<section id="api">
+  <div class="sec-head"><span class="idx">05</span><h2>API Design</h2></div>
+  <p class="sec-intro">Resource-centric REST. All business logic on server. Frontend renders only.</p>
+
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>POST</code></td><td><code>/v1/assessments</code></td><td>Start a new self-assessment session</td></tr>
+      <tr><td><code>GET</code></td><td><code>/v1/assessments/{id}</code></td><td>Get current state and progress</td></tr>
+      <tr><td><code>PATCH</code></td><td><code>/v1/assessments/{id}/answers</code></td><td>Submit answers for one step</td></tr>
+      <tr><td><code>GET</code></td><td><code>/v1/assessments/{id}/report</code></td><td>Generate Pathfinder report with recommendations</td></tr>
+      <tr><td><code>GET</code></td><td><code>/v1/roadmap/positions</code></td><td>Read-only proxy from WP3</td></tr>
+      <tr><td><code>GET</code></td><td><code>/v1/compliance/checks</code></td><td>Read-only proxy from WP8</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 06 Risks -->
+<section id="risks">
+  <div class="sec-head"><span class="idx">06</span><h2>Architecture Risks &amp; Tradeoffs</h2></div>
+
+  <div class="finding critical">
+    <h3><span class="badge badge-critical">CRITICAL</span> WP3 roadmap format is single point of failure</h3>
+    <p>If CHARITE delivers a PDF instead of structured JSON, the graph engine cannot function. Mitigation: demand JSON/CSV node-edge list with topological proof by M2. No schema = no code.</p>
+  </div>
+  <div class="finding">
+    <h3><span class="badge badge-high">HIGH</span> WP8 legal constraints may not be formalizable</h3>
+    <p>Lawyers write "should" and "may" — SAT solvers need boolean predicates. Architecture handles this with soft checks: flag risks rather than hard-block. Rules hot-loadable when WP8 updates.</p>
+  </div>
+  <div class="finding">
+    <h3><span class="badge badge-medium">MEDIUM</span> CHARITE must maintain code in T4.3</h3>
+    <p>Write "boring code" — no clever abstractions, no custom DSL, no deep inheritance. README explains deployment, not design philosophy. They need to add a rule, not understand the engine.</p>
+  </div>
+  <div class="finding">
+    <h3><span class="badge badge-low">LOW</span> Performance at scale</h3>
+    <p>&lt; 500 users, &lt; 10⁴ roadmap nodes. Dijkstra O(|V|+|E|) on DAG is sub-millisecond. Premature optimization is Mathematics Inc.'s enemy.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="k">DataWego · Architecture Spec</div>
+  <div>Generated 2026-05-13 · <span class="badge badge-low">html-spec</span></div>
+</footer>
+</div>
+</body>
+</html>

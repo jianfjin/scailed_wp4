@@ -1,0 +1,23 @@
+[Jensen/CIO] — 基础设施与算力
+
+硬体需求 (两阶段):
+
+Phase       | Compute   | GPU?      | RAM   | Cost/mo
+T4.1 Dev    | 4 vCPU    | None      | 8GB   | €50-80
+T4.1 Prod   | 8 vCPU    | None      | 16GB  | €100-150
+T4.3 Dev    | 8 vCPU    | 1x L40S   | 32GB  | €300-400
+T4.3 Prod   | 16 vCPU   | 1x L40S   | 64GB  | €600-800
+
+关键: No H100/A100. 这不是训练GPT-7.
+
+AI Factory SPE 策略:
+- 前端/API → 公有云 (€100/mo)
+- KG引擎 + 嵌入服务 → SPE内部 (合规要求)
+- 不是全部搬进SPE, 分流部署
+
+SPE需求: Docker/K8s, GPU L40S 16GB VRAM, 200GB SSD, <10ms延迟, EHDS Article 6日志
+
+总成本 36个月: €15,000-25,000
+
+核心警告: 不是算力是数据管道。M3前定义所有接口合约, stub先行。
+SHAIPED: 索要成本/性能分解 — 如果2x GPU跑500ms/推荐, M24才知道就晚了。

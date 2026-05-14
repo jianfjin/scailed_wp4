@@ -1,0 +1,22 @@
+[Musk/CVO] — 第一性原理分析
+
+核心：Pathfinder 是一个状态转移函数。不是"工具"。
+
+Input: 利益相关者当前状态向量 S(t)
+Output: 最优轨迹 ΔS → S(t+1), S(t+2)... 到目标 G
+核心操作: 最小化每步转移的"激活能"
+
+四个组件:
+1. State Space: 利益相关者 × WP3能力轴 × WP8合规阈值 → 向量嵌入
+2. Transition Dynamics: 规则描述有效移动。"你在X，WP8说Y强制，唯一下一步是Z"
+3. Path Optimization: Dijkstra/A* on regulatory graph
+4. Validation Layer (T4.2): 必须可证伪。预测→验证→更新模型
+
+架构: State Ingestion → Knowledge Graph/Symbolic Engine → Path Solver → Validation Feedback Loop
+
+关键:
+- 构建"真值机"，不是展示层
+- LLM只用做自然语言生成，绝不能用于路径选择（需要确定性+可审计性）
+- 交付: Python库 pathfinder.solve(state, target) → Path对象 + FastAPI + 最小前端
+- SHAIPED: 问Lu Zhao — 是查表还是状态机？如果是前者，做相反的。
+- 上游依赖是单点故障 — M3前定义数据接口

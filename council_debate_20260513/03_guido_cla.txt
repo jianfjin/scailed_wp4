@@ -1,0 +1,24 @@
+[Guido/CLA] — API设计和Pythonic架构
+
+API设计 (资源为中心REST):
+- POST /v1/assessments → 启动评估
+- PATCH /v1/assessments/{id}/answers → 提交答案
+- GET /v1/assessments/{id}/report → 生成报告
+- GET /v1/roadmap/positions → WP3代理
+- GET /v1/compliance/checks → WP8代理
+
+Pydantic模型: AssessmentAnswers, RoadmapPosition, Recommendation, PathfinderReport
+
+框架: FastAPI (async原生, 自动OpenAPI, Pydantic集成)
+
+规则引擎: 声明式 @dataclass Rule + lambda条件, 拒绝if-else地狱
+
+模块拆分:
+pathfinder/
+├── core/ — 纯Python, 零外部依赖
+├── api/ — FastAPI, 依赖core
+├── adapters/ — wp2, wp3, wp8 数据适配器
+├── frontend/ — Vue SPA
+└── tests/ — pytest
+
+审计追踪: 每次答案修改、每次推荐生成 → 不可篡改日志

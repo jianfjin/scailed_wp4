@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCAILED WP4 Pathfinder — 九龙议会终论</title>
+<style>
+  :root {
+    --ivory:  #FAF9F5;
+    --paper:  #FFFFFF;
+    --slate:  #141413;
+    --clay:   #D97757;
+    --clay-d: #B85C3E;
+    --oat:    #E3DACC;
+    --olive:  #788C5D;
+    --g100:   #F0EEE6;
+    --g200:   #E6E3DA;
+    --g300:   #D1CFC5;
+    --g500:   #87867F;
+    --g700:   #3D3D3A;
+    --serif: ui-serif, Georgia, "Times New Roman", Times, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ivory); color: var(--slate);
+    font-family: var(--sans); line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 32px 120px; }
+  header.masthead {
+    padding: 72px 0 48px; border-bottom: 1.5px solid var(--g300); margin-bottom: 12px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.10em;
+    text-transform: uppercase; color: var(--g500); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before { content: ""; width: 20px; height: 1.5px; background: var(--clay); }
+  h1 {
+    font-family: var(--serif); font-weight: 500;
+    font-size: clamp(32px, 4.5vw, 52px); line-height: 1.08;
+    letter-spacing: -0.016em; margin: 0 0 6px;
+  }
+  h1 em { font-style: italic; color: var(--clay); }
+  .intro { font-size: 16px; color: var(--g700); max-width: 620px; margin: 18px 0 0; }
+  .meta { font-family: var(--mono); font-size: 11px; color: var(--g500); margin-top: 20px; display: flex; gap: 24px; flex-wrap: wrap; }
+
+  section { margin-top: 64px; scroll-margin-top: 28px; }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; }
+  .sec-head .idx { font-family: var(--mono); font-size: 13px; color: var(--clay); font-weight: 600; width: 30px; flex-shrink: 0; }
+  .sec-head h2 { font-family: var(--serif); font-weight: 500; font-size: 26px; margin: 0; letter-spacing: -0.012em; }
+  .sec-head .count { font-family: var(--mono); font-size: 11px; color: var(--g500); background: var(--g100); padding: 2px 8px; border-radius: 999px; }
+
+  .consensus {
+    background: linear-gradient(135deg, #F7FAF5, #EDF3E8);
+    border: 1.5px solid var(--olive); border-radius: 12px; padding: 22px 26px; margin: 20px 0;
+  }
+  .consensus h3 { color: var(--olive); margin: 0 0 8px; font-family: var(--serif); }
+  .consensus ul { margin: 0; padding-left: 20px; font-size: 14px; line-height: 2.1; }
+
+  .position-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; margin: 20px 0; }
+  .position-card {
+    background: var(--paper); border: 1.5px solid var(--g200); border-radius: 12px; padding: 18px;
+  }
+  .position-card:hover { border-color: var(--slate); transform: translateY(-2px); transition: all 150ms; box-shadow: 0 8px 24px rgba(20,20,19,.06); }
+  .position-card .avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--g100); border: 1.5px solid var(--g300);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 12px; font-weight: 600; margin-right: 8px; vertical-align: middle;
+  }
+  .position-card strong { font-size: 14px; vertical-align: middle; }
+  .position-card .role { font-family: var(--mono); font-size: 10px; color: var(--clay); text-transform: uppercase; margin-left: 6px; }
+  .position-card .quote { font-size: 13px; font-style: italic; color: var(--g700); margin: 10px 0 0; padding-left: 10px; border-left: 2.5px solid var(--oat); line-height: 1.5; }
+  .position-card .model { font-family: var(--mono); font-size: 10px; color: var(--g500); margin-top: 10px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 16px 0; }
+  thead th { text-align: left; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--g500); padding: 0 0 8px; border-bottom: 1.5px solid var(--g300); }
+  tbody td { padding: 10px 0; border-bottom: 1px solid var(--g200); vertical-align: middle; }
+  tbody td:first-child { font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+
+  .badge { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.04em; display: inline-block; }
+  .badge-critical { background: #FED7D7; color: #991B1B; }
+  .badge-high { background: #FDE8E0; color: #B85C3E; }
+  .badge-medium { background: #FEF3C7; color: #92400E; }
+  .badge-low { background: #DCFCE7; color: #166534; }
+
+  .finding {
+    border: 1.5px solid var(--g200); border-radius: 10px; padding: 16px 20px; margin: 12px 0;
+    border-left: 4px solid var(--clay);
+  }
+  .finding.critical { border-left-color: #991B1B; background: #FFF5F5; }
+  .finding.positive { border-left-color: var(--olive); background: #F7FAF5; }
+  .finding h3 { font-size: 15px; margin: 0 0 6px; }
+  .finding p { font-size: 13px; color: var(--g700); margin: 0; }
+  .finding .source { font-family: var(--mono); font-size: 10px; color: var(--g500); margin-top: 8px; }
+
+  .action-item { display: flex; gap: 14px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--g200); }
+  .action-item .who { font-family: var(--mono); font-size: 11px; color: var(--clay); min-width: 90px; }
+  .action-item .what { flex: 1; font-size: 14px; }
+  .action-item .when { font-family: var(--mono); font-size: 11px; color: var(--g500); white-space: nowrap; }
+
+  .tag { font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 999px; background: var(--g100); color: var(--g500); margin-right: 4px; }
+
+  .arch-diagram { overflow-x: auto; padding: 20px 0; }
+  .arch-diagram svg { min-width: 700px; }
+
+  footer { margin-top: 80px; border-top: 1.5px solid var(--g300); padding-top: 28px; display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--g500); }
+  footer .k { font-family: var(--serif); font-style: italic; color: var(--g700); font-size: 14px; }
+
+  @media print {
+    body { background: white; font-size: 11pt; }
+    .position-card:hover { transform: none; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">Council Debate Synthesis · 2026-05-13</div>
+    <h1>SCAILED <em>WP4</em> Pathfinder System</h1>
+    <p class="intro">
+      DataWego 九龙议会就 Epidata 外包的 SCAILED WP4 Pathfinder System 进行全会辩论。
+      9/9 席位一致裁决：Pathfinder 是一个带合规约束的图搜索引擎，不是平台，不是仪表盘，不是 AI 聊天机器人。
+    </p>
+    <div class="meta">
+      <span>🏛 9 seats</span><span>⏱ 42s–1m38s each</span><span>📐 Python + FastAPI + PostgreSQL</span><span>🏗 Monolith · Docker Compose</span>
+    </div>
+  </header>
+
+  <!-- ===== Positions ===== -->
+  <section id="positions">
+    <div class="sec-head"><span class="idx">01</span><h2>Council Positions</h2><span class="count">9 seats</span></div>
+
+    <div class="position-cards">
+      <div class="position-card">
+        <div class="avatar">M</div><strong>Elon Musk</strong><span class="role">CVO</span>
+        <div class="model">kimi-k2.6</div>
+        <div class="quote">"You're building a state transition function. pathfinder.solve(state, target) → Path. Not a web app — a computational kernel."</div>
+      </div>
+      <div class="position-card">
+        <div class="avatar">张</div><strong>张雪峰</strong><span class="role">CSA</span>
+        <div class="model">deepseek-v4-flash</div>
+        <div class="quote">"这不是技术项目，是政治项目。做能截图、能演示、能忽悠的东西。验收那天是PDF+录屏链接，没人跑pytest。"</div>
+      </div>
+      <div class="position-card">
+        <div class="avatar">G</div><strong>Guido van Rossum</strong><span class="role">CLA</span>
+        <div class="model">kimi-k2.6</div>
+        <div class="quote">"FastAPI + Pydantic + 声明式规则引擎。拒绝 if-else 地狱。规则 YAML 外部化，非程序员也能审阅。"</div>
+      </div>
+      <div class="position-card">
+        <div class="avatar">D</div><strong>Edsger W. Dijkstra</strong><span class="role">CSO</span>
+        <div class="model">kimi-k2.6</div>
+        <div class="quote">"EWD498: G=(V,E,w) 必须是 DAG。C 必须可判定。WP3 不交付图只交付 PPT → 拒绝接收。M3 无形式化签字 → 拒绝开工。"</div>
+      </div>
+      <div class="position-card">
+        <div class="avatar">J</div><strong>Jensen Huang</strong><span class="role">CIO</span>
+        <div class="model">deepseek-v4-flash</div>
+        <div class="quote">"No H100. No A100. CPU-only. 36 months infra: €15,000–25,000. If someone quotes €100K, they're selling a Ferrari for groceries."</div>
+      </div>
+      <div class="position-card">
+        <div class="avatar">S</div><strong>Steve Jobs</strong><span class="role">CPO</span>
+        <div class="model">kimi-k2.6</div>
+        <div class="quote">"One question. White screen. Three buttons. Not SAP dashboard — Apple Setup Assistant. Make compliance seductive."</div>
+      </div>
+      <div class="position-card">
+        <div class="avatar">L</div><strong>Linus Torvalds</strong><span class="role">Arch</span>
+        <div class="model">deepseek-v4-pro</div>
+        <div class="quote">"Monolith. Docker Compose. No K8s. No microservices. No Neo4j. You're building a questionnaire with a recommendation engine — not Netflix."</div>
+      </div>
+      <div class="position-card">
+        <div class="avatar">小</div><strong>张小龙</strong><span class="role">Eng</span>
+        <div class="model">deepseek-v4-pro</div>
+        <div class="quote">"MVP = 问卷引擎 + 定位 + 推荐 + PDF导出。砍掉登录、后台、多语言、仪表盘。好产品是用户花10分钟填完就走。"</div>
+      </div>
+      <div class="position-card" style="border-color:var(--clay);">
+        <div class="avatar" style="background:var(--oat);">峰</div><strong>峰哥</strong><span class="role">CTO</span>
+        <div class="model">deepseek-v4-pro</div>
+        <div class="quote">"内核搞扎实（TDD + 形式化），外壳搞漂亮（录屏 + PDF），接口先锁死（M3），合同护城河（预付款30%+返工另计）。"</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Consensus ===== -->
+  <section id="consensus">
+    <div class="sec-head"><span class="idx">02</span><h2>Consensus</h2><span class="count">9/9 seats agree</span></div>
+    <div class="consensus">
+      <h3>Unanimous Verdict</h3>
+      <ul>
+        <li><strong>本质</strong>：Pathfinder = 带约束的图搜索 (Dijkstra/A*) + 极简问卷界面。不是 Web App，不是平台。</li>
+        <li><strong>架构</strong>：Monolith FastAPI + PostgreSQL。No K8s, no 微服务, no Neo4j, no GraphQL。Docker Compose 单容器。</li>
+        <li><strong>规则引擎</strong>：声明式 YAML 外部化，热加载。非程序员（Epidata QA 团队）可审阅。</li>
+        <li><strong>生死线</strong>：M3 前 WP2/3/8 Schema 签字。无签字 = 拒绝开工。</li>
+        <li><strong>交付物</strong>：Python 库 pathfinder.solve() + FastAPI wrapper + Vue 3 前端。内核 > 外壳。</li>
+        <li><strong>LLM 使用</strong>：仅用于自然语言生成和文档解析。路径选择必须确定性、可审计。</li>
+        <li><strong>合同</strong>：预付款30% + 里程碑绑定上游 + V2 独立合同 + 返工按人天另计。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== Architecture ===== -->
+  <section id="architecture">
+    <div class="sec-head"><span class="idx">03</span><h2>Technical Architecture</h2></div>
+    <div class="arch-diagram">
+      <svg viewBox="0 0 800 340" style="width:100%;">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 Z" fill="var(--g500)"/>
+          </marker>
+          <marker id="arrow-clay" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 Z" fill="var(--clay)"/>
+          </marker>
+        </defs>
+        <!-- Frontend -->
+        <rect x="280" y="10" width="240" height="46" rx="9" fill="var(--paper)" stroke="var(--g300)" stroke-width="2"/>
+        <text x="400" y="38" text-anchor="middle" font-family="system-ui" font-size="13" fill="var(--slate)" font-weight="500">Vue 3 · Questionnaire UI</text>
+        <!-- Arrow -->
+        <line x1="400" y1="56" x2="400" y2="88" stroke="var(--clay)" stroke-width="2" marker-end="url(#arrow-clay)"/>
+        <text x="410" y="76" font-family="monospace" font-size="9" fill="var(--clay)">REST/OpenAPI</text>
+        <!-- Backend -->
+        <rect x="160" y="90" width="480" height="120" rx="10" fill="var(--paper)" stroke="var(--slate)" stroke-width="2.5"/>
+        <text x="400" y="113" text-anchor="middle" font-family="system-ui" font-size="14" fill="var(--slate)" font-weight="600">FastAPI Backend</text>
+        <!-- Modules -->
+        <rect x="176" y="122" width="145" height="38" rx="6" fill="var(--g100)" stroke="var(--g200)" stroke-width="1"/>
+        <text x="248" y="140" text-anchor="middle" font-family="monospace" font-size="10" fill="var(--g700)">Assessment Engine</text>
+        <text x="248" y="152" text-anchor="middle" font-family="monospace" font-size="8" fill="var(--g500)">core/</text>
+        <rect x="328" y="122" width="145" height="38" rx="6" fill="var(--oat)" stroke="var(--clay)" stroke-width="1.5"/>
+        <text x="400" y="140" text-anchor="middle" font-family="monospace" font-size="10" fill="var(--slate)" font-weight="600">Recommendation Engine</text>
+        <text x="400" y="152" text-anchor="middle" font-family="monospace" font-size="8" fill="var(--g500)">solver.py</text>
+        <rect x="480" y="122" width="145" height="38" rx="6" fill="var(--g100)" stroke="var(--g200)" stroke-width="1"/>
+        <text x="552" y="140" text-anchor="middle" font-family="monospace" font-size="10" fill="var(--g700)">Compliance Adapter</text>
+        <text x="552" y="152" text-anchor="middle" font-family="monospace" font-size="8" fill="var(--g500)">adapters/</text>
+        <!-- Bottom label -->
+        <text x="400" y="198" text-anchor="middle" font-family="monospace" font-size="9" fill="var(--g500)">WP2/3/5/6/7/8 Adapters · Audit Trail</text>
+        <!-- Arrow -->
+        <line x1="400" y1="210" x2="400" y2="242" stroke="var(--g500)" stroke-width="2" marker-end="url(#arrow)"/>
+        <!-- DB -->
+        <rect x="280" y="244" width="240" height="46" rx="9" fill="var(--slate)" stroke="var(--slate)" stroke-width="2"/>
+        <text x="400" y="266" text-anchor="middle" font-family="monospace" font-size="12" fill="var(--ivory)">PostgreSQL</text>
+        <text x="400" y="280" text-anchor="middle" font-family="monospace" font-size="9" fill="var(--g300)">JSONB · Audit Log · Rules</text>
+        <!-- Labels -->
+        <rect x="98" y="138" width="44" height="22" rx="4" fill="var(--g100)" stroke="var(--g300)" stroke-width="1"/>
+        <text x="120" y="153" text-anchor="middle" font-family="monospace" font-size="8" fill="var(--g500)">YAML</text>
+        <text x="115" y="133" font-family="monospace" font-size="8" fill="var(--g500)">Rules</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ===== Phases ===== -->
+  <section id="phases">
+    <div class="sec-head"><span class="idx">04</span><h2>Implementation Phases</h2><span class="count">5 phases · M1–M33</span></div>
+    <table>
+      <thead><tr><th>Phase</th><th>Timeline</th><th>Scope</th><th>Deliverable</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>0 · 形式化冻结</td><td>M1–M3</td><td>WP2/3/8 Schema 签字确认</td><td>Signed schemas</td><td><span class="badge badge-critical">P0</span></td></tr>
+        <tr><td>1 · 核心引擎</td><td>M4–M9</td><td>Graph engine + Constraint checker + Questionnaire</td><td>Core library</td><td><span class="badge badge-critical">P0</span></td></tr>
+        <tr><td>2 · API + MVP</td><td>M10–M15</td><td>FastAPI + Vue 3 frontend</td><td>Demo for D4.2 (M18)</td><td><span class="badge badge-high">P1</span></td></tr>
+        <tr><td>3 · V1 交付</td><td>M16–M20</td><td>Polish + report support</td><td>D4.1 Pathfinder V1</td><td><span class="badge badge-high">P1</span></td></tr>
+        <tr><td>4 · Test Drive</td><td>M21–M24</td><td>T4.2 validation with WP5/6/7</td><td>Feedback integration</td><td><span class="badge badge-medium">P2</span></td></tr>
+        <tr><td>5 · V2 迭代</td><td>M25–M33</td><td>T4.3 CHARITE-led revision</td><td>D4.4 Final Guidelines</td><td><span class="badge badge-low">P3</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ===== Risks ===== -->
+  <section id="risks">
+    <div class="sec-head"><span class="idx">05</span><h2>Risk Register</h2><span class="count">5 critical risks</span></div>
+
+    <div class="finding critical">
+      <h3>🚨 WP3 delivers PDF instead of structured JSON</h3>
+      <p>If CHARITE provides roadmap as a PDF with colored arrows, the entire graph engine is blocked. Mitigation: require JSON/CSV schema sign-off by M2, with topological sort proof.</p>
+      <div class="source">Probability: Very High · Impact: Critical · Owner: Feng Ge</div>
+    </div>
+
+    <div class="finding critical">
+      <h3>🚨 WP8 legal constraints are natural language, not executable rules</h3>
+      <p>Lawyers write "should" and "may" — SAT solvers need boolean predicates. Mitigation: soft checks + YAML hot-loading; flag risks rather than hard-block.</p>
+      <div class="source">Probability: High · Impact: High · Owner: Dijkstra + Guido</div>
+    </div>
+
+    <div class="finding">
+      <h3>⚠️ Ambiguous requirements cause endless rework</h3>
+      <p>Epidata says "build the tool" but can't define what it is. Mitigation: M1 low-fi prototype with 3 options, signed scope boundary.</p>
+      <div class="source">Probability: Very High · Impact: High · Owner: Feng Ge</div>
+    </div>
+
+    <div class="finding">
+      <h3>⚠️ D4.1 acceptance criteria are subjective</h3>
+      <p>"Report + demo" means Lu Zhao's subjective judgment. Mitigation: quantified acceptance criteria in contract.</p>
+      <div class="source">Probability: Medium-High · Impact: Medium · Owner: Legal</div>
+    </div>
+
+    <div class="finding">
+      <h3>⚠️ EHDS implementing acts change mid-project</h3>
+      <p>Rules written in M1 based on drafts may be obsolete by M30. Mitigation: hot-loadable rule engine. Never hard-code compliance.</p>
+      <div class="source">Probability: Medium-High · Impact: Medium · Owner: Guido</div>
+    </div>
+  </section>
+
+  <!-- ===== Action Items ===== -->
+  <section id="actions">
+    <div class="sec-head"><span class="idx">06</span><h2>Action Items</h2></div>
+    <div class="action-item"><span class="who">Feng Ge</span><span class="what">Send formalization requirements to WP3/8/2 Leads; schedule M2 schema sign-off meeting</span><span class="when">M1 W1</span></div>
+    <div class="action-item"><span class="who">Feng Ge</span><span class="what">Draft subcontract with scope boundaries, payment terms, and quantified acceptance criteria</span><span class="when">M1 W3</span></div>
+    <div class="action-item"><span class="who">Linus + Xiaolong</span><span class="what">Set up project scaffold: Docker Compose, CI/CD, repo, PostgreSQL schema</span><span class="when">M1 W1</span></div>
+    <div class="action-item"><span class="who">Guido + Dijkstra</span><span class="what">Define formal data interface schemas for WP2 (stakeholders), WP3 (roadmap DAG), WP8 (compliance rules)</span><span class="when">M1 W2</span></div>
+    <div class="action-item"><span class="who">Xiaolong</span><span class="what">Audit SHAIPED codebase and documentation; report on reusable assets</span><span class="when">M1 W1</span></div>
+    <div class="action-item"><span class="who">Jensen</span><span class="what">Confirm SPE access timeline with LNDS AI Factory; define infra requirements</span><span class="when">M1 W3</span></div>
+    <div class="action-item"><span class="who">Jobs</span><span class="what">Create 3 low-fidelity prototypes for Epidata direction validation</span><span class="when">M1 W4</span></div>
+  </section>
+
+  <footer>
+    <div class="k">DataWego · 九龙议会</div>
+    <div>2026-05-13 · <span class="tag">html-report</span> <span class="tag">council</span></div>
+  </footer>
+</div>
+</body>
+</html>

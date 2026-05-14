@@ -1,0 +1,25 @@
+[Linus/Arch] — 系统架构
+
+本质: 规则驱动的推荐引擎 + 自评工具。不是AGI。
+
+分层方案 (单体, 不微服务):
+前端 SPA → 后端API单体 (评估引擎/推荐引擎/合规检查器/报告生成器)
+→ 数据层 PostgreSQL (路线图DB/规则引擎DB/用户画像/评估历史)
+
+不做:
+- 不拆微服务 — 没运维预算
+- 不搞Kafka — 不是高频交易
+- 不GraphQL — REST够了
+- No K8s — Docker Compose 一把梭
+- No Neo4j, No 大模型
+
+技术栈: Python+FastAPI, React或Vue (团队谁会写哪个就用哪个), PostgreSQL, Docker Compose, GitHub Actions
+
+上游输入 (阻塞级): WP2(利益相关者分类), WP3(路线图结构JSON), WP8(规则集)
+接口原则: JSON Schema定义, Git版本控制, version字段, REST+JSON
+
+时间节点: M3 schema锁定(否则已死), M6推荐引擎原型, M18 D4.2, M20 D4.1, M24 Test Drive, M33最终交付
+
+风险: WP3如果是PDF→废铁; WP8如果是"指导原则"→合规是摆设; 规则引擎必须热加载
+
+"If someone suggests K8s, microservices, LLM, or Neo4j — tell them Linus said: That's f***ing stupid."

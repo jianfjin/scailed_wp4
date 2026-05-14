@@ -1,0 +1,30 @@
+[Xiaolong/Eng] — MVP做减法
+
+本质: 带规则的问卷引擎。不是KG，不是推荐引擎，不是AI。
+
+就是一个树。10-20道选择题，走到叶子节点，系统告诉你位置和下一步。
+
+MVP只做四样:
+1. 问卷引擎 (读JSON规则, 渲染问题, 收集答案)
+2. 定位算法 (答案→路线图位置)
+3. 推荐展示 (下一步+合规提示)
+4. 导出PDF
+
+砍掉:
+- 用户系统/登录 (匿名填问卷)
+- 实时数据对接 (T4.2的事)
+- 知识图谱/向量数据库 (JSON配置文件够了)
+- 管理后台 (JSON文件管理)
+- 多语言 (先英文)
+- 仪表盘/动画/渐变背景
+
+数据库Schema (三张表):
+- questionnaires (id, version, stakeholder_type, definition JSONB)
+- roadmap_nodes (id, node_id, label, description, parent_node, x, y, metadata JSONB)
+- recommendation_rules (id, node_id, stakeholder_type, condition JSONB, action_text, compliance_ref TEXT[], priority, source_wp)
+
+技术栈: FastAPI, Vue3+Vite, PostgreSQL, Docker Compose 单容器
+
+开发: 三个月一循环, 非waterfall
+
+风险: 上游不按时交付 → Phase0签JSON Schema锁死接口; CHARITE接手 → 代码写大白话

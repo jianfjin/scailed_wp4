@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Implementation Plan — SCAILED WP4 Pathfinder System</title>
+<style>
+  :root {
+    --ivory:#FAF9F5;--paper:#FFFFFF;--slate:#141413;--clay:#D97757;--clay-d:#B85C3E;
+    --oat:#E3DACC;--olive:#788C5D;--g100:#F0EEE6;--g200:#E6E3DA;--g300:#D1CFC5;
+    --g500:#87867F;--g700:#3D3D3A;
+    --serif:ui-serif,Georgia,"Times New Roman",Times,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Monaco,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ivory);color:var(--slate);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 28px 120px}
+  header.masthead{padding:64px 0 44px;border-bottom:1.5px solid var(--g300);margin-bottom:12px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--g500);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:20px;height:1.5px;background:var(--clay)}
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(30px,4.2vw,48px);line-height:1.08;letter-spacing:-.016em;margin:0 0 6px}
+  h1 em{font-style:italic;color:var(--clay)}
+  .intro{font-size:15px;color:var(--g700);max-width:600px;margin:16px 0 0}
+  .meta{font-family:var(--mono);font-size:10px;color:var(--g500);margin-top:18px;display:flex;gap:20px;flex-wrap:wrap}
+
+  section{margin-top:56px;scroll-margin-top:24px}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+  .sec-head .idx{font-family:var(--mono);font-size:13px;color:var(--clay);font-weight:600;width:28px;flex-shrink:0}
+  .sec-head h2{font-family:var(--serif);font-weight:500;font-size:24px;margin:0;letter-spacing:-.012em}
+  .sec-head .count{font-family:var(--mono);font-size:10px;color:var(--g500);background:var(--g100);padding:2px 8px;border-radius:999px}
+  .sec-intro{font-size:13.5px;color:var(--g700);max-width:620px;margin:0 0 20px 42px}
+
+  /* Timeline */
+  .timeline{position:relative;padding:44px 0 20px;overflow-x:auto}
+  .timeline::before{content:"";position:absolute;left:0;right:0;top:58px;height:4px;background:var(--g200);border-radius:2px}
+  .timeline-phases{display:flex;gap:0;position:relative;min-width:700px}
+  .timeline-phase{flex:1;text-align:center;position:relative;padding-top:30px;cursor:pointer}
+  .timeline-phase::before{content:"";position:absolute;top:50px;left:50%;width:16px;height:16px;border-radius:50%;background:var(--clay);transform:translateX(-50%);border:3px solid var(--ivory);z-index:1}
+  .timeline-phase.active::before{background:var(--slate);width:20px;height:20px;top:48px}
+  .timeline-phase.future::before{background:var(--g300)}
+  .timeline-phase.done::before{background:var(--olive)}
+  .timeline-phase .phase-label{font-family:var(--mono);font-size:10px;color:var(--g500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+  .timeline-phase .phase-name{font-family:var(--serif);font-size:15px;font-weight:500}
+  .timeline-phase .phase-date{font-size:11px;color:var(--g500);margin-top:3px}
+  .timeline-phase:hover .phase-name{color:var(--clay)}
+  .timeline-phase .phase-deliverable{font-family:var(--mono);font-size:9px;color:var(--clay);margin-top:4px}
+
+  /* Phase accordion */
+  details.phase{margin:12px 0;border:1.5px solid var(--g200);border-radius:10px;overflow:hidden}
+  details.phase[open]{border-color:var(--clay)}
+  details.phase summary{cursor:pointer;padding:16px 20px;font-family:var(--serif);font-size:18px;font-weight:500;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  details.phase summary::-webkit-details-marker{display:none}
+  details.phase summary .ph-meta{font-family:var(--mono);font-size:11px;color:var(--g500)}
+  details.phase .ph-body{padding:0 20px 20px}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+  thead th{text-align:left;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--g500);padding:0 0 8px;border-bottom:1.5px solid var(--g300)}
+  tbody td{padding:9px 0;border-bottom:1px solid var(--g200);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tbody td:first-child{font-weight:600;font-size:12px}
+
+  .badge{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;display:inline-block}
+  .badge-critical{background:#FED7D7;color:#991B1B}
+  .badge-high{background:#FDE8E0;color:#B85C3E}
+  .badge-medium{background:#FEF3C7;color:#92400E}
+  .badge-low{background:#DCFCE7;color:#166534}
+
+  .filter-bar{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}
+  .filter-btn{padding:6px 14px;border:1.5px solid var(--g300);border-radius:999px;background:var(--paper);cursor:pointer;font-size:12px;font-family:var(--sans);transition:all .12s}
+  .filter-btn:hover{border-color:var(--slate)}
+  .filter-btn.pressed{background:var(--g100);border-color:var(--slate);color:var(--clay);font-weight:600}
+
+  .dep-graph{overflow-x:auto;padding:20px 0}
+  .dep-graph svg{min-width:750px}
+
+  .finding{border:1.5px solid var(--g200);border-radius:10px;padding:14px 18px;margin:10px 0;border-left:4px solid var(--clay)}
+  .finding.critical{border-left-color:#991B1B;background:#FFF5F5}
+  .finding h3{font-size:14px;margin:0 0 5px}
+
+  .note{background:var(--g100);border:1.5px solid var(--g200);border-radius:8px;padding:14px 18px;margin:14px 0;font-size:13px;color:var(--g700)}
+  .note strong{color:var(--clay)}
+
+  footer{margin-top:72px;border-top:1.5px solid var(--g300);padding-top:24px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--g500)}
+  footer .k{font-family:var(--serif);font-style:italic;color:var(--g700);font-size:14px}
+
+  @media print{body{background:white;font-size:10pt}.timeline-phase::before{print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">Implementation Plan · M1–M36 · May 2026</div>
+  <h1>Pathfinder <em>System</em></h1>
+  <p class="intro">
+    Phased delivery plan for the SCAILED WP4 Pathfinder System. Five phases over 33 months.
+    Built by DataWego for Epidata. Priority filtering available — click P0 to see only critical path.
+  </p>
+  <div class="meta">
+    <span>5 phases</span><span>7 deliverables</span><span>4 milestones</span><span>Python + PostgreSQL</span>
+  </div>
+</header>
+
+<!-- 01 Timeline -->
+<section id="timeline">
+  <div class="sec-head"><span class="idx">01</span><h2>Project Timeline</h2></div>
+  <div class="timeline">
+    <div class="timeline-phases">
+      <div class="timeline-phase active">
+        <div class="phase-label">Phase 0</div>
+        <div class="phase-name">Formalization</div>
+        <div class="phase-date">M1–M3</div>
+        <div class="phase-deliverable">Schema sign-off</div>
+      </div>
+      <div class="timeline-phase">
+        <div class="phase-label">Phase 1</div>
+        <div class="phase-name">Core Engine</div>
+        <div class="phase-date">M4–M9</div>
+      </div>
+      <div class="timeline-phase">
+        <div class="phase-label">Phase 2</div>
+        <div class="phase-name">API + MVP</div>
+        <div class="phase-date">M10–M15</div>
+        <div class="phase-deliverable">D4.2 (M18)</div>
+      </div>
+      <div class="timeline-phase future">
+        <div class="phase-label">Phase 3</div>
+        <div class="phase-name">V1 Delivery</div>
+        <div class="phase-date">M16–M20</div>
+        <div class="phase-deliverable">D4.1 (M20)</div>
+      </div>
+      <div class="timeline-phase future">
+        <div class="phase-label">Phase 4</div>
+        <div class="phase-name">Test Drive</div>
+        <div class="phase-date">M21–M24</div>
+        <div class="phase-deliverable">D4.3 (M27)</div>
+      </div>
+      <div class="timeline-phase future">
+        <div class="phase-label">Phase 5</div>
+        <div class="phase-name">V2 Iteration</div>
+        <div class="phase-date">M25–M33</div>
+        <div class="phase-deliverable">D4.4 (M33)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 Phases with tasks + priority filter -->
+<section id="phases">
+  <div class="sec-head"><span class="idx">02</span><h2>Phase Breakdown</h2><span class="count">5 phases</span></div>
+  <p class="sec-intro">Click a phase to expand. Use the filter buttons to focus on critical-path tasks.</p>
+
+  <div class="filter-bar">
+    <button class="filter-btn pressed" onclick="filterT('all',this)">All Tasks</button>
+    <button class="filter-btn" onclick="filterT('p0',this)">🔴 P0 · Critical</button>
+    <button class="filter-btn" onclick="filterT('p1',this)">🟡 P1 · High</button>
+    <button class="filter-btn" onclick="filterT('p2',this)">🟢 P2 · Medium</button>
+    <button class="filter-btn" onclick="filterT('p3',this)">⚪ P3 · Low</button>
+  </div>
+
+  <details class="phase" open>
+    <summary>
+      <span><span style="font-family:var(--mono);font-size:12px;color:var(--clay);margin-right:10px;">00</span>Formalization Freeze</span>
+      <span class="ph-meta">M1–M3 · <span class="badge badge-critical">Go/No-Go Gate</span></span>
+    </summary>
+    <div class="ph-body">
+      <p style="font-size:13px;color:var(--g700);margin:0 0 12px;">All upstream data schemas must be signed by WP2/3/8 leads. No sign-off = project does not proceed.</p>
+      <table>
+        <thead><tr><th width="8%">Prio</th><th>Task</th><th>Owner</th><th width="12%">Due</th></tr></thead>
+        <tbody>
+          <tr class="trow" data-prio="p0"><td><span class="badge badge-critical">P0</span></td><td>Define and circulate WP3 roadmap data schema (JSON node-edge list + topological proof)</td><td>Dijkstra + Guido</td><td>M1 W2</td></tr>
+          <tr class="trow" data-prio="p0"><td><span class="badge badge-critical">P0</span></td><td>Define WP8 compliance constraint format (YAML rules with boolean predicates)</td><td>Dijkstra + Guido</td><td>M1 W2</td></tr>
+          <tr class="trow" data-prio="p0"><td><span class="badge badge-critical">P0</span></td><td>Define WP2 stakeholder classification schema (JSON Schema)</td><td>Guido</td><td>M1 W3</td></tr>
+          <tr class="trow" data-prio="p0"><td><span class="badge badge-critical">P0</span></td><td>Get sign-off from WP2/3/8 Leads on all three schemas</td><td>Feng Ge</td><td>M3</td></tr>
+          <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>Audit SHAIPED codebase and documentation</td><td>Xiaolong</td><td>M1 W2</td></tr>
+          <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>Project scaffold: Docker Compose, CI/CD, repo, linting</td><td>Linus + Xiaolong</td><td>M1 W1</td></tr>
+          <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>Build 3 low-fidelity prototypes for Epidata direction validation</td><td>Jobs</td><td>M1 W4</td></tr>
+          <tr class="trow" data-prio="p2"><td><span class="badge badge-medium">P2</span></td><td>Confirm SPE access timeline with LNDS AI Factory</td><td>Jensen</td><td>M2</td></tr>
+          <tr class="trow" data-prio="p2"><td><span class="badge badge-medium">P2</span></td><td>Draft subcontract with Epidata (scope, payment, acceptance)</td><td>Feng Ge</td><td>M1 W3</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <details class="phase">
+    <summary>
+      <span><span style="font-family:var(--mono);font-size:12px;color:var(--clay);margin-right:10px;">01</span>Core Engine</span>
+      <span class="ph-meta">M4–M9</span>
+    </summary>
+    <div class="ph-body">
+      <p style="font-size:13px;color:var(--g700);margin:0 0 12px;">Build the computational kernel. Graph engine, constraint solver, questionnaire engine. All with mock data if upstream is delayed.</p>
+      <table>
+        <thead><tr><th width="8%">Prio</th><th>Task</th><th>Owner</th><th width="12%">Due</th></tr></thead>
+        <tbody>
+          <tr class="trow" data-prio="p0"><td><span class="badge badge-critical">P0</span></td><td>Implement DAG validator + topological sorter</td><td>Dijkstra</td><td>M5</td></tr>
+          <tr class="trow" data-prio="p0"><td><span class="badge badge-critical">P0</span></td><td>Implement Dijkstra path planner with constraint filtering</td><td>Xiaolong</td><td>M6</td></tr>
+          <tr class="trow" data-prio="p0"><td><span class="badge badge-critical">P0</span></td><td>Implement compliance constraint evaluator (YAML rules → SAT)</td><td>Dijkstra</td><td>M7</td></tr>
+          <tr class="trow" data-prio="p0"><td><span class="badge badge-critical">P0</span></td><td>Implement questionnaire engine (dynamic form from JSON schema)</td><td>Xiaolong</td><td>M8</td></tr>
+          <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>Pydantic models for all domain objects</td><td>Guido</td><td>M5</td></tr>
+          <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>WP2/3/8 adapter layer with mock data fallback</td><td>Guido</td><td>M7</td></tr>
+          <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>Audit logging infrastructure (immutable append-only)</td><td>Xiaolong</td><td>M8</td></tr>
+          <tr class="trow" data-prio="p2"><td><span class="badge badge-medium">P2</span></td><td>pytest test suite (≥80% coverage on core)</td><td>All</td><td>M9</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <details class="phase">
+    <summary>
+      <span><span style="font-family:var(--mono);font-size:12px;color:var(--clay);margin-right:10px;">02</span>API + MVP Frontend</span>
+      <span class="ph-meta">M10–M15 · <span class="badge badge-high">D4.2 Stakeholder Event M18</span></span>
+    </summary>
+    <div class="ph-body">
+      <p style="font-size:13px;color:var(--g700);margin:0 0 12px;">Must be demo-ready by M15 for internal review before M18 Stakeholder Event.</p>
+      <table>
+        <thead><tr><th width="8%">Prio</th><th>Task</th><th>Owner</th><th width="12%">Due</th></tr></thead>
+        <tbody>
+          <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>FastAPI REST endpoints (assessments, roadmap, compliance)</td><td>Guido</td><td>M11</td></tr>
+          <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>Vue 3 questionnaire wizard UI (5-7 step flow)</td><td>Xiaolong</td><td>M13</td></tr>
+          <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>Results visualization: roadmap positioning + recommendation cards</td><td>Jobs</td><td>M14</td></tr>
+          <tr class="trow" data-prio="p2"><td><span class="badge badge-medium">P2</span></td><td>PDF report export</td><td>Xiaolong</td><td>M15</td></tr>
+          <tr class="trow" data-prio="p2"><td><span class="badge badge-medium">P2</span></td><td>Token-based access control (one-time links for event)</td><td>Guido</td><td>M14</td></tr>
+          <tr class="trow" data-prio="p2"><td><span class="badge badge-medium">P2</span></td><td>Support Epidata with D4.2 Stakeholder Event materials</td><td>Jobs + Feng Ge</td><td>M16–M18</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <details class="phase">
+    <summary>
+      <span><span style="font-family:var(--mono);font-size:12px;color:var(--clay);margin-right:10px;">03</span>V1 Delivery</span>
+      <span class="ph-meta">M16–M20 · <span class="badge badge-high">D4.1 Pathfinder V1 Demo</span></span>
+    </summary>
+    <div class="ph-body">
+      <p style="font-size:13px;color:var(--g700);margin:0 0 12px;">Polish, document, support Epidata's D4.1 report. No new features in this phase.</p>
+      <table>
+        <thead><tr><th width="8%">Prio</th><th>Task</th><th>Owner</th><th width="12%">Due</th></tr></thead>
+        <tbody>
+          <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>Bug fixes from stakeholder event feedback</td><td>All</td><td>M18</td></tr>
+          <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>OpenAPI documentation + README (CHARITE-deployable)</td><td>Guido</td><td>M19</td></tr>
+          <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>Docker Compose deployment package</td><td>Linus</td><td>M19</td></tr>
+          <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>Support Epidata with D4.1 report + demo recording</td><td>Feng Ge</td><td>M20</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <details class="phase">
+    <summary>
+      <span><span style="font-family:var(--mono);font-size:12px;color:var(--clay);margin-right:10px;">04</span>Test Drive</span>
+      <span class="ph-meta">M21–M24 · CHARITE-led T4.2</span>
+    </summary>
+    <div class="ph-body">
+      <p style="font-size:13px;color:var(--g700);margin:0 0 12px;">CHARITE runs Pathfinder against WP5/6/7 pilots. DataWego supports, does not lead.</p>
+      <table>
+        <thead><tr><th width="8%">Prio</th><th>Task</th><th>Owner</th><th width="12%">Due</th></tr></thead>
+        <tbody>
+          <tr class="trow" data-prio="p2"><td><span class="badge badge-medium">P2</span></td><td>Package deployable Pathfinder instance for WP5/6/7</td><td>Linus</td><td>M21</td></tr>
+          <tr class="trow" data-prio="p2"><td><span class="badge badge-medium">P2</span></td><td>Bug fixes ONLY from Test Drive feedback. No new features.</td><td>Xiaolong</td><td>M22–M24</td></tr>
+          <tr class="trow" data-prio="p2"><td><span class="badge badge-medium">P2</span></td><td>Distinguish model defects (G/C errors) from code bugs</td><td>Dijkstra</td><td>M22–M24</td></tr>
+          <tr class="trow" data-prio="p3"><td><span class="badge badge-low">P3</span></td><td>Support CHARITE with D4.3 Assessment Report</td><td>Feng Ge</td><td>M27</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <details class="phase">
+    <summary>
+      <span><span style="font-family:var(--mono);font-size:12px;color:var(--clay);margin-right:10px;">05</span>V2 Iteration</span>
+      <span class="ph-meta">M25–M33 · CHARITE-led T4.3 · <span style="color:var(--clay-d);">New contract required</span></span>
+    </summary>
+    <div class="ph-body">
+      <div class="note">
+        <strong>⚠ Contract boundary:</strong> V2 is CHARITE-led, not in T4.1 scope. If Epidata re-engages DataWego, this is a separate contract.
+      </div>
+      <table>
+        <thead><tr><th width="8%">Prio</th><th>Task</th><th>Owner</th><th width="12%">Due</th></tr></thead>
+        <tbody>
+          <tr class="trow" data-prio="p3"><td><span class="badge badge-low">P3</span></td><td>Incorporate WP2/3/8 updates into rule engine</td><td>Guido</td><td>M28</td></tr>
+          <tr class="trow" data-prio="p3"><td><span class="badge badge-low">P3</span></td><td>Refactor based on T4.2 Test Drive findings</td><td>Xiaolong</td><td>M30</td></tr>
+          <tr class="trow" data-prio="p3"><td><span class="badge badge-low">P3</span></td><td>Generate ΔG impact reports (how WP3 changes affect recommendations)</td><td>Dijkstra</td><td>M30</td></tr>
+          <tr class="trow" data-prio="p3"><td><span class="badge badge-low">P3</span></td><td>Support CHARITE with D4.4 Final Guidelines</td><td>Feng Ge</td><td>M33</td></tr>
+          <tr class="trow" data-prio="p3"><td><span class="badge badge-low">P3</span></td><td>Handover: runbooks, cost model, deployment docs</td><td>Jensen</td><td>M33</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </details>
+</section>
+
+<!-- 03 Dependencies -->
+<section id="dependencies">
+  <div class="sec-head"><span class="idx">03</span><h2>Upstream Dependencies</h2></div>
+  <p class="sec-intro">Pathfinder consumes 6 WP outputs. Three are blocking. Three can be mocked for V1.</p>
+
+  <div class="dep-graph">
+    <svg viewBox="0 0 800 280" style="width:100%;">
+      <defs>
+        <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#87867F"/></marker>
+        <marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#D97757"/></marker>
+      </defs>
+      <!-- Blocking deps (top row, solid lines) -->
+      <text x="140" y="20" font-family="monospace" font-size="9" fill="#991B1B" text-anchor="middle">BLOCKING</text>
+      <rect x="20" y="28" width="130" height="44" rx="8" fill="#FFF5F5" stroke="#991B1B" stroke-width="2"/>
+      <text x="85" y="48" font-size="11" font-family="system-ui" fill="#141413" font-weight="600" text-anchor="middle">WP3 · Roadmap</text>
+      <text x="85" y="62" font-size="9" font-family="monospace" fill="#87867F" text-anchor="middle">CHARITE</text>
+      <rect x="180" y="28" width="130" height="44" rx="8" fill="#FFF5F5" stroke="#991B1B" stroke-width="2"/>
+      <text x="245" y="48" font-size="11" font-family="system-ui" fill="#141413" font-weight="600" text-anchor="middle">WP8 · Legal</text>
+      <text x="245" y="62" font-size="9" font-family="monospace" fill="#87867F" text-anchor="middle">TBD</text>
+      <rect x="340" y="28" width="130" height="44" rx="8" fill="#FFF5F5" stroke="#991B1B" stroke-width="2"/>
+      <text x="405" y="48" font-size="11" font-family="system-ui" fill="#141413" font-weight="600" text-anchor="middle">WP2 · Stakeholders</text>
+      <text x="405" y="62" font-size="9" font-family="monospace" fill="#87867F" text-anchor="middle">IISLAFE</text>
+
+      <!-- Non-blocking deps (bottom row, dashed) -->
+      <text x="140" y="104" font-family="monospace" font-size="9" fill="#788C5D" text-anchor="middle">MOCKABLE</text>
+      <rect x="20" y="112" width="130" height="40" rx="8" fill="#F7FAF5" stroke="#788C5D" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="85" y="130" font-size="11" font-family="system-ui" fill="#141413" text-anchor="middle">WP5 · Infra</text>
+      <text x="85" y="144" font-size="9" font-family="monospace" fill="#87867F" text-anchor="middle">ELIXIR</text>
+      <rect x="180" y="112" width="130" height="40" rx="8" fill="#F7FAF5" stroke="#788C5D" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="245" y="130" font-size="11" font-family="system-ui" fill="#141413" text-anchor="middle">WP6 · Use Cases</text>
+      <text x="245" y="144" font-size="9" font-family="monospace" fill="#87867F" text-anchor="middle">TBD</text>
+      <rect x="340" y="112" width="130" height="40" rx="8" fill="#F7FAF5" stroke="#788C5D" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="405" y="130" font-size="11" font-family="system-ui" fill="#141413" text-anchor="middle">WP7 · AI Factories</text>
+      <text x="405" y="144" font-size="9" font-family="monospace" fill="#87867F" text-anchor="middle">LNDS</text>
+
+      <!-- Pathfinder center -->
+      <rect x="580" y="50" width="180" height="100" rx="12" fill="#E3DACC" stroke="#141413" stroke-width="2.5"/>
+      <text x="670" y="90" font-size="14" font-family="system-ui" fill="#141413" font-weight="600" text-anchor="middle">Pathfinder</text>
+      <text x="670" y="108" font-size="11" font-family="system-ui" fill="#87867F" text-anchor="middle">WP4 · DataWego</text>
+      <text x="670" y="128" font-size="10" font-family="monospace" fill="#D97757" text-anchor="middle">M3 schema freeze</text>
+
+      <!-- Arrows: blocking (clay) -->
+      <line x1="150" y1="50" x2="580" y2="80" stroke="#D97757" stroke-width="2" marker-end="url(#ac)"/>
+      <line x1="310" y1="50" x2="580" y2="95" stroke="#D97757" stroke-width="2" marker-end="url(#ac)"/>
+      <line x1="470" y1="50" x2="580" y2="110" stroke="#D97757" stroke-width="2" marker-end="url(#ac)"/>
+      <!-- Arrows: non-blocking (gray dashed) -->
+      <line x1="150" y1="132" x2="580" y2="80" stroke="#87867F" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#a)"/>
+      <line x1="310" y1="132" x2="580" y2="95" stroke="#87867F" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#a)"/>
+      <line x1="470" y1="132" x2="580" y2="110" stroke="#87867F" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#a)"/>
+    </svg>
+  </div>
+
+  <table>
+    <thead><tr><th>Source WP</th><th>Lead</th><th>What We Need</th><th>Format</th><th>Blocking?</th><th>Fallback</th></tr></thead>
+    <tbody>
+      <tr><td><strong>WP3</strong></td><td>CHARITE</td><td>Roadmap node-edge graph</td><td>JSON/CSV + topo proof</td><td><span class="badge badge-critical">YES</span></td><td>Mock DAG</td></tr>
+      <tr><td><strong>WP8</strong></td><td>TBD</td><td>Legal constraint rules</td><td>YAML boolean predicates</td><td><span class="badge badge-critical">YES</span></td><td>Soft-check mock</td></tr>
+      <tr><td><strong>WP2</strong></td><td>IISLAFE</td><td>Stakeholder classification</td><td>JSON Schema</td><td><span class="badge badge-critical">YES</span></td><td>3-type mock</td></tr>
+      <tr><td><strong>WP5</strong></td><td>ELIXIR</td><td>Infrastructure specs</td><td>API/docs</td><td><span class="badge badge-low">No</span></td><td>Mock endpoints</td></tr>
+      <tr><td><strong>WP6</strong></td><td>TBD</td><td>Use case definitions</td><td>Docs</td><td><span class="badge badge-low">No</span></td><td>Mock cases</td></tr>
+      <tr><td><strong>WP7</strong></td><td>LNDS</td><td>SPE environment params</td><td>Config</td><td><span class="badge badge-low">No</span></td><td>Local Docker</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 04 Deliverables -->
+<section id="deliverables">
+  <div class="sec-head"><span class="idx">04</span><h2>Deliverables &amp; Milestones</h2></div>
+  <table>
+    <thead><tr><th>ID</th><th>Name</th><th>Lead</th><th width="10%">Due</th><th>Type</th><th>DataWego Role</th></tr></thead>
+    <tbody>
+      <tr><td><strong>D4.2</strong></td><td>Stakeholder Event Report</td><td>EPIDATA</td><td>M18</td><td>Report</td><td>Technical support + demo</td></tr>
+      <tr><td><strong>D4.1</strong></td><td>Pathfinder System V1/Demo</td><td>EPIDATA</td><td>M20</td><td>Report + Demo</td><td>Full system delivery</td></tr>
+      <tr><td><strong>MS4.1</strong></td><td>Draft M&E Guidelines</td><td>EPIDATA</td><td>M18</td><td>Milestone</td><td>Engine to validate against</td></tr>
+      <tr><td><strong>MS4.3</strong></td><td>Evaluation Report</td><td>CHARITE</td><td>M24</td><td>Milestone</td><td>Bug fixes (no features)</td></tr>
+      <tr><td><strong>D4.3</strong></td><td>Pathfinder Assessment</td><td>CHARITE</td><td>M27</td><td>Report</td><td>Data + analysis support</td></tr>
+      <tr><td><strong>D4.4</strong></td><td>Finalized Guidelines</td><td>CHARITE</td><td>M33</td><td>Report + Demo</td><td>V2 delivery (new contract)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 05 Risks -->
+<section id="risks">
+  <div class="sec-head"><span class="idx">05</span><h2>Risk Register</h2></div>
+
+  <div class="finding critical">
+    <h3><span class="badge badge-critical">CRITICAL</span> WP3 delivers PDF roadmap instead of structured JSON</h3>
+    <p style="font-size:13px;color:var(--g700);margin:0;">Mitigation: Demand JSON/CSV schema sign-off by M2. Include topological sort proof. No sign-off = refuse to start.</p>
+  </div>
+  <div class="finding critical">
+    <h3><span class="badge badge-critical">CRITICAL</span> Ambiguous requirements cause endless rework</h3>
+    <p style="font-size:13px;color:var(--g700);margin:0;">Mitigation: M1 low-fi prototype with 3 options, signed scope boundary. Rework due to scope change = billable.</p>
+  </div>
+  <div class="finding">
+    <h3><span class="badge badge-high">HIGH</span> WP8 legal framework changes mid-project</h3>
+    <p style="font-size:13px;color:var(--g700);margin:0;">Mitigation: Hot-loadable YAML rule engine. Never hard-code compliance. Update rules without redeploy.</p>
+  </div>
+  <div class="finding">
+    <h3><span class="badge badge-high">HIGH</span> Upstream WP2/3/8 data delayed past M12</h3>
+    <p style="font-size:13px;color:var(--g700);margin:0;">Mitigation: Build with mock data from M1. Swap real data when it arrives. Decouple data from logic via adapter layer.</p>
+  </div>
+  <div class="finding">
+    <h3><span class="badge badge-medium">MEDIUM</span> D4.1 acceptance criteria subjective</h3>
+    <p style="font-size:13px;color:var(--g700);margin:0;">Mitigation: Quantified acceptance criteria in contract. 5 stakeholder types supported, ≥3 paths each, 100% WP8 rule match, ≤3s response.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="k">DataWego · Implementation Plan</div>
+  <div>Generated 2026-05-13 · <span class="badge badge-low">html-plan</span></div>
+</footer>
+</div>
+
+<script>
+function filterT(prio, btn) {
+  document.querySelectorAll('.trow').forEach(row => {
+    if (prio === 'all') { row.style.display = ''; return; }
+    row.style.display = row.dataset.prio === prio ? '' : 'none';
+  });
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('pressed'));
+  btn.classList.add('pressed');
+}
+</script>
+</body>
+</html>
