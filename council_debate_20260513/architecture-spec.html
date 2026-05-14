@@ -94,7 +94,7 @@
   <table>
     <thead><tr><th width="25%">Component</th><th width="37%">Is</th><th width="38%">Is Not</th></tr></thead>
     <tbody>
-      <tr><td><strong>Core Algorithm</strong></td><td>Constrained graph search (Dijkstra/A* on DAG)</td><td>LLM-generated recommendations</td></tr>
+      <tr><td><strong>Core Algorithm</strong></td><td>Constrained graph search (CSP framework on DAG)</td><td>LLM-generated recommendations</td></tr>
       <tr><td><strong>Input</strong></td><td>Structured questionnaire + WP3 roadmap + WP8 legal rules</td><td>PDF parsing / natural language</td></tr>
       <tr><td><strong>Output</strong></td><td>Auditable recommendation path with traceability</td><td>Unverifiable natural language paragraphs</td></tr>
       <tr><td><strong>Interface</strong></td><td>Wizard-style questionnaire → map → action plan</td><td>Dashboard with 20 widgets</td></tr>
@@ -157,6 +157,16 @@
     User base is &lt; 500 invited stakeholders. Docker Compose single container.
     No K8s, no service mesh, no event bus.
   </div>
+
+  <div class="note">
+    <strong>Module Structure (project root):</strong><br>
+    <code>api/</code> (FastAPI routes) · <code>core/</code> (assessment, solver engines) ·
+    <code>adapters/</code> (WP2/3/5/6/7/8) · <code>models/</code> (Pydantic + SQLAlchemy) ·
+    <code>rules/</code> (*.yaml) · <code>migrations/</code> (Alembic) ·
+    <code>config/</code> (env-specific settings) · <code>exceptions/</code> (custom error hierarchy) ·
+    <code>services/</code> (business logic layer) · <code>scripts/</code> (CLI admin tools) ·
+    <code>tests/</code> + <code>tests/fixtures/</code>
+  </div>
 </section>
 
 <!-- 03 Tech Stack -->
@@ -175,9 +185,9 @@
     <table>
       <thead><tr><th width="25%">Technology</th><th width="15%">Version</th><th>Rationale</th></tr></thead>
       <tbody>
-        <tr><td><strong>FastAPI</strong></td><td>latest</td><td>Async-native, auto OpenAPI/Swagger (D4 deliverable), Pydantic integration</td></tr>
+        <tr><td><strong>FastAPI</strong></td><td>latest</td><td>Async-native, auto OpenAPI/Swagger (D4 deliverable), Pydantic integration. NetworkX ops wrapped in ThreadPoolExecutor to avoid event loop blocking.</td></tr>
         <tr><td><strong>Pydantic</strong></td><td>v2</td><td>Type-safe models, JSON Schema generation, validation at API boundary</td></tr>
-        <tr><td><strong>NetworkX</strong></td><td>3.x</td><td>DAG validation, Dijkstra shortest path, topological sort. Pure Python.</td></tr>
+        <tr><td><strong>Apache AGE</strong></td><td>1.5+</td><td>PostgreSQL graph extension — primary graph engine. Cypher queries, property graph model, DAG validation, shortest path. NetworkX used as dev/testing fallback only.</td></tr>
         <tr><td><strong>HTTPX</strong></td><td>latest</td><td>Async HTTP client for calling upstream WP services</td></tr>
         <tr><td><strong>pytest</strong></td><td>latest</td><td>TDD with hypothesis for property-based rule testing</td></tr>
       </tbody>
@@ -255,6 +265,9 @@
     <pre><code>CREATE TABLE recommendation_rules (
     id                SERIAL PRIMARY KEY,
     rule_id           TEXT UNIQUE NOT NULL,     -- 'R-PHARMA-AI-001'
+    parent_rule_id    UUID REFERENCES recommendation_rules(id), -- tree hierarchy
+    rule_type         TEXT NOT NULL DEFAULT 'preference'
+                      CHECK (rule_type IN ('eligibility','exclusion','preference','override')),
     node_id           TEXT REFERENCES roadmap_nodes(node_id),
     stakeholder_type  TEXT,
     condition         JSONB NOT NULL,           -- {"answers":{"q2.1":{"gte":3}}}
@@ -296,13 +309,59 @@ CREATE INDEX idx_rules_condition ON recommendation_rules USING GIN (condition);<
     session_id      UUID REFERENCES assessment_sessions(id),
     event_type      TEXT NOT NULL,
     event_data      JSONB NOT NULL,
+    prev_hash       TEXT,                        -- SHA-256 of previous row for tamper detection
     timestamp       TIMESTAMPTZ DEFAULT now(),
     ip_hash         TEXT,
     user_agent_hash TEXT
 );
 -- Append-only: no updates, no deletes
-CREATE RULE audit_no_update AS ON UPDATE TO audit_log DO INSTEAD NOTHING;
-CREATE RULE audit_no_delete AS ON DELETE TO audit_log DO INSTEAD NOTHING;</code></pre>
+CREATE TRIGGER audit_no_update BEFORE UPDATE ON audit_log FOR EACH ROW EXECUTE FUNCTION audit_no_update_fn();
+CREATE TRIGGER audit_no_delete BEFORE DELETE ON audit_log FOR EACH ROW EXECUTE FUNCTION audit_no_delete_fn();</code></pre>
+  </details>
+
+  <p style="font-family:var(--serif);font-size:16px;font-weight:500;margin:24px 0 8px;">5. Schema Versions <span style="font-family:var(--mono);font-size:11px;color:var(--g500);">(migration tracking)</span></p>
+  <details>
+    <summary style="cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--clay);padding:6px 0;">Show DDL</summary>
+    <pre><code>CREATE TABLE schema_versions (
+    id              SERIAL PRIMARY KEY,
+    table_name      TEXT NOT NULL,
+    version         TEXT NOT NULL,
+    applied_at      TIMESTAMPTZ DEFAULT now(),
+    migration_hash  TEXT NOT NULL,
+    notes           TEXT
+);
+CREATE INDEX idx_schema_versions_table ON schema_versions(table_name, version);</code></pre>
+  </details>
+
+  <p style="font-family:var(--serif);font-size:16px;font-weight:500;margin:24px 0 8px;">6. Rule Versions <span style="font-family:var(--mono);font-size:11px;color:var(--g500);">(auditable rule evolution)</span></p>
+  <details>
+    <summary style="cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--clay);padding:6px 0;">Show DDL</summary>
+    <pre><code>CREATE TABLE rule_versions (
+    id              SERIAL PRIMARY KEY,
+    rule_id         TEXT NOT NULL,
+    version         TEXT NOT NULL,
+    snapshot        JSONB NOT NULL,              -- full rule state at this version
+    changed_by      TEXT,
+    change_reason   TEXT,
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(rule_id, version)
+);
+CREATE INDEX idx_rule_versions_rule ON rule_versions(rule_id, version);</code></pre>
+  </details>
+
+  <p style="font-family:var(--serif);font-size:16px;font-weight:500;margin:24px 0 8px;">7. Upstream Data Snapshots <span style="font-family:var(--mono);font-size:11px;color:var(--g500);">(WP3/WP8 data lineage)</span></p>
+  <details>
+    <summary style="cursor:pointer;font-family:var(--mono);font-size:12px;color:var(--clay);padding:6px 0;">Show DDL</summary>
+    <pre><code>CREATE TABLE upstream_data_snapshots (
+    id              SERIAL PRIMARY KEY,
+    source          TEXT NOT NULL,               -- 'WP3' | 'WP8'
+    data_hash       TEXT NOT NULL,
+    fetched_at      TIMESTAMPTZ DEFAULT now(),
+    raw_payload     JSONB,
+    schema_version  TEXT,
+    superseded_by   INT REFERENCES upstream_data_snapshots(id)
+);
+CREATE INDEX idx_upstream_snapshots_source ON upstream_data_snapshots(source, fetched_at);</code></pre>
   </details>
 </section>
 
@@ -314,14 +373,23 @@ CREATE RULE audit_no_delete AS ON DELETE TO audit_log DO INSTEAD NOTHING;</code>
   <table>
     <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
     <tbody>
+      <tr><td><code>GET</code></td><td><code>/health</code></td><td>Liveness + readiness probe (Docker healthcheck)</td></tr>
       <tr><td><code>POST</code></td><td><code>/v1/assessments</code></td><td>Start a new self-assessment session</td></tr>
       <tr><td><code>GET</code></td><td><code>/v1/assessments/{id}</code></td><td>Get current state and progress</td></tr>
       <tr><td><code>PATCH</code></td><td><code>/v1/assessments/{id}/answers</code></td><td>Submit answers for one step</td></tr>
       <tr><td><code>GET</code></td><td><code>/v1/assessments/{id}/report</code></td><td>Generate Pathfinder report with recommendations</td></tr>
+      <tr><td><code>GET</code></td><td><code>/v1/questionnaires/{type}</code></td><td>Retrieve questionnaire definition by stakeholder type</td></tr>
       <tr><td><code>GET</code></td><td><code>/v1/roadmap/positions</code></td><td>Read-only proxy from WP3</td></tr>
       <tr><td><code>GET</code></td><td><code>/v1/compliance/checks</code></td><td>Read-only proxy from WP8</td></tr>
+      <tr><td><code>POST</code></td><td><code>/admin/rules/reload</code></td><td>Hot-reload YAML rules without restart (admin only)</td></tr>
     </tbody>
   </table>
+
+  <div class="note">
+    <strong>Rate Limiting:</strong> API gateway enforces 100 req/min per IP on public endpoints.
+    <code>/admin/*</code> routes restricted to CHARITE internal network (192.168.0.0/16).
+    Questionnaire responses rate-limited to 30 req/min per session to prevent abuse.
+  </div>
 </section>
 
 <!-- 06 Risks -->
@@ -330,7 +398,7 @@ CREATE RULE audit_no_delete AS ON DELETE TO audit_log DO INSTEAD NOTHING;</code>
 
   <div class="finding critical">
     <h3><span class="badge badge-critical">CRITICAL</span> WP3 roadmap format is single point of failure</h3>
-    <p>If CHARITE delivers a PDF instead of structured JSON, the graph engine cannot function. Mitigation: demand JSON/CSV node-edge list with topological proof by M2. No schema = no code.</p>
+    <p>If CHARITE delivers a PDF instead of structured JSON, the graph engine cannot function. Mitigation: demand JSON/CSV node-edge list with topological proof by M2. No schema = no code. <strong>WP3 Plan B: data extraction layer</strong> — if structured data is delayed, implement a lightweight extraction pipeline that parses WP3 deliverables into the canonical node-edge format with manual QA sign-off.</p>
   </div>
   <div class="finding">
     <h3><span class="badge badge-high">HIGH</span> WP8 legal constraints may not be formalizable</h3>
@@ -342,7 +410,7 @@ CREATE RULE audit_no_delete AS ON DELETE TO audit_log DO INSTEAD NOTHING;</code>
   </div>
   <div class="finding">
     <h3><span class="badge badge-low">LOW</span> Performance at scale</h3>
-    <p>&lt; 500 users, &lt; 10⁴ roadmap nodes. Dijkstra O(|V|+|E|) on DAG is sub-millisecond. Premature optimization is Mathematics Inc.'s enemy.</p>
+    <p>&lt; 500 users, &lt; 10⁴ roadmap nodes. Constrained graph search on DAG is sub-millisecond. Premature optimization is Mathematics Inc.'s enemy.</p>
   </div>
 </section>
 
@@ -350,6 +418,16 @@ CREATE RULE audit_no_delete AS ON DELETE TO audit_log DO INSTEAD NOTHING;</code>
   <div class="k">DataWego · Architecture Spec</div>
   <div>Generated 2026-05-13 · <span class="badge badge-low">html-spec</span></div>
 </footer>
+
+<section id="ip-boundary">
+  <div class="sec-head"><span class="idx">07</span><h2>IP Boundary Reference</h2></div>
+  <p class="sec-intro">
+    For the formal intellectual-property boundary between DataWego and CHARITE deliverables,
+    see <code>IP_BOUNDARY.md</code> in the project root. That document defines ownership
+    demarcation for the recommendation rule set (DataWego IP), the WP3 roadmap schema
+    (CHARITE IP), and the API contract (joint deliverable under EU4Health D4).
+  </p>
+</section>
 </div>
 </body>
 </html>

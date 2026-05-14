@@ -98,7 +98,7 @@
     Built by DataWego for Epidata. Priority filtering available — click P0 to see only critical path.
   </p>
   <div class="meta">
-    <span>5 phases</span><span>7 deliverables</span><span>4 milestones</span><span>Python + PostgreSQL</span>
+    <span>5 phases</span><span>7 deliverables</span><span>4 milestones</span><span>Python + PostgreSQL + Apache AGE</span>
   </div>
 </header>
 
@@ -116,7 +116,7 @@
       <div class="timeline-phase">
         <div class="phase-label">Phase 1</div>
         <div class="phase-name">Core Engine</div>
-        <div class="phase-date">M4–M9</div>
+        <div class="phase-date">M4–M8</div>
       </div>
       <div class="timeline-phase">
         <div class="phase-label">Phase 2</div>
@@ -166,6 +166,9 @@
     </summary>
     <div class="ph-body">
       <p style="font-size:13px;color:var(--g700);margin:0 0 12px;">All upstream data schemas must be signed by WP2/3/8 leads. No sign-off = project does not proceed.</p>
+      <div class="note">
+        <strong>⏳ Schema Extension Clause:</strong> If M3 schema is not signed, Phase 00 auto-extends to M5 with payment shift. M9 payment moves to M11. Extension capped at M5 — if still unsigned, project enters formal dispute resolution.
+      </div>
       <table>
         <thead><tr><th width="8%">Prio</th><th>Task</th><th>Owner</th><th width="12%">Due</th></tr></thead>
         <tbody>
@@ -186,10 +189,13 @@
   <details class="phase">
     <summary>
       <span><span style="font-family:var(--mono);font-size:12px;color:var(--clay);margin-right:10px;">01</span>Core Engine</span>
-      <span class="ph-meta">M4–M9</span>
+      <span class="ph-meta">M4–M8</span>
     </summary>
     <div class="ph-body">
-      <p style="font-size:13px;color:var(--g700);margin:0 0 12px;">Build the computational kernel. Graph engine, constraint solver, questionnaire engine. All with mock data if upstream is delayed.</p>
+      <p style="font-size:13px;color:var(--g700);margin:0 0 12px;">Build the computational kernel. Graph engine (Apache AGE primary + NetworkX dev fallback), constraint solver, questionnaire engine. All with mock data if upstream is delayed.</p>
+      <div class="note">
+        <strong>🔧 Tech Stack Note:</strong> Graph storage and traversal on <strong>Apache AGE</strong> (PostgreSQL extension, Cypher queries). NetworkX retained as dev/local fallback for rapid prototyping. All audit log events use <strong>TRIGGER</strong>-based immutability (PostgreSQL BEFORE INSERT triggers) instead of application-level RULE enforcement.
+      </div>
       <table>
         <thead><tr><th width="8%">Prio</th><th>Task</th><th>Owner</th><th width="12%">Due</th></tr></thead>
         <tbody>
@@ -200,7 +206,7 @@
           <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>Pydantic models for all domain objects</td><td>Guido</td><td>M5</td></tr>
           <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>WP2/3/8 adapter layer with mock data fallback</td><td>Guido</td><td>M7</td></tr>
           <tr class="trow" data-prio="p1"><td><span class="badge badge-high">P1</span></td><td>Audit logging infrastructure (immutable append-only)</td><td>Xiaolong</td><td>M8</td></tr>
-          <tr class="trow" data-prio="p2"><td><span class="badge badge-medium">P2</span></td><td>pytest test suite (≥80% coverage on core)</td><td>All</td><td>M9</td></tr>
+          <tr class="trow" data-prio="p2"><td><span class="badge badge-medium">P2</span></td><td>pytest test suite (≥80% coverage on core)</td><td>All</td><td>M8</td></tr>
         </tbody>
       </table>
     </div>
@@ -234,6 +240,9 @@
     </summary>
     <div class="ph-body">
       <p style="font-size:13px;color:var(--g700);margin:0 0 12px;">Polish, document, support Epidata's D4.1 report. No new features in this phase.</p>
+      <div class="note">
+        <strong>💰 Payment Split:</strong> M9 milestone payment split into 15% (M9) + 15% (M15). If CHARITE delays WP3 data delivery &gt;30 days past committed date, Epidata advances the deferred 15% to DataWego to maintain cash flow. No work stoppage for upstream delays beyond DataWego's control.
+      </div>
       <table>
         <thead><tr><th width="8%">Prio</th><th>Task</th><th>Owner</th><th width="12%">Due</th></tr></thead>
         <tbody>
@@ -376,6 +385,7 @@
   <div class="finding critical">
     <h3><span class="badge badge-critical">CRITICAL</span> WP3 delivers PDF roadmap instead of structured JSON</h3>
     <p style="font-size:13px;color:var(--g700);margin:0;">Mitigation: Demand JSON/CSV schema sign-off by M2. Include topological sort proof. No sign-off = refuse to start.</p>
+    <p style="font-size:13px;color:var(--clay);margin:6px 0 0;"><strong>Plan B (Activated if WP3 delivers PDF):</strong> Deploy a data extraction layer: PDF→text parser → LLM-assisted structured extraction → human validation checkpoint → JSON. Graceful degradation mode: reduced path confidence scoring, manual edge verification required. Adds ~3 weeks to Phase 1 timeline.</p>
   </div>
   <div class="finding critical">
     <h3><span class="badge badge-critical">CRITICAL</span> Ambiguous requirements cause endless rework</h3>
@@ -392,6 +402,23 @@
   <div class="finding">
     <h3><span class="badge badge-medium">MEDIUM</span> D4.1 acceptance criteria subjective</h3>
     <p style="font-size:13px;color:var(--g700);margin:0;">Mitigation: Quantified acceptance criteria in contract. 5 stakeholder types supported, ≥3 paths each, 100% WP8 rule match, ≤3s response.</p>
+  </div>
+</section>
+
+<!-- 06 Contract Notes -->
+<section id="contract">
+  <div class="sec-head"><span class="idx">06</span><h2>Contract &amp; Commercial Notes</h2></div>
+
+  <div class="finding">
+    <h3><span class="badge badge-high">COMMERCIAL</span> Rework &amp; Scope Change Rates</h3>
+    <p style="font-size:13px;color:var(--g700);margin:4px 0 0;">
+      <strong>Three-tier rework rates.</strong> Cap: single scope change ≤15% of contract value, annual cumulative ≤30%.
+      Tier 1 (minor): Within original scope boundary, no charge. Tier 2 (medium): Scope extension within WP4 remit, pre-agreed hourly. Tier 3 (major): New deliverable outside WP4, separate SOW required.
+    </p>
+  </div>
+
+  <div class="note">
+    <strong>📄 Intellectual Property:</strong> Background IP and Foreground IP split per <code>IP_BOUNDARY.md</code>. DataWego retains ownership of generic engine components (graph traversal, constraint solver, questionnaire engine). Epidata/CHARITE own project-specific schemas, rules, and generated reports. Joint ownership of integration code with non-exclusive royalty-free license to both parties.
   </div>
 </section>
 
