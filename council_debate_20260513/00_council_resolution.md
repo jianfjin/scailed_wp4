@@ -1,13 +1,17 @@
 # SCAILED WP4 Pathfinder System — 九龙议会终论决议
 
 **项目**: DataWego (乙方) 为 Epidata (甲方) 开发 SCAILED WP4 Pathfinder System
-**日期**: 2026-05-13 (初议) / 2026-05-14 (六席审计修订) / 2026-05-15 (前端+数据库替代方案辩论)
+**日期**: 2026-05-13 (初议) / 2026-05-14 (六席审计修订) / 2026-05-15 (前端+数据库辩论 + Agent-D方案对比裁决)
 **议会**: 9席全会 (Musk/Xuefeng/Guido/Dijkstra/Jensen/Jobs/Linus/Xiaolong/FengGe)
 **审计**: 6席复审 (Xuefeng/Musk/Jobs/Linus/Guido/Dijkstra)
-**辩论**: 5席前端选型 (Musk/Linus/Guido/Xiaolong/Jobs) + 5席数据库选型 (Musk/Linus/Dijkstra/Guido/Xiaolong)
+**辩论**: 前端5席 + 数据库5席 + Agent-D对比8席 (Musk/Linus/Dijkstra/Guido/Xiaolong/Xuefeng/Jobs/Jensen)
 **项目周期**: EU4Health SCAILED, M1-M36
 
-> **2026-05-15 补充辩论**: 陛下提出两大技术质疑——(1) 前端是否应加入TypeScript考虑替代Vue? (2) 数据库是否有DuckDB等轻量替代? 议会分别展开两轮5席辩论。结论: Vue 3保留, 薄层TS采纳; PostgreSQL+AGE全票维持, DuckDB/SQLite因OLTP不适格被一致否决。完整辩论记录见 architecture-spec.html §02c, §02d。
+> **2026-05-15 最终融合裁决 (8/8全票)**:
+> 陛下委托Agent-D产出的独立方案(docs/, 11份文档)与议会方案进行了8席位全面对比辩论。
+> **吸收**: 立即开工不等数据(M0启动)、Mock数据先行(HL7 FHIR标准)、WP边界数据契约(写入合同附件)、产品化UX思维、本体论为头等工件。
+> **维持**: PG+AGE(否决Neo4j, Dijkstra加V2日落条款)、Docker Compose(否决K8s)、3模块D4.1范围(否决AI Copilot/GraphRAG)、单repo(否决4-5 repos拆分)、确定性规则引擎(否决LLM路径评分)。
+> **Agent-D方案成本估算**: €260K-320K (Xuefeng审计), 超出€145K预算80-120%。Agent-D方案是好产品蓝图，但不是€145K预算能交付的方案。
 
 > **审计修订说明**: 2026-05-14 六席联合审计发现17个风险点（7个🔴致命），以下决议已全部吸收审计修正：
 > IP条款重写、图引擎选型修正、付款结构加固、WP3数据Plan B、审计日志加固、规则引擎重构、邮件措辞修正、时间表压缩。

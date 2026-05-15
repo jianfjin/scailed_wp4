@@ -349,6 +349,71 @@
   </div>
 </section>
 
+<!-- 02e Agent-D Comparison & Fusion Verdict -->
+<section id="agent-d-comparison">
+  <div class="sec-head"><span class="idx">02e</span><h2>Agent-D Comparison &amp; Fusion Verdict</h2></div>
+  <p class="sec-intro">2026-05-15: 8-seat council debate (Musk/Linus/Dijkstra/Guido/Xiaolong/Xuefeng/Jobs/Jensen) compared Parliament's design against an independent Agent-D proposal (docs/, 11 documents). <strong>8/8 unanimous fusion verdict.</strong></p>
+
+  <table>
+    <thead><tr><th>Dimension</th><th>Parliament</th><th>Agent-D</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Graph Engine</strong></td>
+        <td>PG + Apache AGE</td>
+        <td>Neo4j</td>
+        <td><span class="badge badge-yes">Parliament</span> — AGE sufficient for 10⁴-node DAG. Dijkstra: "O(V+E) complexity class unchanged." Neo4j ops burden (€31.5K, second DB) unjustified. V2 sunset clause: if GraphRAG/ontology reasoning scope confirmed, re-evaluate.</td>
+      </tr>
+      <tr>
+        <td><strong>Deployment</strong></td>
+        <td>Docker Compose</td>
+        <td>K8s + Helm + Terraform + Azure</td>
+        <td><span class="badge badge-yes">Parliament</span> — K8s control plane eats 1.15GB RAM on 8GB VM. 85% of German hospitals don't run K8s. Docker Compose + Makefile is enterprise-grade for 500 users.</td>
+      </tr>
+      <tr>
+        <td><strong>D4.1 Scope</strong></td>
+        <td>3 modules (CSP engine + questionnaire + dashboard/PDF)</td>
+        <td>6 modules (+AI Copilot, GraphRAG, regulatory intelligence, use-case validation)</td>
+        <td><span class="badge badge-yes">Parliament</span> — Agent-D scope costs €260K-320K (Xuefeng audit), exceeding €145K by 80-120%. AI Copilot rejected: EU AI Act liability + €42K cost.</td>
+      </tr>
+      <tr>
+        <td><strong>Repo Strategy</strong></td>
+        <td>Single repo</td>
+        <td>4-5 repos</td>
+        <td><span class="badge badge-yes">Parliament</span> — Premature decomposition for solo developer. Cross-cutting changes need 1 commit, not 4 PRs.</td>
+      </tr>
+      <tr>
+        <td><strong>AI Layer</strong></td>
+        <td>Deterministic rule engine only</td>
+        <td>RAG + LLM Copilot + GraphRAG</td>
+        <td><span class="badge badge-yes">Parliament</span> — Jobs: "Not a feature. A lawsuit wearing a chat interface." Deterministic = auditable = EU AI Act safe harbor.</td>
+      </tr>
+      <tr>
+        <td><strong>Start Strategy</strong></td>
+        <td>Wait for WP3/WP8 M3 schema</td>
+        <td>Build immediately with mock data</td>
+        <td><span class="badge badge-yes">Agent-D</span> — Parliament's biggest blind spot corrected. Xuefeng: "Waiting 3 months costs €42K opportunity. Rebuilding from wrong assumptions costs €10-14K." M0 start with HL7 FHIR standards.</td>
+      </tr>
+      <tr>
+        <td><strong>Data Contracts</strong></td>
+        <td>Brief JSON/CSV mention</td>
+        <td>Detailed per-partner JSON schemas</td>
+        <td><span class="badge badge-yes">Agent-D</span> — Adopt docs/07 specs as contract appendix. Guido: "Exactly what consortiums need." But only at WP boundaries, not internal microservice plumbing.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>Fusion Architecture (8/8 unanimous):</strong>
+    One repo. PG16 + Apache AGE (one database). React frontend. Docker Compose (5 containers, single VM).
+    Three D4.1 modules: CSP pathfinding engine + questionnaire wizard + basic dashboard/PDF.
+    M0 start with mock data. WP-boundary JSON schemas in contract. Deterministic rule engine. No Neo4j, no K8s, no AI Copilot, no GraphRAG.
+    <br><br>
+    <strong>Agent-D's strongest contributions (absorbed):</strong> mock-data-first strategy, detailed data contracts, product UX vision, ontology as first-class artifact.<br>
+    <strong>Agent-D's over-engineering (rejected):</strong> Neo4j, K8s+Helm+Terraform, AI Copilot, 6-module scope, 4-5 repo split.<br>
+    <strong>Cost reality:</strong> Agent-D blueprint = €260K-320K. Parliament fusion = €87.5K. Remaining €57.5K buffer for uncertainty.
+  </div>
+</section>
+
 <!-- 03 Tech Stack -->
 <section id="stack">
   <div class="sec-head"><span class="idx">03</span><h2>Technology Stack</h2></div>

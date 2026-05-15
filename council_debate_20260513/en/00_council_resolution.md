@@ -1,13 +1,17 @@
 # SCAILED WP4 Pathfinder System — Nine-Dragon Council Final Resolution
 
 **Project**: DataWego (Contractor) developing SCAILED WP4 Pathfinder System for Epidata (Client)
-**Date**: 2026-05-13 (Initial Debate) / 2026-05-14 (6-Seat Audit Revision) / 2026-05-15 (Frontend + Database Alternatives Debate)
+**Date**: 2026-05-13 (Initial) / 2026-05-14 (6-Seat Audit) / 2026-05-15 (Frontend+DB debates + Agent-D comparison verdict)
 **Council**: 9 seats (Musk/Xuefeng/Guido/Dijkstra/Jensen/Jobs/Linus/Xiaolong/FengGe)
 **Audit**: 6 seats (Xuefeng/Musk/Jobs/Linus/Guido/Dijkstra)
-**Debates**: 5-seat Frontend (Musk/Linus/Guido/Xiaolong/Jobs) + 5-seat Database (Musk/Linus/Dijkstra/Guido/Xiaolong)
+**Debates**: 5-seat Frontend + 5-seat Database + 8-seat Agent-D comparison (Musk/Linus/Dijkstra/Guido/Xiaolong/Xuefeng/Jobs/Jensen)
 **Project Timeline**: EU4Health SCAILED, M1-M36
 
-> **2026-05-15 Supplementary Debates**: The Emperor raised two technical challenges — (1) Should TypeScript alternatives to Vue be considered for the frontend? (2) Are there lightweight database alternatives like DuckDB? The council conducted two 5-seat debates. Conclusion: Vue 3 retained, thin-layer TypeScript adopted; PostgreSQL+AGE unanimously reaffirmed, DuckDB/SQLite rejected as categorically unsuitable for OLTP workloads. Full debate records at architecture-spec.html §02c, §02d.
+> **2026-05-15 Final Fusion Verdict (8/8 unanimous)**:
+> The Emperor commissioned Agent-D to produce an independent design (docs/, 11 documents). An 8-seat council debate compared it with Parliament's design.
+> **Absorbed**: Immediate-start strategy, mock-data-first (HL7 FHIR standards), WP-boundary data contracts, product-oriented UX, ontology as first-class artifact.
+> **Retained**: PG+AGE (Neo4j rejected, Dijkstra added V2 sunset clause), Docker Compose (K8s rejected), 3-module D4.1 scope (AI Copilot/GraphRAG rejected), single repo (4-5 repos rejected), deterministic rule engine (LLM path scoring rejected).
+> **Agent-D cost estimate**: €260K-320K (Xuefeng audit), exceeding €145K budget by 80-120%. Agent-D's design is a good product blueprint, but not deliverable within €145K.
 
 > **Audit Revision Note**: The 2026-05-14 six-seat joint audit identified 17 risk items (7 critical). This resolution incorporates all audit fixes: IP terms rewrite, graph engine correction, payment restructuring, WP3 Plan B, audit log hardening, rule engine refactor, and wording corrections. Full audit reports in documents 10–16.
 
