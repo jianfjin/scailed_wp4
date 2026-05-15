@@ -106,7 +106,7 @@
 <!-- 02 Architecture -->
 <section id="architecture">
   <div class="sec-head"><span class="idx">02</span><h2>System Architecture</h2></div>
-  <p class="sec-intro">Three-layer monolith. Single Docker container. Deployed via <code>docker compose up -d</code>.</p>
+  <p class="sec-intro">Three-layer monolith. Multi-container Docker Compose (5 services). Deployed via <code>docker compose up -d</code>. PostgreSQL runs in its own stateful container with a named volume — never co-located with the application.</p>
 
   <div class="arch-diagram">
     <svg viewBox="0 0 800 380" style="width:100%;">
@@ -153,9 +153,11 @@
   </div>
 
   <div class="note">
-    <strong>Architecture Decision:</strong> Monolith, not microservices. 9/9 council seats agree.
-    User base is &lt; 500 invited stakeholders. Docker Compose single container.
-    No K8s, no service mesh, no event bus.
+    <strong>Architecture Decision:</strong> Multi-container monolith, not microservices. 9/9 council seats agree.
+    User base is &lt; 500 invited stakeholders. Docker Compose with 5 services:
+    <code>traefik</code> (proxy) · <code>frontend</code> (nginx + Vue 3) · <code>backend</code> (FastAPI, horizontally scalable) ·
+    <code>postgres</code> (PG16 + Apache AGE, stateful with named volume) · <code>redis</code> (optional cache).
+    No K8s, no service mesh, no event bus. See <code>deploy/docker-compose.yml</code>.
   </div>
 
   <div class="note">
@@ -166,6 +168,184 @@
     <code>config/</code> (env-specific settings) · <code>exceptions/</code> (custom error hierarchy) ·
     <code>services/</code> (business logic layer) · <code>scripts/</code> (CLI admin tools) ·
     <code>tests/</code> + <code>tests/fixtures/</code>
+  </div>
+</section>
+
+<!-- 02b Deployment Architecture -->
+<section id="deployment">
+  <div class="sec-head"><span class="idx">02b</span><h2>Deployment Architecture</h2></div>
+  <p class="sec-intro">Multi-container Docker Compose with 5 services, 2 isolated networks, and 1 named volume. Full interactive diagram at <code>deploy/deployment-architecture.html</code>.</p>
+
+  <table>
+    <thead><tr><th>Service</th><th>Container</th><th>Image</th><th>Port</th><th>Network</th><th>State</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-low" style="background:#083344;color:#22d3ee">proxy</span></td>
+        <td><strong>Traefik v3.3</strong></td>
+        <td><code>traefik:v3.3</code></td>
+        <td>:80, :443</td>
+        <td>frontend + backend</td>
+        <td>Stateless</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-low" style="background:#083344;color:#22d3ee">frontend</span></td>
+        <td><strong>Nginx + Vue 3</strong></td>
+        <td><code>scailed/frontend</code></td>
+        <td>:80 (internal)</td>
+        <td>frontend</td>
+        <td>Stateless</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-low" style="background:#064e3b;color:#34d399">backend</span></td>
+        <td><strong>FastAPI 3.12</strong></td>
+        <td><code>scailed/backend</code></td>
+        <td>:8000 (internal)</td>
+        <td>backend + frontend</td>
+        <td>Stateless, ×N scalable</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-low" style="background:#4c1d95;color:#a78bfa">database</span></td>
+        <td><strong>PostgreSQL 16 + AGE</strong></td>
+        <td><code>scailed/postgres</code></td>
+        <td>:5432 (internal)</td>
+        <td>backend only</td>
+        <td>Stateful — named volume</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-low" style="background:#7c2d12;color:#fb923c">cache</span></td>
+        <td><strong>Redis 7</strong></td>
+        <td><code>redis:7-alpine</code></td>
+        <td>:6379 (internal)</td>
+        <td>backend only</td>
+        <td>Optional</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>Architecture Decision:</strong> PostgreSQL runs in its own independent container with a named volume (<code>scailed_pgdata</code>).
+    It is never co-located with the application container. This is Docker best practice — one process per container.
+    The database is only accessible on the <code>backend</code> internal network; it has no exposure to the <code>frontend</code> network or the public internet.
+    Backend scales horizontally: <code>docker compose up -d --scale backend=3</code>.
+  </div>
+
+  <div class="note">
+    <strong>Key files in <code>deploy/</code>:</strong><br>
+    <code>docker-compose.yml</code> (187 lines, 5 services) ·
+    <code>Dockerfile.backend</code> (Python 3.12 multi-stage) ·
+    <code>Dockerfile.frontend</code> (Vue 3 → Nginx) ·
+    <code>Dockerfile.postgres</code> (PG16 + AGE compiled from source) ·
+    <code>nginx.conf</code> · <code>.env.example</code> ·
+    <code>pg-init/01_enable_extensions.sql</code> ·
+    <code>pg-init/02_schema.sql</code> (7 tables, 2 schemas) ·
+    <code>deployment-architecture.html</code> (interactive SVG diagram)
+  </div>
+</section>
+
+<!-- 02c Frontend Alternatives -->
+<section id="frontend-alternatives">
+  <div class="sec-head"><span class="idx">02c</span><h2>Frontend: Dual-Option Strategy</h2></div>
+  <p class="sec-intro">Council debate 2026-05-15 initially preferred Vue 3. However, a subsequent market-data investigation (GitHub stars, npm downloads, EU job market analysis) revealed React's 10× dominance in Europe. <strong>Revised position (2026-05-15): frontend framework selection deferred to CHARITE/Epidata input. DataWego prepared to deliver in either React or Vue 3.</strong></p>
+
+  <table>
+    <thead><tr><th>Candidate</th><th>Status</th><th>Market Position</th><th>Decision Factor</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>React 19 + TypeScript</strong></td>
+        <td><span class="badge badge-yes">✅ PRIMARY</span></td>
+        <td>GitHub 245K ★ · npm 132M/week · Next.js 36M/week. React dominates EU/German job market by 5-8×. CHARITE (Berlin) would have abundant local developer supply.</td>
+        <td>Recommended if CHARITE plans to maintain in-house or hire EU contractors.</td>
+      </tr>
+      <tr>
+        <td><strong>Vue 3 + TypeScript</strong></td>
+        <td><span class="badge badge-yes">✅ VIABLE</span></td>
+        <td>GitHub 54K ★ · npm 12M/week. Strong in China/Asia. Gentler learning curve for non-frontend developers due to HTML-like template syntax.</td>
+        <td>Recommended if CHARITE has existing Vue codebase or non-frontend staff maintaining.</td>
+      </tr>
+      <tr>
+        <td><strong>Svelte 5</strong></td>
+        <td><span class="badge badge-no">✕ REJECTED</span></td>
+        <td>Niche ecosystem. Opaque compiled output. CHARITE can't Google problems. No hiring pool in Berlin.</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td><strong>SolidJS</strong></td>
+        <td><span class="badge badge-no">✕ REJECTED</span></td>
+        <td>Alien signal-based paradigm. Tiny community. Double learning risk (framework + TypeScript).</td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>Strategic Decision:</strong> We will NOT finalize the frontend framework unilaterally.
+    The email to Epidata (v3) explicitly asks:
+    (1) Who maintains the frontend during T4.2/T4.3 — CHARITE internal IT, external contractor, or re-tender?
+    (2) Does CHARITE have an existing frontend technology preference or constraint?
+    (3) Can we connect with CHARITE's IT contact for technical alignment?
+    DataWego's development cost is effectively identical for either framework (~500 lines of frontend code).
+    We will lock the choice after receiving CHARITE's feedback, before M1 prototype delivery.
+  </div>
+
+  <div class="note">
+    <strong>Market Data (May 2026):</strong>
+    React npm downloads (132M/week) exceed Vue (12M/week) by 10.7×.
+    Next.js alone (36M/week) outpaces the entire Vue ecosystem (Vue + Nuxt = 14M/week) by 2.6×.
+    In the EU/German market, React job postings outnumber Vue 5-8:1.
+    However, Vue remains a strong choice for teams with limited frontend specialization — its template syntax is instantly readable by anyone who knows HTML.
+    The right answer depends on CHARITE's actual maintenance plan, which we do not yet know.
+  </div>
+</section>
+
+<!-- 02d Database Alternatives -->
+<section id="database-alternatives">
+  <div class="sec-head"><span class="idx">02d</span><h2>Database: Alternatives Evaluated</h2></div>
+  <p class="sec-intro">Council debate 2026-05-15: 5 seats (Musk/Linus/Dijkstra/Guido/Xiaolong) evaluated PostgreSQL vs DuckDB vs SQLite. <strong>Verdict: PostgreSQL 16 + Apache AGE unanimously reaffirmed. DuckDB/SQLite rejected as categorically unsuitable.</strong></p>
+
+  <table>
+    <thead><tr><th>Candidate</th><th>Verdict</th><th>Fatal Flaw</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>PostgreSQL 16 + AGE</strong></td>
+        <td><span class="badge badge-yes">✅ KEEP</span></td>
+        <td>None. Satisfies all 4 irreducible requirements: concurrent OLTP, ACID audit trail, Cypher graph queries, operational maturity.</td>
+      </tr>
+      <tr>
+        <td><strong>DuckDB</strong></td>
+        <td><span class="badge badge-no">✕ REJECTED</span></td>
+        <td>OLAP engine, not OLTP. No concurrent writes (database-level lock). No graph extension (no Cypher, no DAG traversal). No ACID for audit trail. "It's DuckDB, not DuckTP." — Xiaolong</td>
+      </tr>
+      <tr>
+        <td><strong>DuckDB + PG hybrid</strong></td>
+        <td><span class="badge badge-no">✕ REJECTED</span></td>
+        <td>Two connection pools, two backup strategies, two failure modes. Violates Musk's Algorithm Step 2: "delete any part or process you can." No analytics workload justifies the operational surface area.</td>
+      </tr>
+      <tr>
+        <td><strong>SQLite + Litestream</strong></td>
+        <td><span class="badge badge-no">✕ REJECTED</span></td>
+        <td>Single-writer bottleneck. No graph extension — would externalize to NetworkX (already rejected at 200+ nodes). Litestream async S3 replication loses audit log seconds on crash → EU AI Act non-compliance.</td>
+      </tr>
+      <tr>
+        <td><strong>Neo4j Community</strong></td>
+        <td><span class="badge badge-no">✕ REJECTED</span></td>
+        <td>Already rejected by May 13 council resolution. "No Neo4j" is council law.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <strong>Dijkstra's formal objection to DuckDB:</strong> "DuckDB has no graph extension, no Cypher, no recursive traversals.
+    You would externalize the graph to NetworkX — which you already rejected at 200+ nodes.
+    At 10⁴ nodes, this is algorithmic suicide. The audit log becomes a probabilistic audit log.
+    Simplicity is a prerequisite for reliability — a hybrid architecture doubles your moving parts and halves your correctness confidence."
+  </div>
+
+  <div class="note">
+    <strong>Xiaolong's PG tuning guide (for 8 GB RAM):</strong>
+    PG can run comfortably on 2 GB RAM with proper config: <code>shared_buffers=256MB</code>,
+    <code>max_connections=30</code>, <code>work_mem=8MB</code>, <code>effective_cache_size=4GB</code>.
+    Use PgBouncer for connection pooling. PG's "heaviness" is a configuration problem, not an architecture problem.
+    "Time should be spent tuning, not selecting."
   </div>
 </section>
 
@@ -197,9 +377,11 @@
     <table>
       <thead><tr><th width="25%">Technology</th><th width="15%">Version</th><th>Rationale</th></tr></thead>
       <tbody>
-        <tr><td><strong>Vue 3</strong></td><td>3.x</td><td>v-model + SFC sufficient for questionnaire complexity. Gentler learning curve than React for non-frontend team.</td></tr>
-        <tr><td><strong>Vite</strong></td><td>latest</td><td>Fast dev server, native ESM, simple config</td></tr>
-        <tr><td><strong>D3.js</strong></td><td>—</td><td>If roadmap visualization needs interactive graph. Optional — Mermaid.js for static.</td></tr>
+        <tr><td><strong>React 19</strong> <span class="badge badge-yes">Primary</span></td><td>19.x</td><td>Global standard (245K ★, 132M npm/week). Dominant in EU/German job market. Recommended if CHARITE maintains in-house or hires EU contractors. ~500 lines for Pathfinder wizard.</td></tr>
+        <tr><td><strong>Vue 3</strong> <span class="badge badge-low">Alternative</span></td><td>3.x</td><td>HTML-like template syntax, gentler learning curve for non-frontend staff. Strong in Asian markets. Viable if CHARITE has existing Vue codebase or non-specialist maintainers.</td></tr>
+        <tr><td><strong>TypeScript</strong></td><td>5.x</td><td>Thin-layer: type contracts at API boundary only. Do not annotate component internals. Applies equally to React or Vue.</td></tr>
+        <tr><td><strong>Vite</strong></td><td>latest</td><td>Fast dev server, native ESM. Works identically with React and Vue. Build output: static files for Nginx.</td></tr>
+        <tr><td><strong>Mermaid.js</strong></td><td>—</td><td>Declarative DAG visualization (15 lines). D3.js available as fallback for complex graphs.</td></tr>
       </tbody>
     </table>
   </div>
@@ -217,7 +399,7 @@
     <table>
       <thead><tr><th width="25%">Technology</th><th width="15%">Version</th><th>Rationale</th></tr></thead>
       <tbody>
-        <tr><td><strong>Docker Compose</strong></td><td>—</td><td>Single-container deploy. CHARITE can <code>docker compose up -d</code> on any Linux host.</td></tr>
+        <tr><td><strong>Docker Compose</strong></td><td>—</td><td>Multi-container deploy (5 services). CHARITE can <code>docker compose up -d</code> on any Linux host. PostgreSQL in its own stateful container with named volume.</td></tr>
         <tr><td><strong>Nginx</strong></td><td>—</td><td>Reverse proxy, HTTPS termination, static file serving</td></tr>
         <tr><td><strong>GitHub Actions</strong></td><td>—</td><td>CI/CD. pytest on every push. Docker image build on tag.</td></tr>
         <tr><td><strong>VM Spec</strong></td><td>—</td><td>4–8 vCPU, 16 GB RAM, 100 GB SSD. No GPU needed for V1.</td></tr>

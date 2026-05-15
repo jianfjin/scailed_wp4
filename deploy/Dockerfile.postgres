@@ -1,0 +1,39 @@
+# ═══════════════════════════════════════════════════════════
+# PostgreSQL Dockerfile — PG16 + Apache AGE + pgvector
+# AGE: 图引擎 (Cypher查询, DAG验证, 最短路径)
+# pgvector: 可选向量扩展 (未来WP9 NLP ingestion 预留)
+# ═══════════════════════════════════════════════════════════
+
+FROM postgres:16-bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装构建依赖 + Apache AGE 编译
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    postgresql-server-dev-16 \
+    libreadline-dev \
+    zlib1g-dev \
+    flex \
+    bison \
+    git \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# 从源码编译 Apache AGE
+ARG AGE_VERSION=1.5.0
+RUN git clone --depth 1 --branch v${AGE_VERSION} \
+    https://github.com/apache/age.git /tmp/age \
+    && cd /tmp/age \
+    && make install \
+    && rm -rf /tmp/age
+
+# 安装 pgvector (可选, 未来 NLP 向量检索)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-16-pgvector \
+    && rm -rf /var/lib/apt/lists/*
+
+# 清理构建依赖 (保持镜像体积小)
+RUN apt-get purge -y build-essential postgresql-server-dev-16 git \
+    && apt-get autoremove -y \
+    && apt-get clean

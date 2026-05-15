@@ -1,10 +1,13 @@
 # SCAILED WP4 Pathfinder System — 九龙议会终论决议
 
 **项目**: DataWego (乙方) 为 Epidata (甲方) 开发 SCAILED WP4 Pathfinder System
-**日期**: 2026-05-13 (初议) / 2026-05-14 (六席审计修订)
+**日期**: 2026-05-13 (初议) / 2026-05-14 (六席审计修订) / 2026-05-15 (前端+数据库替代方案辩论)
 **议会**: 9席全会 (Musk/Xuefeng/Guido/Dijkstra/Jensen/Jobs/Linus/Xiaolong/FengGe)
 **审计**: 6席复审 (Xuefeng/Musk/Jobs/Linus/Guido/Dijkstra)
+**辩论**: 5席前端选型 (Musk/Linus/Guido/Xiaolong/Jobs) + 5席数据库选型 (Musk/Linus/Dijkstra/Guido/Xiaolong)
 **项目周期**: EU4Health SCAILED, M1-M36
+
+> **2026-05-15 补充辩论**: 陛下提出两大技术质疑——(1) 前端是否应加入TypeScript考虑替代Vue? (2) 数据库是否有DuckDB等轻量替代? 议会分别展开两轮5席辩论。结论: Vue 3保留, 薄层TS采纳; PostgreSQL+AGE全票维持, DuckDB/SQLite因OLTP不适格被一致否决。完整辩论记录见 architecture-spec.html §02c, §02d。
 
 > **审计修订说明**: 2026-05-14 六席联合审计发现17个风险点（7个🔴致命），以下决议已全部吸收审计修正：
 > IP条款重写、图引擎选型修正、付款结构加固、WP3数据Plan B、审计日志加固、规则引擎重构、邮件措辞修正、时间表压缩。
@@ -52,11 +55,13 @@ pathfinder/
 ```
 
 - **No 微服务, No K8s, No Neo4j, No GraphQL**
-- **Docker Compose 部署** (PostgreSQL独立volume；V1单机模式明确声明)
+- **Docker Compose 多容器部署** (5 services: traefik + frontend(nginx+Vue) + backend(FastAPI) + postgres(PG16+AGE) + redis)
+- **PostgreSQL 独立容器 + named volume** — 绝不与应用容器合署，这是 Docker 铁律
 - 规则引擎外部化 (YAML/JSON，带JSON Schema静态校验), 热加载(API触发+watchdog)
 - 审计日志: PostgreSQL TRIGGER（非RULE）+ prev_hash加密链式哈希
 - 图引擎: **Apache AGE (PG原生图扩展，Cypher嵌入SQL)** + NetworkX作为开发/测试fallback
 - 规则结构: recommendation_rules 树结构 (parent_rule_id + rule_type枚举 + priority)
+- 完整部署配置见 `deploy/docker-compose.yml` + `deploy/Dockerfile.*`
 
 ## 技术栈
 
@@ -67,7 +72,7 @@ pathfinder/
 | 规则引擎 | 声明式 YAML → Python 规则类 | 补：condition操作符全集JSON Schema + 冲突消解策略 + .test.yaml |
 | 数据库 | PostgreSQL 16+ | — |
 | 图引擎 | **Apache AGE** (primary) + NetworkX (dev) | 审计修正：纯NetworkX在200+节点时突破SLA |
-| 前端 | Vue 3 + Vite | — |
+| 前端 | React 19 (Primary) / Vue 3 (Alternative) + TypeScript | 2026-05-15修订: 前端选型待CHARITE确认。React主导欧盟市场(245K★/132M周下载), Vue适合非前端团队。DataWego两种均可交付。 |
 | 部署 | Docker Compose | V1单机模式；K8s是V2的事 |
 | 测试 | pytest + hypothesis + pytest-benchmark | 外壳≥80%，内核≥98%；mutation testing验证 |
 

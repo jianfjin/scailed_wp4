@@ -1,10 +1,13 @@
 # SCAILED WP4 Pathfinder System — Nine-Dragon Council Final Resolution
 
 **Project**: DataWego (Contractor) developing SCAILED WP4 Pathfinder System for Epidata (Client)
-**Dates**: 2026-05-13 (Initial) / 2026-05-14 (6-Seat Audit Revision)
-**Council**: 9-seat plenary (Musk/Xuefeng/Guido/Dijkstra/Jensen/Jobs/Linus/Xiaolong/FengGe)
-**Audit**: 6-seat review (Xuefeng/Musk/Jobs/Linus/Guido/Dijkstra)
-**Timeline**: EU4Health SCAILED, M1–M36
+**Date**: 2026-05-13 (Initial Debate) / 2026-05-14 (6-Seat Audit Revision) / 2026-05-15 (Frontend + Database Alternatives Debate)
+**Council**: 9 seats (Musk/Xuefeng/Guido/Dijkstra/Jensen/Jobs/Linus/Xiaolong/FengGe)
+**Audit**: 6 seats (Xuefeng/Musk/Jobs/Linus/Guido/Dijkstra)
+**Debates**: 5-seat Frontend (Musk/Linus/Guido/Xiaolong/Jobs) + 5-seat Database (Musk/Linus/Dijkstra/Guido/Xiaolong)
+**Project Timeline**: EU4Health SCAILED, M1-M36
+
+> **2026-05-15 Supplementary Debates**: The Emperor raised two technical challenges — (1) Should TypeScript alternatives to Vue be considered for the frontend? (2) Are there lightweight database alternatives like DuckDB? The council conducted two 5-seat debates. Conclusion: Vue 3 retained, thin-layer TypeScript adopted; PostgreSQL+AGE unanimously reaffirmed, DuckDB/SQLite rejected as categorically unsuitable for OLTP workloads. Full debate records at architecture-spec.html §02c, §02d.
 
 > **Audit Revision Note**: The 2026-05-14 six-seat joint audit identified 17 risk items (7 critical). This resolution incorporates all audit fixes: IP terms rewrite, graph engine correction, payment restructuring, WP3 Plan B, audit log hardening, rule engine refactor, and wording corrections. Full audit reports in documents 10–16.
 
@@ -50,11 +53,13 @@ pathfinder/
 ```
 
 - **No microservices, No K8s, No Neo4j, No GraphQL**
-- **Docker Compose deployment** (PostgreSQL independent volume; V1 single-node mode explicitly declared)
+- **Docker Compose multi-container deployment** (5 services: traefik + frontend(nginx+Vue) + backend(FastAPI) + postgres(PG16+AGE) + redis)
+- **PostgreSQL independent container + named volume** — never co-located with application container (Docker best practice)
 - Rule engine externalized (YAML/JSON, with JSON Schema static validation), hot-loadable (API trigger + watchdog)
 - Audit log: PostgreSQL TRIGGER (not RULE) + prev_hash cryptographic chain
 - Graph engine: **Apache AGE (PostgreSQL native graph extension, Cypher embedded in SQL)** + NetworkX as dev/testing fallback
 - Rule structure: recommendation_rules tree structure (parent_rule_id + rule_type enum + priority)
+- Complete deployment config at `deploy/docker-compose.yml` + `deploy/Dockerfile.*`
 
 ## Technology Stack
 
@@ -65,8 +70,8 @@ pathfinder/
 | Rule Engine | Declarative YAML → Python rule classes | Added: condition operator JSON Schema + conflict resolution + .test.yaml |
 | Database | PostgreSQL 16+ | — |
 | Graph Engine | **Apache AGE** (primary) + NetworkX (dev) | Audit fix: pure NetworkX breaks SLA beyond 200 nodes |
-| Frontend | Vue 3 + Vite | — |
-| Deployment | Docker Compose | V1 single-node; K8s is V2 territory |
+| Frontend | React 19 (Primary) / Vue 3 (Alternative) + TypeScript | 2026-05-15 revision: framework selection deferred to CHARITE input. React dominates EU (245K★/132M weekly downloads). Vue better for non-frontend teams. DataWego can deliver either. |
+| Deployment | Docker Compose | Multi-container (5 services); K8s is V2 territory |
 | Testing | pytest + hypothesis + pytest-benchmark | Shell ≥80%, kernel ≥98%; mutation testing verification |
 
 ## Phase Breakdown
