@@ -714,3 +714,106 @@ def test_compliance_check_50_rules(benchmark, state_with_50_rules):
 
 *扩展分析完。与九龙决议合并，形成完整项目方案。*
 *路径: ~/projects/scailed_wp4/council_debate_20260513/*
+
+---
+
+## 附录 B：Action Writeback — 推荐闭环反馈（2026-05-15 议会裁决）
+
+### 问题
+
+当前 Pathfinder 输出推荐后是黑洞。用户是否执行了"建立 DPO"的建议？半年后合规状态是否变化？系统不知道。
+
+### 设计：推荐生命周期状态机
+
+每条推荐从静态字符串升级为有生命周期的 Action 对象：
+
+```
+   ISSUED ──→ ACCEPTED ──→ IN_PROGRESS ──→ COMPLETED
+     │            │              │
+     └──→ SKIPPED │              └──→ BLOCKED
+                  └──→ DEFERRED
+```
+
+| 状态 | 含义 | 触发方式 |
+|------|------|----------|
+| ISSUED | 系统生成，尚未被用户审阅 | 自动 |
+| ACCEPTED | 用户确认采纳 | 用户点击 |
+| SKIPPED | 用户跳过（附原因） | 用户点击+原因 |
+| DEFERRED | 用户推迟到以后 | 用户点击+日期 |
+| IN_PROGRESS | 执行中 | 用户标记或自动检测 |
+| COMPLETED | 已完成 | 用户确认 |
+| BLOCKED | 遇到障碍 | 用户报告+障碍描述 |
+
+### 数据库扩展
+
+```sql
+CREATE TABLE action_states (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES assessment_sessions(id),
+    recommendation_id UUID NOT NULL,
+    state TEXT NOT NULL CHECK (state IN ('issued','accepted','skipped','deferred','in_progress','completed','blocked')),
+    reason TEXT,                    -- 跳过/推迟/受阻原因
+    deferred_until TIMESTAMPTZ,     -- 推迟到何时
+    changed_by TEXT,                -- 谁改变的（用户ID或'system'）
+    changed_at TIMESTAMPTZ DEFAULT now(),
+    previous_state TEXT,            -- 审计追踪
+    metadata JSONB                  -- 扩展字段
+);
+
+-- 不可变审计
+CREATE TRIGGER action_states_audit
+BEFORE UPDATE OR DELETE ON action_states
+FOR EACH ROW EXECUTE FUNCTION audit_log_no_mutation();
+```
+
+### Dijkstra形式化护栏
+
+Action Types必须满足：
+
+1. **Guarded transitions**: 每个状态转移有前置条件。例如 ISSUED→COMPLETED 非法（必须经过IN_PROGRESS）。
+2. **Transactional isolation**: writeback与推荐引擎并发安全。写入action_states不阻塞solver。
+3. **Deterministic state machine**: 状态转移图是确定性的——同一输入+同一状态=同一合法下一状态集合。
+
+```python
+# core/actions.py
+from enum import Enum
+from typing import Set
+
+class ActionState(Enum):
+    ISSUED = "issued"
+    ACCEPTED = "accepted"
+    SKIPPED = "skipped"
+    DEFERRED = "deferred"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    BLOCKED = "blocked"
+
+TRANSITIONS: dict[ActionState, Set[ActionState]] = {
+    ActionState.ISSUED: {ActionState.ACCEPTED, ActionState.SKIPPED, ActionState.DEFERRED},
+    ActionState.ACCEPTED: {ActionState.IN_PROGRESS, ActionState.SKIPPED, ActionState.DEFERRED},
+    ActionState.IN_PROGRESS: {ActionState.COMPLETED, ActionState.BLOCKED},
+    ActionState.SKIPPED: {ActionState.ACCEPTED},
+    ActionState.DEFERRED: {ActionState.ACCEPTED, ActionState.SKIPPED},
+    ActionState.COMPLETED: set(),    # 终态
+    ActionState.BLOCKED: {ActionState.IN_PROGRESS, ActionState.SKIPPED},
+}
+
+def can_transition(from_state: ActionState, to_state: ActionState) -> bool:
+    return to_state in TRANSITIONS.get(from_state, set())
+```
+
+### 闭环反馈路径
+
+```
+用户填问卷 → Solver生成推荐 → 用户标记执行状态 → 
+写入action_states → 下次评估时solver读取历史 →
+已完成推荐降低对应节点的edge cost → 推荐更精准
+```
+
+### 对D4.1的影响
+
+Phase 3前端增加"推荐状态面板"：每条推荐旁显示当前状态+操作按钮（✓接受 / ⏭跳过 / ⏰推迟 / 🚧受阻）。D4.1 Demo需展示完整闭环。
+
+---
+
+*议会裁决日期: 2026-05-15 · 参与席位: Musk/Dijkstra/Linus/Guido/Jobs/Xuefeng/Xiaolong/FengGe*
