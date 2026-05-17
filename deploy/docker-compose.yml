@@ -45,12 +45,11 @@ services:
     command:
       # 生产环境注释掉 --api.insecure, 启用 Let's Encrypt
       - "--api.insecure=true"
+      - "--log.level=DEBUG"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      # 速率限制: 100 req/min per IP (符合 D4 交付要求)
-      - "--entrypoints.web.http.middlewares=ratelimit@docker"
     ports:
       - "${TRAEFIK_HTTP_PORT:-80}:80"
     volumes:
