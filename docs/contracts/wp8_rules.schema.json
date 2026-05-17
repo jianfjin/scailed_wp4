@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WP8 Rule Bundle",
+  "type": "object",
+  "required": ["version", "rules", "tests"],
+  "properties": {
+    "version": {"type": "string"},
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "rule_type", "priority", "applies_to", "condition", "action", "compliance_refs"],
+        "properties": {
+          "rule_id": {"type": "string"},
+          "rule_type": {"enum": ["eligibility", "exclusion", "preference", "override"]},
+          "priority": {"type": "integer"},
+          "applies_to": {"type": "array", "items": {"type": "string"}},
+          "condition": {"type": "object"},
+          "action": {"type": "object"},
+          "compliance_refs": {"type": "array", "items": {"type": "string"}},
+          "effective_from": {"type": "string"},
+          "effective_until": {"type": "string"},
+          "source_doc_ref": {"type": "string"}
+        }
+      }
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "state", "expected_rule_ids"],
+        "properties": {
+          "name": {"type": "string"},
+          "state": {"type": "object"},
+          "expected_rule_ids": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}

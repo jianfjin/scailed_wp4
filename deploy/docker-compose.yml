@@ -5,7 +5,7 @@
 # ═══════════════════════════════════════════════════════════════════════
 #
 # 容器拓扑:
-#   traefik (反向代理/TLS) ──→ frontend (nginx + Vue3 SPA)
+#   traefik (反向代理/TLS) ──→ frontend (nginx + React SPA)
 #                           ──→ backend  (FastAPI, 可水平扩展)
 #   backend ──→ postgres (PG16 + Apache AGE)
 #           ──→ redis   (可选缓存)
@@ -65,7 +65,7 @@ services:
       - "traefik.http.middlewares.ratelimit.ratelimit.burst=20"
 
   # ┌──────────────────────────────────────────────────────────────────┐
-  # │ Frontend — Nginx 提供 Vue 3 SPA 静态文件                          │
+  # │ Frontend — Nginx 提供 React SPA 静态文件                         │
   # │ 暴露路径: /                                                       │
   # │ API 代理: /api/* → backend (避免 CORS)                            │
   # └──────────────────────────────────────────────────────────────────┘

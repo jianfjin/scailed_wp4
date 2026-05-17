@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WP3 Roadmap Graph",
+  "type": "object",
+  "required": ["version", "nodes", "edges"],
+  "properties": {
+    "version": {"type": "string"},
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node_id", "label", "dimension", "maturity_level", "stakeholder_types"],
+        "properties": {
+          "node_id": {"type": "string"},
+          "label": {"type": "string"},
+          "description": {"type": "string"},
+          "dimension": {"type": "string"},
+          "maturity_level": {"type": "integer", "minimum": 1, "maximum": 5},
+          "stakeholder_types": {"type": "array", "items": {"type": "string"}},
+          "prerequisites": {"type": "array", "items": {"type": "string"}},
+          "source_doc_ref": {"type": "string"}
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["edge_id", "from_node_id", "to_node_id"],
+        "properties": {
+          "edge_id": {"type": "string"},
+          "from_node_id": {"type": "string"},
+          "to_node_id": {"type": "string"},
+          "relation_type": {"type": "string"},
+          "required": {"type": "boolean"},
+          "source_doc_ref": {"type": "string"}
+        }
+      }
+    }
+  }
+}

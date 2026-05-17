@@ -292,7 +292,7 @@ Public assessment endpoints use invited bearer token or signed demo link.
 
 ## Frontend Design
 
-Framework: React or Vue, selected after Epidata/Charite preference. The architecture does not depend on either.
+Framework: React. Epidata/Charite preference is now resolved in favor of React.
 
 V1 views:
 
@@ -453,4 +453,3 @@ Maintain `IP_BOUNDARY.md` with per-file ownership:
 - third-party dependencies and licenses
 
 Avoid GPL/AGPL dependencies unless approved in writing.
-

@@ -16,3 +16,8 @@ Thumbs.db
 # Temp
 /tmp/
 *.tmp
+*.log
+
+# Frontend
+node_modules/
+dist/

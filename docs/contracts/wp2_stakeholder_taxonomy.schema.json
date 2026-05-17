@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WP2 Stakeholder Taxonomy",
+  "type": "object",
+  "required": ["version", "stakeholder_types"],
+  "properties": {
+    "version": {"type": "string"},
+    "stakeholder_types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "personas", "user_journeys"],
+        "properties": {
+          "id": {"type": "string"},
+          "label": {"type": "string"},
+          "personas": {"type": "array", "items": {"type": "string"}},
+          "user_journeys": {"type": "array", "items": {"type": "string"}},
+          "feedback_categories": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}

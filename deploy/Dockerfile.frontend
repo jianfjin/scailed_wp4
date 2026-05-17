@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════
-# Frontend Dockerfile — Vue 3 SPA (多阶段构建)
+# Frontend Dockerfile — React SPA (多阶段构建)
 # Stage 1: Node build → Stage 2: Nginx serve
 # ═══════════════════════════════════════════════════════════
 

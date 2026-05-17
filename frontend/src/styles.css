@@ -1,0 +1,130 @@
+:root {
+  color: #162018;
+  background: #f6f7f4;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+select {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 28px;
+}
+
+.toolbar {
+  align-items: center;
+  border-bottom: 1px solid #ccd4c8;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding-bottom: 18px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 28px;
+}
+
+.toolbar p {
+  color: #516052;
+  margin-top: 6px;
+}
+
+.toolbar button {
+  background: #1d5d43;
+  border: 0;
+  color: white;
+  cursor: pointer;
+  min-height: 42px;
+  padding: 0 18px;
+}
+
+.layout {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 260px minmax(320px, 1fr) minmax(360px, 1.3fr);
+  margin-top: 18px;
+}
+
+.panel {
+  background: white;
+  border: 1px solid #d7ded4;
+  border-radius: 6px;
+  padding: 18px;
+}
+
+.panel label {
+  color: #516052;
+  display: block;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.panel select {
+  border: 1px solid #aebaaa;
+  min-height: 38px;
+  width: 100%;
+}
+
+.banner {
+  background: #fff7dc;
+  border: 1px solid #e6c870;
+  margin-top: 16px;
+  padding: 10px;
+}
+
+.question-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.question {
+  border-bottom: 1px solid #edf0eb;
+  display: grid;
+  gap: 6px;
+  padding-bottom: 10px;
+}
+
+.question span {
+  color: #516052;
+}
+
+.question strong {
+  overflow-wrap: anywhere;
+}
+
+.report pre {
+  background: #101510;
+  color: #d8f5df;
+  max-height: 68vh;
+  overflow: auto;
+  padding: 14px;
+  white-space: pre-wrap;
+}
+
+.error {
+  color: #9d1c1c;
+}
+
+@media (max-width: 1020px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

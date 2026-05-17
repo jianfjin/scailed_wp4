@@ -60,7 +60,7 @@ No existing OpenSpec capability or implementation is present. Implementation sho
 4. Harden the D4.1 demo and support validation without opening uncontrolled V2 scope.
 
 ## Open Questions
-- Which frontend framework should be selected after Epidata/Charite preference: React or Vue?
+- Which frontend framework should be selected after Epidata/Charite preference? Resolved: React.
 - Which five stakeholder types are in the first accepted demo set?
 - Which WP8 rule bundle forms the initial agreed test set?
 - Which D4.1 demo scenario is the authoritative acceptance script?
