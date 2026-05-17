@@ -133,21 +133,44 @@ class AgeRoadmapGraph:
     # lifecycle
     # ------------------------------------------------------------------
     async def connect(self) -> None:
-        """Create connection pool and initialise AGE graph."""
+        """Create connection pool and initialise AGE graph.
+
+        Each pool connection self-initialises: create_graph (no LOAD) →
+        LOAD (error ignored) → SET search_path.  This keeps the AGE session
+        state on the same connection where Cypher queries will run.
+        """
         import asyncpg
+        import sys
 
         if self._connected:
             return
-        self._pool = await asyncpg.create_pool(dsn=self._dsn, min_size=1, max_size=4)
-        async with self._pool.acquire() as conn:
-            # Ensure AGE is loaded
-            await conn.execute("LOAD 'age';")
-            await conn.execute("SET search_path = ag_catalog, '$user', public;")
-            # Create graph if not exists (ignore error if already exists)
+
+        async def _init_connection(conn: asyncpg.Connection) -> None:
+            # Step 1: create graph (no LOAD — AGE extension provides the function).
+            # Must happen BEFORE LOAD to avoid "cypher_return already exists".
             try:
                 await conn.execute(_CREATE_GRAPH)
+            except Exception as exc:
+                if "already exists" not in str(exc).lower():
+                    print(f"[AGE] create_graph warning: {exc}", file=sys.stderr)
+            # Step 2: LOAD (may partially fail — ignore).
+            try:
+                await conn.execute("LOAD 'age';")
             except Exception:
-                pass  # graph already exists
+                pass
+            # Step 3: search path for Cypher type resolution.
+            await conn.execute("SET search_path = ag_catalog, '$user', public;")
+
+        self._pool = await asyncpg.create_pool(
+            dsn=self._dsn, min_size=1, max_size=4,
+            init=_init_connection,
+            server_settings={"search_path": "ag_catalog, '$user', public"},
+        )
+
+        # Trigger initialisation on the first pool connection
+        async with self._pool.acquire() as conn:
+            pass  # _init_connection already ran
+
         self._connected = True
 
     async def disconnect(self) -> None:
