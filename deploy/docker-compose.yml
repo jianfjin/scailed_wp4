@@ -39,7 +39,7 @@ services:
   # │ 端口: 80 (HTTP) / 443 (HTTPS, 生产环境)                           │
   # └──────────────────────────────────────────────────────────────────┘
   traefik:
-    image: traefik:v3.3
+    image: traefik:v3.7
     container_name: scailed-traefik
     restart: unless-stopped
     command:
