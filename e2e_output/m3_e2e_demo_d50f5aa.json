@@ -1,0 +1,59 @@
+{
+  "audit_chain_valid": true,
+  "assessment_id": "6c595ce8-717f-4873-9ee7-d964d882666a",
+  "schema_version": "v1.0-m3-baseline",
+  "stakeholder_type": "biotech-sme",
+  "target_scenario": "secondary-use-readiness",
+  "status": "complete",
+  "mock_data_mode": true,
+  "readiness_snapshot": {
+    "maturity_scores": {"governance": 2, "data": 2, "compliance": 2},
+    "capabilities": ["secure-processing"],
+    "missing_capabilities": ["data-catalog"],
+    "regulatory_flags": ["gdpr-review-needed"],
+    "confidence": 1.0,
+    "confidence_warnings": []
+  },
+  "recommended_path": {
+    "blockers": [],
+    "confidence": 1.0,
+    "current_node": "governance-scope",
+    "target_node": "access-body-review",
+    "triggered_rules": [
+      {
+        "rule_id": "WP8-GDPR-REVIEW-001",
+        "rule_type": "preference",
+        "priority": 100,
+        "condition": {"field": "regulatory_flags", "operator": "contains", "value": "gdpr-review-needed"},
+        "action": {"node_id": "legal-basis", "block": false, "title": "GDPR review needed"}
+      },
+      {
+        "rule_id": "DATA-CATALOG-GAP-003",
+        "rule_type": "preference",
+        "priority": 50,
+        "condition": {"field": "missing_capabilities", "operator": "contains", "value": "data-catalog"},
+        "action": {"node_id": "governance-scope", "block": false, "title": "Data catalog gap"}
+      }
+    ],
+    "next_steps": [
+      {"node_id": "governance-scope", "dimension": "governance", "maturity_level": 2},
+      {"node_id": "legal-basis", "dimension": "compliance", "maturity_level": 3},
+      {"node_id": "access-body-review", "dimension": "compliance", "maturity_level": 4}
+    ],
+    "trace": {
+      "regulatory_refs": ["GDPR-Review", "EHDS-Secondary-Use", "WP3-Roadmap"],
+      "triggered_rule_ids": ["WP8-GDPR-REVIEW-001", "DATA-CATALOG-GAP-003"],
+      "roadmap_node_ids": ["governance-scope", "legal-basis", "access-body-review"],
+      "confidence": 1.0
+    }
+  },
+  "meta": {
+    "commit": "d50f5aa",
+    "python_version": "3.12",
+    "age_version": "1.5.0",
+    "pg_version": "16",
+    "docker_available": false,
+    "run_at": "2026-05-17T21:28:00Z",
+    "host": "hermes-asus.datawego.nl"
+  }
+}
