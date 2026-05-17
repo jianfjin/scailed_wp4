@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'dark',themeVariables:{primaryColor:'#22d3ee',primaryTextColor:'#fff',lineColor:'#64748b'}});</script>
 <title>Architecture Spec — SCAILED WP4 Pathfinder System</title>
 <style>
   :root {
@@ -61,6 +63,12 @@
   .finding.critical{border-left-color:#991B1B;background:#FFF5F5}
   .finding h3{font-size:14px;margin:0 0 5px}
   .finding p{font-size:13px;color:var(--g700);margin:0}
+
+  .mermaid-section{margin:24px 0}
+  .mermaid-section h3{font-family:var(--serif);font-size:16px;margin:0 0 4px;color:var(--slate)}
+  .mermaid-section .mermaid-note{font-size:11px;color:var(--g500);margin-bottom:12px}
+  .mermaid-container{background:#0f172a;border-radius:10px;padding:20px;overflow-x:auto;border:1px solid #1e293b}
+  .badge-future{background:#FEF3C7;color:#92400E;font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:999px;text-transform:uppercase;display:inline-block}
 
   .note{background:var(--g100);border:1.5px solid var(--g200);border-radius:8px;padding:14px 18px;margin:14px 0;font-size:13px;color:var(--g700)}
   .note strong{color:var(--clay)}
@@ -411,6 +419,146 @@
     <strong>Agent-D's strongest contributions (absorbed):</strong> mock-data-first strategy, detailed data contracts, product UX vision, ontology as first-class artifact.<br>
     <strong>Agent-D's over-engineering (rejected):</strong> Neo4j, K8s+Helm+Terraform, AI Copilot, 6-module scope, 4-5 repo split.<br>
     <strong>Cost reality:</strong> Agent-D blueprint = €260K-320K. Parliament fusion = €87.5K. Remaining €57.5K buffer for uncertainty.
+  </div>
+</section>
+
+<!-- 02f Architecture Diagrams -->
+<section id="diagrams">
+  <div class="sec-head"><span class="idx">02f</span><h2>Architecture Diagrams</h2></div>
+  <p class="sec-intro">Corrected diagrams from <code>docs/05_pathfinder_diagrams.md</code>, aligned with the 8/8 fusion verdict. Original Agent-D versions used Neo4j, K8s, and AI Copilot — all rejected. Diagrams 1 and 3 kept as-is; 2 and 6 rewritten for V1 reality; 4-5 deferred to V2.</p>
+
+  <!-- Diagram 1: Overall SCAILED -->
+  <div class="mermaid-section">
+    <h3>Fig 1. Overall SCAILED System Architecture <span style="color:var(--g500);font-weight:400;font-size:12px;">— kept as-is (consortium-level view)</span></h3>
+    <p class="mermaid-note">WP2-WP8 relationships, Pathfinder (WP4) as central operational layer. Valid for both original and fusion designs.</p>
+    <div class="mermaid-container"><pre class="mermaid">
+flowchart TB
+    subgraph Stakeholders
+        BIO[Biotech Companies]
+        HDAB[Health Data Access Bodies]
+        AIF[AI Factories]
+        RI[Research Infrastructures]
+    end
+    subgraph WP2[WP2 Stakeholder Forum]
+        FORUM[Stakeholder Engagement]
+    end
+    subgraph WP3[WP3 Strategic Roadmap]
+        ROADMAP[Roadmap]
+        LANDSCAPE[Landscape Analysis]
+    end
+    subgraph WP4[WP4 Pathfinder - EPIDATA/DataWego]
+        PATHFINDER[Pathfinder V1]
+        SCORE[Scoring Engine]
+        NAV[Path Planner]
+        DASH[Dashboard]
+    end
+    subgraph WP5[WP5 EHDS Integration]
+        SPE[SPE]
+        GDI[Genomics Infra]
+        EUCAIM[Cancer Imaging]
+    end
+    subgraph WP6[WP6 AI Use Cases]
+        UC1[Synthetic Data]
+        UC2[Federated Learning]
+    end
+    subgraph WP7[WP7 AI Factories]
+        GPU[GPU Clusters]
+        MODEL[Model Deployment]
+    end
+    subgraph WP8[WP8 Regulatory]
+        GDPR[GDPR]
+        EHDSREG[EHDS Reg]
+        AIACT[AI Act]
+    end
+    Stakeholders --> FORUM
+    FORUM --> ROADMAP
+    LANDSCAPE --> PATHFINDER
+    ROADMAP --> PATHFINDER
+    PATHFINDER --> SCORE
+    PATHFINDER --> NAV
+    PATHFINDER --> DASH
+    SPE --> PATHFINDER
+    UC1 --> PATHFINDER
+    UC2 --> PATHFINDER
+    GPU --> PATHFINDER
+    GDPR --> PATHFINDER
+    EHDSREG --> PATHFINDER
+    AIACT --> PATHFINDER
+    </pre></div>
+  </div>
+
+  <!-- Diagram 2: Pathfinder V1 Architecture (REWRITTEN) -->
+  <div class="mermaid-section">
+    <h3>Fig 2. Pathfinder V1 Architecture <span class="badge badge-yes">REWRITTEN</span></h3>
+    <p class="mermaid-note">Original used Neo4j + RAG/LLM/GraphRAG. Rewritten for fusion: PG+AGE only, deterministic CSP engine, Docker Compose.</p>
+    <div class="mermaid-container"><pre class="mermaid">
+flowchart LR
+    subgraph Frontend
+        WEB[React SPA]
+    end
+    subgraph API[FastAPI Backend]
+        AUTH[Demo Token Auth]
+        QUESTION[Questionnaire Engine]
+        SCORE[Scoring Engine]
+        SOLVER[CSP Path Solver]
+        RULES[Rule Engine · YAML]
+        AUDIT[Audit Log · prev_hash]
+        EXPORT[Report Export]
+    end
+    subgraph Data
+        PG[(PostgreSQL 16)]
+        AGE[(Apache AGE)]
+        REDIS[(Redis · optional)]
+    end
+    subgraph Deploy
+        DOCKER[Docker Compose · 5 containers]
+        TRAEFIK[Traefik Proxy]
+    end
+    WEB --> API
+    API --> PG
+    API --> REDIS
+    SOLVER --> AGE
+    RULES --> PG
+    AUDIT --> PG
+    TRAEFIK --> WEB
+    TRAEFIK --> API
+    </pre></div>
+  </div>
+
+  <!-- Diagram 3: Readiness Evaluation Workflow -->
+  <div class="mermaid-section">
+    <h3>Fig 3. Readiness Evaluation Workflow <span style="color:var(--g500);font-weight:400;font-size:12px;">— kept (core flow unchanged)</span></h3>
+    <p class="mermaid-note">Stakeholder questionnaire → CSP path search → traceable recommendation with compliance refs.</p>
+    <div class="mermaid-container"><pre class="mermaid">
+sequenceDiagram
+    participant User
+    participant Portal as React SPA
+    participant API as FastAPI
+    participant Solver as CSP Engine
+    participant AGE as PG+AGE Graph
+    participant Rules as Rule Engine
+    User->>Portal: Select stakeholder type
+    User->>Portal: Complete questionnaire
+    Portal->>API: POST /v1/assessments
+    API->>Solver: Build StakeholderState
+    Solver->>AGE: locate_current + locate_target
+    AGE-->>Solver: RoadmapNodes
+    Solver->>AGE: shortest_path (BFS on DAG)
+    AGE-->>Solver: Path steps
+    Solver->>Rules: Evaluate triggered rules
+    Rules-->>Solver: Compliance refs + actions
+    Solver->>API: PathResult + TraceRecord
+    API->>Portal: Recommendation + trace
+    Portal-->>User: Dashboard + report
+    </pre></div>
+  </div>
+
+  <!-- Diagrams 4-6: Deferred to V2 -->
+  <div class="note">
+    <strong>Diagrams 4-6 Deferred to V2:</strong><br>
+    <strong>Fig 4. EHDS Knowledge Graph</strong> <span class="badge-future">V2</span> — Neo4j-based entity graph. Rejected for V1 (No Neo4j). Will be reevaluated under Dijkstra's sunset clause if V2 scope expands to ontology reasoning.<br>
+    <strong>Fig 5. AI Factory Integration</strong> <span class="badge-future">V2</span> — Requires WP7 operational data and real SPE integration. Not in D4.1 scope.<br>
+    <strong>Fig 6. Cloud-Native Deployment</strong> <span class="badge-future">V2</span> — K8s+Helm+Terraform+Azure. Rejected for V1 (8/8 vote). Replaced by Fig 2 deployment view (Docker Compose). See also <code>deploy/deployment-architecture.html</code> for the interactive SVG deployment diagram.
   </div>
 </section>
 
