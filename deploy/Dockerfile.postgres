@@ -21,8 +21,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # 从源码编译 Apache AGE
+# Note: AGE tags follow PG16/v1.5.0-rc0 format
 ARG AGE_VERSION=1.5.0
-RUN git clone --depth 1 --branch v${AGE_VERSION} \
+ARG AGE_TAG=PG16/v${AGE_VERSION}-rc0
+RUN git clone --depth 1 --branch ${AGE_TAG} \
     https://github.com/apache/age.git /tmp/age \
     && cd /tmp/age \
     && make install \
