@@ -43,8 +43,6 @@ services:
     container_name: scailed-traefik
     restart: unless-stopped
     command:
-      # 生产环境注释掉 --api.insecure, 启用 Let's Encrypt
-      - "--api.insecure=true"
       - "--log.level=DEBUG"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
