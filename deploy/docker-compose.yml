@@ -13,12 +13,9 @@
 # 部署: docker compose up -d
 # 扩容: docker compose up -d --scale backend=3
 
-version: "3.9"
-
-# ─── Networks ─────────────────────────────────────────────────────────
+networks:
 # 前端网络: traefik ↔ nginx (仅代理流量)
 # 后端网络: traefik ↔ backend ↔ postgres ↔ redis (业务+数据流量隔离)
-networks:
   frontend:
     driver: bridge
   backend:
