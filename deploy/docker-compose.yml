@@ -57,11 +57,7 @@ services:
     networks:
       - frontend
       - backend
-    labels:
-      # 速率限制中间件
-      - "traefik.http.middlewares.ratelimit.ratelimit.average=100"
-      - "traefik.http.middlewares.ratelimit.ratelimit.period=1m"
-      - "traefik.http.middlewares.ratelimit.ratelimit.burst=20"
+    labels: {}
 
   # ┌──────────────────────────────────────────────────────────────────┐
   # │ Frontend — Nginx 提供 React SPA 静态文件                         │
@@ -86,12 +82,10 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
       - "traefik.http.routers.frontend.entrypoints=web"
-      - "traefik.http.routers.frontend.middlewares=ratelimit@docker"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
       # /api/* 路由到 backend
-      - "traefik.http.routers.api.rule=PathPrefix(`/api`) || PathPrefix(`/v1`) || Path(`/health`)"
+      - "traefik.http.routers.api.rule=PathPrefix(`/api`) || PathPrefix(`/v1`)"
       - "traefik.http.routers.api.entrypoints=web"
-      - "traefik.http.routers.api.middlewares=ratelimit@docker"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
 
   # ┌──────────────────────────────────────────────────────────────────┐
