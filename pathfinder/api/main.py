@@ -1,7 +1,13 @@
-"""FastAPI wrapper for the Pathfinder demo kernel."""
+"""FastAPI wrapper for the Pathfinder demo kernel.
+
+Supports AGE backend via USE_AGE=1 environment variable.
+Start with: USE_AGE=1 uvicorn pathfinder.api.main:app
+"""
 
 from __future__ import annotations
 
+import os
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException, Request
@@ -9,7 +15,28 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from pathfinder.services.assessment_service import AssessmentService
 
-app = FastAPI(title="SCAILED Pathfinder V1", version="0.1.0")
+_USE_AGE = os.environ.get("USE_AGE", "").lower() in ("1", "true", "yes")
+_service: AssessmentService | None = None
+
+
+def _get_service() -> AssessmentService:
+    global _service
+    if _service is None:
+        _service = AssessmentService(use_age=_USE_AGE)
+    return _service
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    service = _get_service()
+    if _USE_AGE:
+        await service.connect_age()
+    yield
+    if _USE_AGE:
+        await service.disconnect_age()
+
+
+app = FastAPI(title="SCAILED Pathfinder V1", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,7 +45,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-service = AssessmentService()
 DEMO_TOKEN = "demo-token"
 ADMIN_TOKEN = "admin-token"
 
@@ -35,20 +61,23 @@ def require_admin_token(authorization: str | None) -> None:
 
 @app.get("/health")
 def health() -> dict[str, object]:
-    return {"status": "ok", **service.status()}
+    svc = _get_service()
+    return {"status": "ok", **svc.status()}
 
 
 @app.get("/v1/questionnaires")
 def stakeholder_types(authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_demo_token(authorization)
-    return {"stakeholder_types": service.stakeholder_types(), "mock_data_mode": True}
+    svc = _get_service()
+    return {"stakeholder_types": svc.stakeholder_types(), "mock_data_mode": True}
 
 
 @app.get("/v1/questionnaires/{stakeholder_type}")
 def questionnaire(stakeholder_type: str, authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_demo_token(authorization)
+    svc = _get_service()
     try:
-        return service.get_questionnaire(stakeholder_type)
+        return svc.get_questionnaire(stakeholder_type)
     except Exception as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -56,8 +85,9 @@ def questionnaire(stakeholder_type: str, authorization: str | None = Header(defa
 @app.post("/v1/assessments")
 async def create_assessment(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_demo_token(authorization)
+    svc = _get_service()
     payload = await request.json()
-    return service.create_session(
+    return svc.create_session(
         stakeholder_type=payload["stakeholder_type"],
         target_scenario=payload["target_scenario"],
     )
@@ -66,8 +96,9 @@ async def create_assessment(request: Request, authorization: str | None = Header
 @app.get("/v1/assessments/{assessment_id}")
 def get_assessment(assessment_id: str, authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_demo_token(authorization)
+    svc = _get_service()
     try:
-        return service.sessions[assessment_id]
+        return svc.sessions[assessment_id]
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="assessment not found") from exc
 
@@ -79,9 +110,10 @@ async def submit_answers(
     authorization: str | None = Header(default=None),
 ) -> dict[str, object]:
     require_demo_token(authorization)
+    svc = _get_service()
     payload: dict[str, Any] = await request.json()
     try:
-        return service.submit_answers(assessment_id, payload["answers"])
+        return svc.submit_answers(assessment_id, payload["answers"])
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -89,8 +121,9 @@ async def submit_answers(
 @app.post("/v1/assessments/{assessment_id}/recommendations")
 def recommendations(assessment_id: str, authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_demo_token(authorization)
+    svc = _get_service()
     try:
-        return service.generate_recommendation(assessment_id)
+        return svc.generate_recommendation(assessment_id)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -98,8 +131,9 @@ def recommendations(assessment_id: str, authorization: str | None = Header(defau
 @app.get("/v1/assessments/{assessment_id}/report")
 def report(assessment_id: str, authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_demo_token(authorization)
+    svc = _get_service()
     try:
-        return service.report(assessment_id)
+        return svc.report(assessment_id)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -107,14 +141,16 @@ def report(assessment_id: str, authorization: str | None = Header(default=None))
 @app.get("/v1/roadmap")
 def roadmap(authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_demo_token(authorization)
-    return service.graph.to_dict()
+    svc = _get_service()
+    return svc.graph.to_dict()
 
 
 @app.get("/v1/roadmap/{node_id}")
 def roadmap_node(node_id: str, authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_demo_token(authorization)
+    svc = _get_service()
     try:
-        return service.graph.nodes[node_id].to_dict()
+        return svc.graph.nodes[node_id].to_dict()
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="roadmap node not found") from exc
 
@@ -140,5 +176,6 @@ def import_wp8(authorization: str | None = Header(default=None)) -> dict[str, ob
 @app.post("/admin/rules/reload")
 def reload_rules(authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_admin_token(authorization)
-    service.audit_log.append("rule_reload", {"rule_version": service.rule_loader.active_version})
-    return {"accepted": True, "active_rule_version": service.rule_loader.active_version}
+    svc = _get_service()
+    svc.audit_log.append("rule_reload", {"rule_version": svc.rule_loader.active_version})
+    return {"accepted": True, "active_rule_version": svc.rule_loader.active_version}

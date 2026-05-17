@@ -1,7 +1,15 @@
-"""End-to-end demo assessment service."""
+"""End-to-end demo assessment service.
+
+Supports two graph backends:
+  - InMemoryRoadmapGraph (default, zero-config for demos/tests)
+  - AgeRoadmapGraph (PostgreSQL + Apache AGE for production)
+
+Set USE_AGE=1 or pass use_age=True to enable the AGE backend.
+"""
 
 from __future__ import annotations
 
+import os
 from uuid import uuid4
 
 from pathfinder.adapters.demo_data import (
@@ -11,6 +19,7 @@ from pathfinder.adapters.demo_data import (
 )
 from pathfinder.core.audit import AuditLog
 from pathfinder.core.graph import InMemoryRoadmapGraph
+from pathfinder.core.graph_age import AgeRoadmapGraph
 from pathfinder.core.imports import import_structured_payload
 from pathfinder.core.questionnaire import QuestionnaireEngine
 from pathfinder.core.recommend import build_recommendation
@@ -19,10 +28,20 @@ from pathfinder.core.solver import PathfinderSolver
 
 
 class AssessmentService:
-    def __init__(self) -> None:
+    def __init__(self, use_age: bool | None = None) -> None:
+        if use_age is None:
+            use_age = os.environ.get("USE_AGE", "").lower() in ("1", "true", "yes")
+
         self.questionnaires = demo_questionnaires()
         nodes, edges = demo_roadmap()
-        self.graph = InMemoryRoadmapGraph(nodes, edges)
+
+        if use_age:
+            self.graph = AgeRoadmapGraph()
+            self._graph_backend = "age"
+        else:
+            self.graph = InMemoryRoadmapGraph(nodes, edges)
+            self._graph_backend = "inmemory"
+
         self.questionnaire_engine = QuestionnaireEngine(self.questionnaires)
         self.rule_loader = RuleLoader(self.questionnaires)
         self.rules = self.rule_loader.load_bundle(demo_rule_bundle())
@@ -40,6 +59,17 @@ class AssessmentService:
                 },
             )
         }
+
+    async def connect_age(self) -> None:
+        """Connect to AGE backend and load demo data (async, called once at startup)."""
+        if isinstance(self.graph, AgeRoadmapGraph):
+            nodes, edges = demo_roadmap()
+            await self.graph.connect()
+            await self.graph.load_demo_data(nodes, edges)
+
+    async def disconnect_age(self) -> None:
+        if isinstance(self.graph, AgeRoadmapGraph):
+            await self.graph.disconnect()
 
     def stakeholder_types(self) -> list[str]:
         return self.questionnaire_engine.stakeholder_types()
@@ -109,6 +139,7 @@ class AssessmentService:
         return {
             "service": "pathfinder",
             "mode": "demo",
+            "graph_backend": self._graph_backend,
             "stakeholder_types": self.stakeholder_types(),
             "rule_version": self.rule_loader.active_version,
             "audit_events": len(self.audit_log.events()),
