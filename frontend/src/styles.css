@@ -110,6 +110,34 @@ h1 {
   overflow-wrap: anywhere;
 }
 
+.question input[type="range"] {
+  width: 100%;
+}
+
+.check-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.check-label {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.check-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+.toolbar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .report pre {
   background: #101510;
   color: #d8f5df;
