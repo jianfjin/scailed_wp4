@@ -100,8 +100,10 @@ services:
       - frontend   # 需要 frontend 网络以接收 traefik 路由
     labels:
       - "traefik.enable=true"
+      - "traefik.http.middlewares.api-strip.stripprefix.prefixes=/api"
       - "traefik.http.routers.api.rule=PathPrefix(`/api`) || PathPrefix(`/v1`) || Path(`/health`)"
       - "traefik.http.routers.api.entrypoints=web"
+      - "traefik.http.routers.api.middlewares=api-strip"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-pathfinder}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-pathfinder}
