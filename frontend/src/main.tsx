@@ -17,6 +17,38 @@ type Questionnaire = {
   }>;
 };
 
+type PathfinderReport = {
+  disclaimer?: string;
+  audit_chain_valid?: boolean;
+  missing_data_warnings?: string[];
+  session?: { stakeholder_type?: string; target_scenario?: string; status?: string };
+  readiness_snapshot?: {
+    maturity_scores?: Record<string, number>;
+    capabilities?: string[];
+    missing_capabilities?: string[];
+    regulatory_flags?: string[];
+    confidence?: number;
+    confidence_warnings?: string[];
+  };
+  recommended_path?: {
+    status?: string;
+    current_node?: string;
+    target_node?: string;
+    next_steps?: Array<{ node_id?: string; label?: string; dimension?: string }>;
+    blockers?: string[];
+    warnings?: string[];
+    trace?: {
+      answer_ids?: string[];
+      roadmap_node_ids?: string[];
+      triggered_rule_ids?: string[];
+      regulatory_refs?: string[];
+      upstream_snapshot_version?: string;
+      schema_version?: string;
+      rule_version?: string;
+    };
+  };
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 const TOKEN = "demo-token";
 
@@ -31,7 +63,8 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error((body as { detail?: string }).detail || response.statusText);
+    const detail = (body as { detail?: string | { detail?: string } }).detail;
+    throw new Error(typeof detail === "string" ? detail : detail?.detail || response.statusText);
   }
   return response.json();
 }
@@ -107,6 +140,95 @@ function MultiChoiceInput({
   );
 }
 
+function EvidenceList({ title, items }: { title: string; items?: string[] }) {
+  if (!items?.length) return null;
+  return (
+    <div className="evidence-block">
+      <h3>{title}</h3>
+      <ul>
+        {items.map((item) => <li key={item}>{item}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+function ReportSummary({ report }: { report: PathfinderReport }) {
+  const path = report.recommended_path;
+  const snapshot = report.readiness_snapshot;
+  const trace = path?.trace;
+  const blocked = path?.status === "blocked";
+
+  return (
+    <div className="report-summary">
+      <div className="status-row">
+        <strong>{blocked ? "Blocked" : "Ready"}</strong>
+        <span>{report.audit_chain_valid ? "Audit chain valid" : "Audit chain needs review"}</span>
+      </div>
+
+      {report.disclaimer && <p className="notice">{report.disclaimer}</p>}
+      <EvidenceList title="Mock and missing data warnings" items={report.missing_data_warnings} />
+
+      <div className="summary-grid">
+        <div>
+          <h3>Assessment</h3>
+          <dl>
+            <dt>Stakeholder</dt>
+            <dd>{report.session?.stakeholder_type || "unknown"}</dd>
+            <dt>Scenario</dt>
+            <dd>{report.session?.target_scenario || "unknown"}</dd>
+            <dt>Confidence</dt>
+            <dd>{snapshot?.confidence ?? "n/a"}</dd>
+          </dl>
+        </div>
+        <div>
+          <h3>Path</h3>
+          <dl>
+            <dt>Current</dt>
+            <dd>{path?.current_node || "n/a"}</dd>
+            <dt>Target</dt>
+            <dd>{path?.target_node || "n/a"}</dd>
+            <dt>Rule version</dt>
+            <dd>{trace?.rule_version || "n/a"}</dd>
+          </dl>
+        </div>
+      </div>
+
+      <EvidenceList title="Blockers" items={path?.blockers} />
+      <EvidenceList title="Warnings" items={[...(path?.warnings || []), ...(snapshot?.confidence_warnings || [])]} />
+
+      {path?.next_steps?.length ? (
+        <div className="evidence-block">
+          <h3>Recommended path</h3>
+          <ol>
+            {path.next_steps.map((step, index) => (
+              <li key={step.node_id || index}>
+                <strong>{step.label || step.node_id}</strong>
+                {step.dimension && <span>{step.dimension}</span>}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+
+      <div className="evidence-block">
+        <h3>Trace evidence</h3>
+        <dl>
+          <dt>Answers</dt>
+          <dd>{trace?.answer_ids?.join(", ") || "n/a"}</dd>
+          <dt>Roadmap nodes</dt>
+          <dd>{trace?.roadmap_node_ids?.join(", ") || "n/a"}</dd>
+          <dt>Triggered rules</dt>
+          <dd>{trace?.triggered_rule_ids?.join(", ") || "n/a"}</dd>
+          <dt>Regulatory refs</dt>
+          <dd>{trace?.regulatory_refs?.join(", ") || "n/a"}</dd>
+          <dt>Snapshot</dt>
+          <dd>{trace?.upstream_snapshot_version || "n/a"}</dd>
+        </dl>
+      </div>
+    </div>
+  );
+}
+
 /* ─── main app ──────────────────────────────────────────── */
 
 function App() {
@@ -114,7 +236,7 @@ function App() {
   const [stakeholderType, setStakeholderType] = useState("biotech-sme");
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
-  const [report, setReport] = useState<Record<string, unknown> | null>(null);
+  const [report, setReport] = useState<PathfinderReport | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -152,7 +274,7 @@ function App() {
       .filter((q) => q.required)
       .every((q) => {
         const v = answers[q.question_id];
-        if (q.question_type === "multi_choice") return Array.isArray(v) && v.length > 0;
+        if (q.question_type === "multi_choice") return Array.isArray(v);
         return v !== "" && v !== null && v !== undefined;
       });
   }, [questionnaire, answers]);
@@ -183,7 +305,7 @@ function App() {
         body: JSON.stringify({ answers: payload }),
       });
       await api(`/v1/assessments/${session.assessment_id}/recommendations`, { method: "POST" });
-      const r = await api<Record<string, unknown>>(`/v1/assessments/${session.assessment_id}/report`);
+      const r = await api<PathfinderReport>(`/v1/assessments/${session.assessment_id}/report`);
       setReport(r);
     } catch (err) {
       setError(String(err));
@@ -258,7 +380,7 @@ function App() {
           {error && <p className="error">{error}</p>}
           {loading && <p>Running assessment…</p>}
           {!report && !loading && <p>Complete the questionnaire and submit to see your roadmap path.</p>}
-          {report && <pre>{JSON.stringify(report, null, 2)}</pre>}
+          {report && <ReportSummary report={report} />}
         </section>
       </section>
     </main>

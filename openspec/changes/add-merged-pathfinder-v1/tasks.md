@@ -12,17 +12,17 @@
 - [x] 2.4 Implement rule parser, schema validation, compiler, conflict checks, loader, and `.test.yaml` runner.
 - [x] 2.5 Implement path solver, compliance evaluator, recommendation ranking, confidence calculation, and graceful degradation.
 - [x] 2.6 Implement append-only audit log with previous-hash chain and upstream data snapshots.
-- [ ] 2.7 Verify core tests, rule tests, graph traversal, audit immutability, and p95 recommendation latency at demo scale.
+- [x] 2.7 Verify core tests, rule tests, graph traversal, audit chain integrity, and p95 recommendation latency at demo scale.
 
 ## 3. API and Frontend MVP
 - [x] 3.1 Implement health, questionnaire, assessment, roadmap, recommendation, report, and admin import/reload REST endpoints.
-- [ ] 3.2 Implement API schemas, safe error model, invited access, admin bearer-token protection, and rate limiting.
+- [x] 3.2 Implement API schemas, safe error model, invited access, admin bearer-token protection, and rate limiting.
 - [x] 3.3 Implement guided assessment frontend, stakeholder selection, readiness summary, roadmap path view, trace view, report export view, and admin import/status view.
 - [x] 3.4 Add demo-data mode banner and missing/unverified data warnings.
-- [ ] 3.5 Verify end-to-end questionnaire completion, traceable recommendation generation, report export, rule reload safety, and p95 latency target.
+- [x] 3.5 Verify end-to-end questionnaire completion, traceable recommendation generation, report export, rule reload safety, and p95 latency target.
 
 ## 4. D4.1 Hardening
-- [ ] 4.1 Polish main user flow, report wording, explicit warnings, and reviewer-facing errors.
+- [x] 4.1 Polish main user flow, report wording, explicit warnings, and reviewer-facing errors.
 - [x] 4.2 Add deployment docs, seed/demo data, demo script, and D4.1 technical appendix.
 - [ ] 4.3 Run stakeholder review sessions and apply only in-scope refinements.
 - [ ] 4.4 Verify clean install from docs, demo script completion without manual database edits, audit-log integrity, and acceptance criteria from `docs/12_merged_pathfinder_spec.md`.

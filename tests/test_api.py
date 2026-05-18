@@ -2,10 +2,14 @@ import unittest
 
 from fastapi.testclient import TestClient
 
+import pathfinder.api.main as api_main
 from pathfinder.api.main import app
 
 
 class ApiTests(unittest.TestCase):
+    def setUp(self) -> None:
+        api_main._service = None
+
     def test_assessment_flow_api(self) -> None:
         client = TestClient(app)
         headers = {"Authorization": "Bearer demo-token"}
@@ -58,6 +62,202 @@ class ApiTests(unittest.TestCase):
         response = client.get("/v1/questionnaires")
 
         self.assertEqual(response.status_code, 401)
+
+    def test_demo_token_cannot_use_admin_imports(self) -> None:
+        client = TestClient(app)
+
+        response = client.post(
+            "/admin/import/wp2",
+            headers={"Authorization": "Bearer demo-token"},
+            json={"version": "wp2-test-v1", "stakeholder_types": []},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["detail"]["error"], "FORBIDDEN")
+
+    def test_rate_limit_blocks_repeated_protected_requests_but_not_health(self) -> None:
+        client = TestClient(app)
+        api_main._rate_limit_hits.clear()
+        original_limit = api_main.RATE_LIMIT_MAX_REQUESTS
+        api_main.RATE_LIMIT_MAX_REQUESTS = 2
+        headers = {"Authorization": "Bearer demo-token"}
+        try:
+            self.assertEqual(client.get("/v1/questionnaires", headers=headers).status_code, 200)
+            self.assertEqual(client.get("/v1/questionnaires", headers=headers).status_code, 200)
+            limited = client.get("/v1/questionnaires", headers=headers)
+            self.assertEqual(limited.status_code, 429)
+            self.assertEqual(limited.json()["detail"]["error"], "RATE_LIMITED")
+            self.assertEqual(client.get("/health").status_code, 200)
+        finally:
+            api_main.RATE_LIMIT_MAX_REQUESTS = original_limit
+            api_main._rate_limit_hits.clear()
+
+    def test_admin_imports_activate_wp2_wp3_and_wp8_payloads(self) -> None:
+        client = TestClient(app)
+        admin_headers = {"Authorization": "Bearer admin-token"}
+        demo_headers = {"Authorization": "Bearer demo-token"}
+
+        wp2 = {
+            "version": "wp2-test-v1",
+            "stakeholder_types": [
+                {
+                    "id": "demo-reviewer",
+                    "label": "Demo reviewer",
+                    "personas": ["technical reviewer"],
+                    "user_journeys": ["review D4.1 evidence"],
+                    "feedback_categories": ["acceptance"],
+                }
+            ],
+        }
+        wp2_response = client.post("/admin/import/wp2", headers=admin_headers, json=wp2)
+        self.assertEqual(wp2_response.status_code, 200)
+        self.assertTrue(wp2_response.json()["accepted"])
+        self.assertEqual(wp2_response.json()["source"], "wp2")
+        self.assertIn("checksum", wp2_response.json())
+
+        questionnaires = client.get("/v1/questionnaires", headers=demo_headers)
+        self.assertEqual(questionnaires.status_code, 200)
+        self.assertEqual(questionnaires.json()["stakeholder_types"], ["demo-reviewer"])
+
+        wp3 = {
+            "version": "wp3-test-v1",
+            "nodes": [
+                {
+                    "node_id": "review-intake",
+                    "label": "Review intake",
+                    "description": "Reviewer intake node",
+                    "dimension": "governance",
+                    "maturity_level": 1,
+                    "stakeholder_types": ["demo-reviewer", "all"],
+                    "prerequisites": [],
+                    "source_doc_ref": "wp3-test",
+                },
+                {
+                    "node_id": "review-complete",
+                    "label": "Review complete",
+                    "description": "Reviewer completion node",
+                    "dimension": "governance",
+                    "maturity_level": 3,
+                    "stakeholder_types": ["demo-reviewer", "all"],
+                    "prerequisites": ["review-intake"],
+                    "source_doc_ref": "wp3-test",
+                },
+            ],
+            "edges": [
+                {
+                    "edge_id": "review-e1",
+                    "from_node_id": "review-intake",
+                    "to_node_id": "review-complete",
+                    "relation_type": "prerequisite",
+                    "required": True,
+                    "source_doc_ref": "wp3-test",
+                }
+            ],
+        }
+        wp3_response = client.post("/admin/import/wp3", headers=admin_headers, json=wp3)
+        self.assertEqual(wp3_response.status_code, 200)
+        self.assertTrue(wp3_response.json()["accepted"])
+
+        roadmap = client.get("/v1/roadmap", headers=demo_headers)
+        self.assertEqual(roadmap.status_code, 200)
+        self.assertEqual(
+            {node["node_id"] for node in roadmap.json()["nodes"]},
+            {"review-intake", "review-complete"},
+        )
+
+        wp8 = {
+            "version": "wp8-test-v1",
+            "rules": [
+                {
+                    "rule_id": "REVIEWER-TRACE-001",
+                    "rule_type": "preference",
+                    "priority": 10,
+                    "applies_to": ["demo-reviewer"],
+                    "condition": {"field": "stakeholder_type", "operator": "eq", "value": "demo-reviewer"},
+                    "action": {
+                        "title": "Trace review evidence",
+                        "text": "Review trace evidence before acceptance.",
+                        "node_id": "review-complete",
+                    },
+                    "compliance_refs": ["D4.1"],
+                }
+            ],
+            "tests": [
+                {
+                    "name": "demo reviewer trace rule",
+                    "state": {
+                        "stakeholder_type": "demo-reviewer",
+                        "target_scenario": "secondary-use-readiness",
+                        "answers": {
+                            "governance_maturity": 1,
+                            "data_maturity": 1,
+                            "compliance_maturity": 1,
+                            "capabilities": [],
+                            "missing_capabilities": [],
+                            "regulatory_flags": [],
+                        },
+                    },
+                    "expected_rule_ids": ["REVIEWER-TRACE-001"],
+                }
+            ],
+        }
+        wp8_response = client.post("/admin/import/wp8", headers=admin_headers, json=wp8)
+        self.assertEqual(wp8_response.status_code, 200)
+        self.assertTrue(wp8_response.json()["accepted"])
+
+        health = client.get("/health")
+        self.assertEqual(health.status_code, 200)
+        self.assertEqual(health.json()["rule_version"], "wp8-test-v1")
+        self.assertIn("wp2", health.json()["import_reports"])
+        self.assertIn("wp3", health.json()["import_reports"])
+        self.assertIn("wp8", health.json()["import_reports"])
+
+    def test_invalid_admin_import_is_rejected_without_replacing_active_data(self) -> None:
+        client = TestClient(app)
+        admin_headers = {"Authorization": "Bearer admin-token"}
+        demo_headers = {"Authorization": "Bearer demo-token"}
+
+        before = client.get("/v1/roadmap", headers=demo_headers)
+        self.assertEqual(before.status_code, 200)
+        before_nodes = {node["node_id"] for node in before.json()["nodes"]}
+
+        invalid = {"version": "broken", "nodes": [], "edges": []}
+        response = client.post("/admin/import/wp3", headers=admin_headers, json=invalid)
+
+        self.assertEqual(response.status_code, 400)
+        after = client.get("/v1/roadmap", headers=demo_headers)
+        self.assertEqual(after.status_code, 200)
+        self.assertEqual({node["node_id"] for node in after.json()["nodes"]}, before_nodes)
+
+        health = client.get("/health")
+        self.assertGreaterEqual(health.json()["audit_events"], 1)
+
+    def test_api_request_metadata_is_hashed_in_audit_events(self) -> None:
+        client = TestClient(app)
+        headers = {
+            "Authorization": "Bearer demo-token",
+            "User-Agent": "pathfinder-test-agent",
+            "X-Forwarded-For": "203.0.113.10",
+        }
+
+        response = client.post(
+            "/v1/assessments",
+            headers=headers,
+            json={
+                "stakeholder_type": "biotech-sme",
+                "target_scenario": "secondary-use-readiness",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        event = api_main._get_service().audit_log.events()[-1]
+        self.assertEqual(event.event_type, "assessment_session_created")
+        self.assertIsNotNone(event.ip_hash)
+        self.assertIsNotNone(event.user_agent_hash)
+        self.assertNotEqual(event.ip_hash, "203.0.113.10")
+        self.assertNotEqual(event.user_agent_hash, "pathfinder-test-agent")
+        self.assertNotIn("203.0.113.10", str(event.to_dict()))
+        self.assertNotIn("pathfinder-test-agent", str(event.to_dict()))
 
 
 if __name__ == "__main__":

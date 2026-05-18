@@ -32,10 +32,11 @@ class QuestionnaireEngine:
 
         for question in questionnaire.questions:
             value = answers.get(question.question_id)
-            if question.required and value in (None, "", []):
+            missing = value in (None, "") or (value == [] and question.question_type != QuestionType.MULTI_CHOICE)
+            if question.required and missing:
                 raise ValidationError(f"missing required answer: {question.question_id}")
 
-            if value in (None, "", []):
+            if missing:
                 warnings.append(f"missing optional answer: {question.question_id}")
                 continue
 
@@ -87,7 +88,11 @@ class QuestionnaireEngine:
         answered_required = sum(
             1
             for question in questionnaire.questions
-            if question.required and answers.get(question.question_id) not in (None, "", [])
+            if question.required
+            and (
+                answers.get(question.question_id) not in (None, "")
+                and (answers.get(question.question_id) != [] or question.question_type == QuestionType.MULTI_CHOICE)
+            )
         )
         confidence = 1.0 if required_count == 0 else answered_required / required_count
         if warnings:

@@ -9,10 +9,12 @@ VALIDATION_ERROR, SERVER_ERROR).
 from __future__ import annotations
 
 import os
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from pathfinder.api.schemas import (
     AdminImportResponse,
@@ -74,8 +76,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DEMO_TOKEN = "demo-token"
-ADMIN_TOKEN = "admin-token"
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "development").lower()
+DEMO_TOKEN = os.environ.get("PATHFINDER_DEMO_TOKEN", "demo-token" if ENVIRONMENT != "production" else "")
+ADMIN_TOKEN = os.environ.get("PATHFINDER_ADMIN_TOKEN", "admin-token" if ENVIRONMENT != "production" else "")
+RATE_LIMIT_MAX_REQUESTS = int(os.environ.get("PATHFINDER_RATE_LIMIT_MAX", "120"))
+RATE_LIMIT_WINDOW_SECONDS = int(os.environ.get("PATHFINDER_RATE_LIMIT_WINDOW_SECONDS", "60"))
+_rate_limit_hits: dict[str, tuple[int, float]] = {}
 
 
 def _auth_error(detail: str) -> HTTPException:
@@ -94,6 +100,13 @@ def _validation_error(detail: str) -> HTTPException:
     return HTTPException(status_code=400, detail=ApiError(error="VALIDATION_ERROR", detail=detail).model_dump())
 
 
+def _rate_limited(detail: str) -> JSONResponse:
+    return JSONResponse(
+        status_code=429,
+        content={"detail": ApiError(error="RATE_LIMITED", detail=detail).model_dump()},
+    )
+
+
 def require_demo_token(authorization: str | None) -> None:
     if authorization not in {f"Bearer {DEMO_TOKEN}", f"Bearer {ADMIN_TOKEN}"}:
         raise _auth_error("invited demo token required")
@@ -102,6 +115,33 @@ def require_demo_token(authorization: str | None) -> None:
 def require_admin_token(authorization: str | None) -> None:
     if authorization != f"Bearer {ADMIN_TOKEN}":
         raise _forbidden_error("admin token required")
+
+
+def _audit_context(request: Request) -> dict[str, str | None]:
+    forwarded_for = request.headers.get("x-forwarded-for")
+    ip = forwarded_for.split(",", 1)[0].strip() if forwarded_for else None
+    if not ip and request.client:
+        ip = request.client.host
+    return {"ip": ip, "user_agent": request.headers.get("user-agent")}
+
+
+@app.middleware("http")
+async def rate_limit(request: Request, call_next):
+    if request.url.path == "/health":
+        return await call_next(request)
+    now = time.monotonic()
+    authorization = request.headers.get("authorization", "")
+    ip = _audit_context(request)["ip"] or "unknown"
+    key = f"{authorization}:{ip}"
+    count, window_start = _rate_limit_hits.get(key, (0, now))
+    if now - window_start >= RATE_LIMIT_WINDOW_SECONDS:
+        count = 0
+        window_start = now
+    count += 1
+    _rate_limit_hits[key] = (count, window_start)
+    if count > RATE_LIMIT_MAX_REQUESTS:
+        return _rate_limited("too many requests")
+    return await call_next(request)
 
 
 # ─── Public ─────────────────────────────────────────────────────────
@@ -142,6 +182,7 @@ async def create_assessment(
     return _get_service().create_session(
         stakeholder_type=body.stakeholder_type,
         target_scenario=body.target_scenario,
+        **_audit_context(request),
     )
 
 
@@ -164,25 +205,27 @@ async def submit_answers(
     require_demo_token(authorization)
     body = BatchAnswersRequest.model_validate(await request.json())
     try:
-        return _get_service().submit_answers(assessment_id, body.answers)
+        return _get_service().submit_answers(assessment_id, body.answers, **_audit_context(request))
     except Exception as exc:
         raise _validation_error(str(exc)) from exc
 
 
 @app.post("/v1/assessments/{assessment_id}/recommendations", response_model=RecommendationResponse)
-def recommendations(assessment_id: str, authorization: str | None = Header(default=None)) -> dict[str, object]:
+def recommendations(
+    assessment_id: str, request: Request, authorization: str | None = Header(default=None)
+) -> dict[str, object]:
     require_demo_token(authorization)
     try:
-        return _get_service().generate_recommendation(assessment_id)
+        return _get_service().generate_recommendation(assessment_id, **_audit_context(request))
     except Exception as exc:
         raise _validation_error(str(exc)) from exc
 
 
 @app.get("/v1/assessments/{assessment_id}/report", response_model=ReportResponse)
-def report(assessment_id: str, authorization: str | None = Header(default=None)) -> dict[str, object]:
+def report(assessment_id: str, request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_demo_token(authorization)
     try:
-        return _get_service().report(assessment_id)
+        return _get_service().report(assessment_id, **_audit_context(request))
     except Exception as exc:
         raise _validation_error(str(exc)) from exc
 
@@ -208,26 +251,38 @@ def roadmap_node(node_id: str, authorization: str | None = Header(default=None))
 # ─── Admin ──────────────────────────────────────────────────────────
 
 @app.post("/admin/import/wp2", response_model=AdminImportResponse)
-def import_wp2(authorization: str | None = Header(default=None)) -> dict[str, object]:
+async def import_wp2(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_admin_token(authorization)
-    return {"accepted": True, "mode": "demo", "message": "WP2 import endpoint scaffolded"}
+    try:
+        report = _get_service().import_wp2(await request.json(), **_audit_context(request))
+    except Exception as exc:
+        raise _validation_error(str(exc)) from exc
+    return {"mode": "demo", "message": "WP2 import activated", **report.to_dict()}
 
 
 @app.post("/admin/import/wp3", response_model=AdminImportResponse)
-def import_wp3(authorization: str | None = Header(default=None)) -> dict[str, object]:
+async def import_wp3(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_admin_token(authorization)
-    return {"accepted": True, "mode": "demo", "message": "WP3 import endpoint scaffolded"}
+    try:
+        report = _get_service().import_wp3(await request.json(), **_audit_context(request))
+    except Exception as exc:
+        raise _validation_error(str(exc)) from exc
+    return {"mode": "demo", "message": "WP3 import activated", **report.to_dict()}
 
 
 @app.post("/admin/import/wp8", response_model=AdminImportResponse)
-def import_wp8(authorization: str | None = Header(default=None)) -> dict[str, object]:
+async def import_wp8(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_admin_token(authorization)
-    return {"accepted": True, "mode": "demo", "message": "WP8 import endpoint scaffolded"}
+    try:
+        report = _get_service().import_wp8(await request.json(), **_audit_context(request))
+    except Exception as exc:
+        raise _validation_error(str(exc)) from exc
+    return {"mode": "demo", "message": "WP8 import activated", **report.to_dict()}
 
 
 @app.post("/admin/rules/reload", response_model=AdminReloadResponse)
-def reload_rules(authorization: str | None = Header(default=None)) -> dict[str, object]:
+def reload_rules(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_admin_token(authorization)
     svc = _get_service()
-    svc.audit_log.append("rule_reload", {"rule_version": svc.rule_loader.active_version})
+    svc.audit_log.append("rule_reload", {"rule_version": svc.rule_loader.active_version}, **_audit_context(request))
     return {"accepted": True, "active_rule_version": svc.rule_loader.active_version}
