@@ -4,6 +4,11 @@
 **Date**: 2026-05-18  
 **决策**: 陛下否决议会6:1投票，坚持mock REST方向
 
+## 决策历史
+
+议会辩论记录 (含6:1投票详录, 陛下否决全文):  
+→ [docs/records/2026-05-18-council-debate-mock-rest.md](../records/2026-05-18-council-debate-mock-rest.md)
+
 ## 相关文档
 
 - **架构图**: [docs/diagrams/2026-05-18-architecture-8-containers.html](../diagrams/2026-05-18-architecture-8-containers.html)
