@@ -166,6 +166,12 @@ class DefaultDenyAuthMiddleware:
 
     def __init__(self, app, admin_token: str, demo_token: str):
         self.app = app
+        # Reject empty tokens (prevents Bearer="" matching any empty auth header)
+        if not admin_token or not demo_token:
+            raise ValueError(
+                "DefaultDenyAuthMiddleware requires non-empty admin_token and demo_token. "
+                "Set PATHFINDER_ADMIN_TOKEN and PATHFINDER_DEMO_TOKEN environment variables."
+            )
         self._admin_auth = f"Bearer {admin_token}"
         self._demo_auth = f"Bearer {demo_token}"
 
@@ -175,6 +181,10 @@ class DefaultDenyAuthMiddleware:
             return
 
         path = scope.get("path", "/")
+
+        # Normalize: strip trailing slash for public path matching
+        if path.endswith("/") and len(path) > 1:
+            path = path.rstrip("/")
 
         # Public paths always allowed.
         if path in _PUBLIC_PATHS:
