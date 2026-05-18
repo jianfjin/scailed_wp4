@@ -17,44 +17,31 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 TASKS_MD = PROJECT_ROOT / "openspec" / "changes" / "add-merged-pathfinder-v1" / "tasks.md"
 
 
-@dataclass(frozen=True)
-class TaskItem:
-    line_no: int
-    checked: bool
-    text: str
-    test_id: str | None
-
-
-TestRunner = Callable[[str], tuple[bool, str]]
-
-
-def parse_checkboxes(path: Path) -> list[TaskItem]:
-    """Extract checkbox items from tasks.md."""
-    items: list[TaskItem] = []
+def parse_checkboxes(path: Path) -> list[tuple[int, str, str | None]]:
+    """Extract (line_no, checkbox_text, test_id) from tasks.md."""
+    items: list[tuple[int, str, str | None]] = []
     if not path.exists():
-        raise FileNotFoundError(f"tasks.md not found at {path}")
+        print(f"[ERROR] tasks.md not found at {path}")
+        sys.exit(2)
 
-    with open(path, encoding="utf-8") as f:
+    with open(path) as f:
         for i, line in enumerate(f, 1):
-            m = re.match(r"\s*- \[([ xX])\]\s+(.+)", line)
+            m = re.match(r"\s*- \[x\]\s+(.+)", line)
             if not m:
                 continue
-            checked = m.group(1).lower() == "x"
-            text = m.group(2).strip()
+            text = m.group(1).strip()
             test_id = None
             tm = re.search(r"\(test:\s*([^\s)]+)\)", text)
             if tm:
                 test_id = tm.group(1)
                 text = re.sub(r"\s*\(test:\s*[^\s)]+\)", "", text).strip()
-            items.append(TaskItem(i, checked, text, test_id))
+            items.append((i, text, test_id))
     return items
 
 
@@ -87,69 +74,59 @@ def run_test(test_id: str) -> tuple[bool, str]:
         return False, str(e)
 
 
-def main(
-    argv: list[str] | None = None,
-    tasks_path: Path = TASKS_MD,
-    test_runner: TestRunner = run_test,
-) -> int:
-    argv = argv if argv is not None else sys.argv[1:]
-    strict = "--strict" in argv
-    try:
-        items = parse_checkboxes(tasks_path)
-    except FileNotFoundError as exc:
-        print(f"[ERROR] {exc}")
-        return 2
+def main() -> None:
+    strict = "--strict" in sys.argv
+    items = parse_checkboxes(TASKS_MD)
 
-    checked_items = [item for item in items if item.checked]
-    checked_with_tests = [item for item in checked_items if item.test_id is not None]
-    checked_without_tests = [item for item in checked_items if item.test_id is None]
-    unchecked_without_tests = [item for item in items if not item.checked and item.test_id is None]
+    checked = [it for it in items if it[2] is not None]
+    unchecked = [it for it in items if it[2] is None]
 
-    print(
-        f"tasks.md: {len(checked_items)} checked items "
-        f"({len(checked_with_tests)} with test annotations, {len(checked_without_tests)} without)\n"
-    )
+    print(f"tasks.md: {len(items)} checked items ({len(checked)} with test annotations, {len(unchecked)} without)\n")
+
+    if not checked:
+        print("No test-annotated checkboxes found.")
+        if strict:
+            print(f"\n[FAIL] Strict mode: {len(unchecked)} checked items have no test annotation.")
+            for line_no, text, _ in unchecked:
+                print(f"  L{line_no}: {text[:80]}")
+            sys.exit(1)
+        print("Nothing to verify. Non-strict mode — informational only.")
+        if unchecked:
+            print(f"\n{len(unchecked)} unchecked items have no test mapping:")
+            for line_no, text, _ in unchecked:
+                print(f"  L{line_no}: {text[:80]}")
+        sys.exit(0)
 
     passed = 0
     failed = 0
-    for item in checked_with_tests:
-        assert item.test_id is not None
-        ok, output = test_runner(item.test_id)
+    for line_no, text, test_id in checked:
+        assert test_id is not None
+        ok, output = run_test(test_id)
         status = "PASS" if ok else "FAIL"
         if ok:
             passed += 1
         else:
             failed += 1
-        print(f"  [{status}] L{item.line_no}: {item.text[:70]}")
-        print(f"         test: {item.test_id}  →  {output}")
+        print(f"  [{status}] L{line_no}: {text[:70]}")
+        print(f"         test: {test_id}  →  {output}")
 
-    print(
-        f"\nResult: {passed} passed, {failed} failed, "
-        f"{len(checked_without_tests)} checked unverified, "
-        f"{len(unchecked_without_tests)} unchecked informational"
-    )
+    print(f"\nResult: {passed} passed, {failed} failed, {len(unchecked)} unverified (no test annotation)")
 
-    if checked_without_tests:
-        print("\nChecked items without test ID annotation:")
-        for item in checked_without_tests:
-            print(f"  L{item.line_no}: {item.text[:80]}")
-
-    if unchecked_without_tests:
-        print("\nUnchecked items without test mapping (informational only):")
-        for item in unchecked_without_tests:
-            print(f"  L{item.line_no}: {item.text[:80]}")
+    if unchecked:
+        print("\nUnverified items (no test ID annotation):")
+        for line_no, text, _ in unchecked:
+            print(f"  L{line_no}: {text[:80]}")
 
     if failed > 0:
         print("\n[FAIL] Some annotated checkboxes do not pass their acceptance tests.")
-        return 1
+        sys.exit(1)
 
-    if checked_without_tests and strict:
-        print("\n[FAIL] Strict mode: checked items without test annotations exist.")
-        return 1
+    if unchecked and strict:
+        print("\n[FAIL] Strict mode: unverified items exist.")
+        sys.exit(1)
 
     print("\n[OK] All annotated checkboxes pass.")
-    return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

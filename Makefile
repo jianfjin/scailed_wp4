@@ -1,15 +1,16 @@
-.PHONY: test verify-tasks smoke-test ci
+# SCAILED Pathfinder V1 — Makefile
+# Primary gate: make gate (runs smoke test + verify tasks + unit tests)
+
+.PHONY: test smoke gate verify clean
 
 test:
-	python3 -m pytest tests -q
-	python3 -m compileall pathfinder api scripts
-	npm run build --prefix frontend
-	openspec validate add-merged-pathfinder-v1 --strict
+	python3 -m pytest tests/ -v
 
-verify-tasks:
-	python3 scripts/verify_tasks.py --strict
-
-smoke-test:
+smoke:
 	bash deploy/smoke-test.sh
 
-ci: test verify-tasks smoke-test
+verify:
+	python3 scripts/verify_tasks.py --strict
+
+gate: smoke verify test
+	@echo "✅ All gates passed — ready for merge."

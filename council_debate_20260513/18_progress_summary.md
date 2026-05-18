@@ -11,7 +11,9 @@ P1 ✅ AGE runtime VM→SSH→本地PG16+AGE连线
 P2 ✅ API schema锁定 (14 Pydantic models, 5 error codes)
 P3 ✅ 前端交互式表单 (220行React TSX, 实时验证)
 P4 ✅ core tests + p95 latency (7 benchmarks, all sub-ms, 3000x under SLA)
-P5 ⬜ clean install验证
+P5 ✅ clean install验证 (docker compose down -v → up -d --build, 5容器healthy)
+📋 ✅ council reforms (R1-R6: D4.1 tests, PATHFINDER_MODE, middleware, smoke test, verify_tasks)
+🔧 ✅ Codex audit fixes (P1/P2: strict mode, Makefile gate, pytest dep, D4.1 appendix aligned)
 P6 ⬜ 发送 email_to_lu_zhao_v3
 ```
 
@@ -126,7 +128,11 @@ scailed-redis       Up   Redis 7         :6379 (internal)
 | api/schemas.py | Pydantic API schemas | 181 | — |
 | api/main.py | FastAPI(AGE lifespan, schema locked) | 181 | 2 tests |
 | frontend/src/main.tsx | React SPA(交互式) | 220 | — |
-| tests/ | 测试套件 | 5 files | 20/20 pass |
+| tests/ | 测试套件 | 8 files | 38/38 pass (4 skip) |
+| api/middleware.py | Auth/audit/rate-limit | 332 | — |
+| scripts/verify_tasks.py | tasks.md→test validator | 126 | — |
+| deploy/smoke_test.py | CI acceptance gate | 303 | — |
+| Makefile | gate = smoke + verify + test | 12 | — |
 
 ## 文档基线
 
