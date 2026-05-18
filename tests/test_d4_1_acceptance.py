@@ -11,7 +11,10 @@ import statistics
 import time
 
 import pytest
+from fastapi.testclient import TestClient
 
+import pathfinder.api.main as api_main
+from pathfinder.api.main import app
 from pathfinder.services.assessment_service import AssessmentService
 
 # ── Shared fixtures / helpers ────────────────────────────────────────
@@ -166,26 +169,50 @@ def test_d4_1_4_report_includes_all_sections() -> None:
 
 # ── D4.1.5 ──────────────────────────────────────────────────────────
 
-@pytest.mark.skip(reason="Depends on R3: audit event middleware enforcement")
 def test_d4_1_5_full_api_flow_with_audit() -> None:
     """Full API flow: create → answers → recommend → report → audit events.
 
     D4.1 criterion: Full API flow produces audit events.
-    Skipped until R3 cross-cutting middleware enforces audit per-endpoint.
     """
-    # The in-memory service already records audit events; this test
-    # would validate that the API middleware guarantees one event per
-    # mutating call, which depends on R3.
-    service = AssessmentService()
-    report = _full_flow(service, "biotech-sme")
+    api_main._service = None
+    client = TestClient(app)
+    headers = {"Authorization": "Bearer demo-token"}
+
+    session = client.post(
+        "/v1/assessments",
+        headers=headers,
+        json={
+            "stakeholder_type": "biotech-sme",
+            "target_scenario": "secondary-use-readiness",
+        },
+    )
+    assert session.status_code == 200
+    assessment_id = session.json()["assessment_id"]
+
+    answers = client.post(
+        f"/v1/assessments/{assessment_id}/answers/batch",
+        headers=headers,
+        json={"answers": BASE_ANSWERS},
+    )
+    assert answers.status_code == 200
+
+    recommendation = client.post(
+        f"/v1/assessments/{assessment_id}/recommendations",
+        headers=headers,
+    )
+    assert recommendation.status_code == 200
+
+    report_response = client.get(f"/v1/assessments/{assessment_id}/report", headers=headers)
+    assert report_response.status_code == 200
+    report = report_response.json()
 
     # Audit chain must be valid
     assert report.get("audit_chain_valid") is True
 
     # At minimum: session_created, answers_submitted, recommendation_generated,
     # report_exported
-    events = service.audit_log.events()
-    event_types = {e["event"] for e in events}  # type: ignore[index]
+    events = api_main._get_service().audit_log.events()
+    event_types = {event.event_type for event in events}
     required_events = {
         "assessment_session_created",
         "answers_submitted",

@@ -19,6 +19,16 @@ fi
 
 echo "=== SCAILED Smoke Test Wrapper ==="
 echo "Script : ${SMOKE_PY}"
+if [ -z "${DOCKER_CMD:-}" ]; then
+    if docker ps >/dev/null 2>&1; then
+        export DOCKER_CMD="docker"
+    else
+        export DOCKER_CMD="sudo docker"
+        echo "Docker socket is not accessible as the current user; using: ${DOCKER_CMD}"
+    fi
+else
+    echo "Docker command: ${DOCKER_CMD}"
+fi
 echo ""
 
 exec python3 "${SMOKE_PY}" "$@"

@@ -71,6 +71,8 @@ $$) AS (node_id agtype, label agtype, description agtype, dimension agtype,
         source_doc_ref agtype, confidence agtype);
 """
 
+_LOAD_LOCK_KEY = 73109741
+
 
 def _agtype_to_text(val: str | None) -> str:
     """Strip agtype quotes: '\"value\"' → 'value'."""
@@ -193,34 +195,38 @@ class AgeRoadmapGraph:
         self.load_projection(nodes, edges)
 
         async with self._pool.acquire() as conn:  # type: ignore[union-attr]
-            for node in nodes:
-                stypes = "[" + ",".join(f'"{t}"' for t in node.stakeholder_types) + "]"
-                safe_label = node.label.replace("'", "''")
-                safe_desc = node.description.replace("'", "''")
-                await conn.execute(
-                    _LOAD_NODE
-                    % (
-                        node.node_id,
-                        safe_label,
-                        safe_desc,
-                        node.dimension,
-                        node.maturity_level,
-                        stypes,
-                        node.source_wp,
-                        node.source_doc_ref,
-                        node.confidence,
+            await conn.execute("SELECT pg_advisory_lock($1);", _LOAD_LOCK_KEY)
+            try:
+                for node in nodes:
+                    stypes = "[" + ",".join(f'"{t}"' for t in node.stakeholder_types) + "]"
+                    safe_label = node.label.replace("'", "''")
+                    safe_desc = node.description.replace("'", "''")
+                    await conn.execute(
+                        _LOAD_NODE
+                        % (
+                            node.node_id,
+                            safe_label,
+                            safe_desc,
+                            node.dimension,
+                            node.maturity_level,
+                            stypes,
+                            node.source_wp,
+                            node.source_doc_ref,
+                            node.confidence,
+                        )
                     )
-                )
-            for edge in edges:
-                await conn.execute(
-                    _LOAD_EDGE
-                    % (
-                        edge.from_node_id,
-                        edge.to_node_id,
-                        edge.edge_id,
-                        "true" if edge.required else "false",
+                for edge in edges:
+                    await conn.execute(
+                        _LOAD_EDGE
+                        % (
+                            edge.from_node_id,
+                            edge.to_node_id,
+                            edge.edge_id,
+                            "true" if edge.required else "false",
+                        )
                     )
-                )
+            finally:
+                await conn.execute("SELECT pg_advisory_unlock($1);", _LOAD_LOCK_KEY)
 
     def load_projection(self, nodes: list[RoadmapNode], edges: list[RoadmapEdge]) -> None:
         """Update the synchronous graph projection used by the V1 solver."""

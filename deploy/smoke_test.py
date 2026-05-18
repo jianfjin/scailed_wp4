@@ -2,7 +2,7 @@
 """Post-Deploy Smoke Test for SCAILED Pathfinder.
 
 Runs against deployed containers and verifies end-to-end functionality:
-  1. docker ps — 5 containers healthy
+  1. docker ps — required containers healthy (frontend optional for API smoke)
   2. Import WP2 demo data via admin API (Bearer admin-token)
   3. Create assessment via public API (Bearer demo-token)
   4. Submit answers + get recommendations
@@ -16,6 +16,8 @@ Uses Python 3 stdlib only (urllib, json — no requests dependency).
 from __future__ import annotations
 
 import json
+import os
+import shlex
 import subprocess
 import sys
 import urllib.error
@@ -24,14 +26,15 @@ import urllib.request
 API_BASE = "http://localhost/api"
 DEMO_TOKEN = "demo-token"
 ADMIN_TOKEN = "admin-token"
+DOCKER_CMD = shlex.split(os.environ.get("DOCKER_CMD", "docker"))
 
 EXPECTED_CONTAINERS = [
     "scailed-backend",
-    "scailed-frontend",
     "scailed-postgres",
     "scailed-redis",
     "scailed-traefik",
 ]
+OPTIONAL_CONTAINERS = ["scailed-frontend"]
 
 
 def _api_request(
@@ -78,12 +81,12 @@ def _fail(reason: str) -> None:
 # Step 1: docker ps — verify 5 containers healthy
 # ---------------------------------------------------------------------------
 def step1_docker_ps() -> None:
-    print("=== Step 1: docker ps (verify 5 containers healthy) ===")
+    print("=== Step 1: docker ps (verify required containers healthy) ===")
 
     result = None
     try:
         result = subprocess.run(
-            ["docker", "ps", "--format", "{{.Names}} {{.Status}}"],
+            [*DOCKER_CMD, "ps", "--format", "{{.Names}} {{.Status}}"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -96,7 +99,8 @@ def step1_docker_ps() -> None:
 
     assert result is not None  # _fail() above exits, so result is always set here
     if result.returncode != 0:
-        _fail(f"docker ps failed (rc={result.returncode}): {result.stderr.strip()}")
+        command = " ".join(DOCKER_CMD)
+        _fail(f"{command} ps failed (rc={result.returncode}): {result.stderr.strip()}")
 
     containers: dict[str, str] = {}
     for line in result.stdout.strip().split("\n"):
@@ -120,7 +124,17 @@ def step1_docker_ps() -> None:
 
     if not all_healthy:
         _fail("some containers are not healthy")
-    print("  All 5 containers present and healthy.\n")
+    for name in OPTIONAL_CONTAINERS:
+        status_str = containers.get(name)
+        if status_str is None:
+            print(f"  {name}: optional, not running")
+            continue
+        is_healthy = "healthy" in status_str.lower() or "up" in status_str.lower()
+        marker = "✓" if is_healthy else "✗ UNHEALTHY"
+        print(f"  {name}: {marker}  ({status_str})")
+        if not is_healthy:
+            _fail(f"optional container is present but unhealthy: {name}")
+    print("  Required containers present and healthy.\n")
 
 
 # ---------------------------------------------------------------------------

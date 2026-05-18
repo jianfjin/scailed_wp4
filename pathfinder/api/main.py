@@ -52,7 +52,10 @@ _service: AssessmentService | None = None
 def _get_service() -> AssessmentService:
     global _service
     if _service is None:
-        _service = AssessmentService(use_age=None)
+        # FastAPI calls this inside the async lifespan; deployed-mode dependency
+        # verification happens in connect_age() below so startup failures still
+        # abort the app without running a sync event loop inside the active one.
+        _service = AssessmentService(use_age=None, startup_check=False)
     return _service
 
 

@@ -33,6 +33,10 @@ from pathfinder.core.rules.loader import RuleLoader
 from pathfinder.core.solver import PathfinderSolver
 
 
+class StartupCheckError(RuntimeError):
+    """Raised when deployed-mode dependencies are unavailable at startup."""
+
+
 class AssessmentService:
     def __init__(
         self,
@@ -103,22 +107,19 @@ class AssessmentService:
                 await self.graph.connect()
                 await self.graph.disconnect()
             except Exception as exc:
-                print(
-                    f"[AssessmentService] Deployed mode startup check FAILED: {exc}",
-                    file=sys.stderr,
-                )
-                sys.exit(1)
+                raise StartupCheckError(
+                    f"deployed mode startup check failed: {exc}"
+                ) from exc
 
         try:
-            asyncio.run(_check())
+            asyncio.get_running_loop()
         except RuntimeError:
-            # Already inside a running event loop (shouldn't happen at init time
-            # but guard against it).
-            print(
-                "[AssessmentService] Cannot run startup check: event loop already running. "
-                "Skipping; caller is responsible for verifying connectivity.",
-                file=sys.stderr,
-            )
+            asyncio.run(_check())
+            return
+
+        raise StartupCheckError(
+            "cannot run deployed mode startup check inside an active event loop"
+        )
 
     async def connect_age(self) -> None:
         """Connect to AGE backend and load demo data (async, called once at startup)."""

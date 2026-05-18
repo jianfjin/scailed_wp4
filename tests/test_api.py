@@ -2,8 +2,10 @@ import pytest
 import unittest
 
 from fastapi.testclient import TestClient
+from starlette.responses import JSONResponse
 
 import pathfinder.api.main as api_main
+from pathfinder.api.middleware import AuditWhitelistMiddleware, RateLimitMiddleware
 from pathfinder.api.main import app
 
 
@@ -76,9 +78,45 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()["detail"]["error"], "FORBIDDEN")
 
-    @pytest.mark.skip(reason="Rate limit functional in production; TestClient middleware persist gap")
     def test_rate_limit_blocks_repeated_protected_requests_but_not_health(self) -> None:
-        pass
+        async def inner(scope, receive, send):
+            response = JSONResponse({"ok": True})
+            await response(scope, receive, send)
+
+        limited_app = RateLimitMiddleware(inner, max_requests=2, window_seconds=60)
+        client = TestClient(limited_app)
+
+        self.assertEqual(client.get("/v1/questionnaires").status_code, 200)
+        self.assertEqual(client.get("/v1/questionnaires").status_code, 200)
+        limited = client.get("/v1/questionnaires")
+        self.assertEqual(limited.status_code, 429)
+        self.assertEqual(limited.json()["detail"]["error"], "RATE_LIMITED")
+        self.assertEqual(client.get("/health").status_code, 200)
+
+    def test_audit_whitelist_warns_when_mutation_records_no_audit_event(self) -> None:
+        async def inner(scope, receive, send):
+            response = JSONResponse({"ok": True})
+            await response(scope, receive, send)
+
+        class AuditLog:
+            def events(self):
+                return ()
+
+        class Service:
+            audit_log = AuditLog()
+
+        checked_app = AuditWhitelistMiddleware(inner, get_service=lambda: Service())
+        client = TestClient(checked_app)
+
+        with self.assertLogs("pathfinder.middleware", level="WARNING") as logs:
+            response = client.post("/v1/mutating")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("produced 0 audit events", "\n".join(logs.output))
+
+    def test_api_hardening_covers_admin_protection_and_rate_limit(self) -> None:
+        self.test_demo_token_cannot_use_admin_imports()
+        self.test_rate_limit_blocks_repeated_protected_requests_but_not_health()
 
     def test_admin_imports_activate_wp2_wp3_and_wp8_payloads(self) -> None:
         client = TestClient(app)

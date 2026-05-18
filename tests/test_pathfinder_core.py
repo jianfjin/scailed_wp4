@@ -1,10 +1,12 @@
+import os
 import unittest
+from unittest.mock import patch
 
 from pathfinder.adapters.demo_data import STAKEHOLDER_TYPES, demo_questionnaires, demo_rule_bundle
 from pathfinder.core.exceptions import RuleValidationError, ValidationError
 from pathfinder.core.questionnaire import QuestionnaireEngine
 from pathfinder.core.rules.loader import RuleLoader
-from pathfinder.services.assessment_service import AssessmentService
+from pathfinder.services.assessment_service import AssessmentService, StartupCheckError
 
 
 class PathfinderCoreTests(unittest.TestCase):
@@ -100,7 +102,8 @@ class PathfinderCoreTests(unittest.TestCase):
         )
 
     def test_age_mode_wp3_import_updates_active_projection_without_backend_downgrade(self) -> None:
-        service = AssessmentService(use_age=True)
+        with patch.dict(os.environ, {"PATHFINDER_MODE": "deployed"}, clear=False):
+            service = AssessmentService(startup_check=False)
         payload = {
             "version": "wp3-age-projection-v1",
             "nodes": [
@@ -145,6 +148,15 @@ class PathfinderCoreTests(unittest.TestCase):
         self.assertEqual(events[-1].event_type, "data_import_failed")
         self.assertEqual(events[-1].event_data["source"], "wp3")
         self.assertTrue(service.audit_log.verify_chain())
+
+    def test_deployed_mode_startup_check_raises_when_age_connect_fails(self) -> None:
+        with patch.dict(os.environ, {"PATHFINDER_MODE": "deployed"}, clear=False):
+            with patch(
+                "pathfinder.core.graph_age.AgeRoadmapGraph.connect",
+                side_effect=RuntimeError("database unavailable"),
+            ):
+                with self.assertRaisesRegex(StartupCheckError, "database unavailable"):
+                    AssessmentService()
 
 
 if __name__ == "__main__":
