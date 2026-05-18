@@ -1,0 +1,32 @@
+{
+  "e2e_status": "PASS",
+  "commit": "d50f5aa",
+  "assessment_id": "25fbafe7-d36f-450a-a584-c29e152f768e",
+  "schema_version": "v1.0-m3-baseline",
+  "host": "hermes-asus.datawego.nl",
+  "run_at": "2026-05-17T21:47:00+02:00",
+  "pipeline": {
+    "step_1_import": {"status": "pass", "detail": "AGE graph created, 6 demo nodes + 6 edges loaded"},
+    "step_2_questionnaire": {"status": "pass", "stakeholder_type": "biotech-sme", "target_scenario": "secondary-use-readiness"},
+    "step_3_assessment": {"status": "pass", "audit_chain_valid": true, "blockers": 0, "triggered_rules": 2, "confidence": 1.0},
+    "step_4_recommendation": {"status": "pass", "nodes": ["governance-scope", "legal-basis", "access-body-review"], "blockers": 0},
+    "step_5_docker_boot": {"status": "pass", "container": "scailed-postgres", "pg_version": "16", "age_version": "1.5.0", "pgvector_version": "0.8.2", "healthcheck": "healthy"}
+  },
+  "rules_triggered": [
+    {"rule_id": "WP8-GDPR-REVIEW-001", "priority": 100, "action": "legal-basis"},
+    {"rule_id": "DATA-CATALOG-GAP-003", "priority": 50, "action": "governance-scope"}
+  ],
+  "recommended_path": {
+    "current_node": "governance-scope",
+    "target_node": "access-body-review",
+    "trace_refs": ["GDPR-Review", "EHDS-Secondary-Use", "WP3-Roadmap"]
+  },
+  "docker_fix_applied": "Dockerfile.postgres AGE tag: v1.5.0 -> PG16/v1.5.0-rc0",
+  "docker_port_mapping": "5433:5432 (host access)",
+  "notes": [
+    "Docker daemon installed via pkexec apt-get",
+    "jin added to docker group (requires relogin for full access, sg docker used)",
+    "AGE source build successful inside Docker (from PG16/v1.5.0-rc0 tag)",
+    "Without port exposure, host cannot reach Docker bridge network from non-Docker process"
+  ]
+}
