@@ -74,9 +74,27 @@ def run_test(test_id: str) -> tuple[bool, str]:
         return False, str(e)
 
 
-def main() -> None:
-    strict = "--strict" in sys.argv
-    items = parse_checkboxes(TASKS_MD)
+def main(
+    argv: list[str] | None = None,
+    tasks_path: Path | None = None,
+    test_runner: "callable | None" = None,
+) -> int:
+    """Run verify_tasks. Returns exit code (0=pass, 1=fail, 2=parse error).
+
+    Args:
+        argv: Command-line arguments (defaults to sys.argv).
+        tasks_path: Override tasks.md path for testing.
+        test_runner: Override test runner function for testing
+            (takes test_id str, returns (passed: bool, output: str)).
+    """
+    if argv is None:
+        argv = sys.argv
+    strict = "--strict" in argv
+
+    path = tasks_path if tasks_path is not None else TASKS_MD
+    items = parse_checkboxes(path)
+
+    _runner = test_runner if test_runner is not None else run_test
 
     checked = [it for it in items if it[2] is not None]
     unchecked = [it for it in items if it[2] is None]
@@ -85,23 +103,25 @@ def main() -> None:
 
     if not checked:
         print("No test-annotated checkboxes found.")
-        if strict:
-            print(f"\n[FAIL] Strict mode: {len(unchecked)} checked items have no test annotation.")
-            for line_no, text, _ in unchecked:
+        # strict: only fail when there are checked ([x]) items without test annotations
+        checked_without_annotation = [it for it in items if it[2] is None]
+        if strict and checked_without_annotation:
+            print(f"\n[FAIL] Strict mode: {len(checked_without_annotation)} checked items have no test annotation.")
+            for line_no, text, _ in checked_without_annotation:
                 print(f"  L{line_no}: {text[:80]}")
-            sys.exit(1)
+            return 1
         print("Nothing to verify. Non-strict mode — informational only.")
         if unchecked:
-            print(f"\n{len(unchecked)} unchecked items have no test mapping:")
+            print(f"\n{len(unchecked)} checked items have no test mapping:")
             for line_no, text, _ in unchecked:
                 print(f"  L{line_no}: {text[:80]}")
-        sys.exit(0)
+        return 0
 
     passed = 0
     failed = 0
     for line_no, text, test_id in checked:
         assert test_id is not None
-        ok, output = run_test(test_id)
+        ok, output = _runner(test_id)
         status = "PASS" if ok else "FAIL"
         if ok:
             passed += 1
@@ -119,14 +139,15 @@ def main() -> None:
 
     if failed > 0:
         print("\n[FAIL] Some annotated checkboxes do not pass their acceptance tests.")
-        sys.exit(1)
+        return 1
 
     if unchecked and strict:
         print("\n[FAIL] Strict mode: unverified items exist.")
-        sys.exit(1)
+        return 1
 
     print("\n[OK] All annotated checkboxes pass.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
