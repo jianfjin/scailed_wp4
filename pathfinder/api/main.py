@@ -40,6 +40,7 @@ from pathfinder.api.schemas import (
     StakeholderStateResponse,
     StakeholderTypesResponse,
 )
+from pathfinder.adapters.upstream import UpstreamClient
 from pathfinder.services.assessment_service import AssessmentService
 
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "development").lower()
@@ -47,26 +48,43 @@ DEMO_TOKEN = os.environ.get("PATHFINDER_DEMO_TOKEN", "demo-token" if ENVIRONMENT
 ADMIN_TOKEN = os.environ.get("PATHFINDER_ADMIN_TOKEN", "admin-token" if ENVIRONMENT != "production" else "")
 
 _service: AssessmentService | None = None
+_upstream_client: UpstreamClient | None = None
 
 
 def _get_service() -> AssessmentService:
     global _service
     if _service is None:
-        # FastAPI calls this inside the async lifespan; deployed-mode dependency
-        # verification happens in connect_age() below so startup failures still
-        # abort the app without running a sync event loop inside the active one.
+        # Service created during lifespan with upstream client.
+        # This fallback only runs if lifespan wasn't called (tests, CLI).
         _service = AssessmentService(use_age=None, startup_check=False)
     return _service
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    service = _get_service()
-    if service._mode == "deployed":
-        await service.connect_age()
+    global _service, _upstream_client
+
+    # ── Startup: fetch upstream data from Mock WP services ──
+    _upstream_client = UpstreamClient()
+    await _upstream_client.startup()
+
+    # ── Create service with upstream data ──
+    _service = AssessmentService(
+        use_age=None,
+        startup_check=False,
+        upstream_client=_upstream_client,
+    )
+
+    # ── Connect AGE backend if deployed ──
+    if _service._mode == "deployed":
+        await _service.connect_age()
+
     yield
-    if service._mode == "deployed":
-        await service.disconnect_age()
+
+    # ── Shutdown ──
+    if _service._mode == "deployed":
+        await _service.disconnect_age()
+    await _upstream_client.close()
 
 
 app = FastAPI(

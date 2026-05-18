@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import sys
+from typing import Optional
 from uuid import uuid4
 
 from pathfinder.adapters.demo_data import (
@@ -22,6 +23,7 @@ from pathfinder.adapters.demo_data import (
     demo_roadmap,
     demo_rule_bundle,
 )
+from pathfinder.adapters.upstream import UpstreamClient
 from pathfinder.core.audit import AuditLog
 from pathfinder.core.graph import InMemoryRoadmapGraph
 from pathfinder.core.graph_age import AgeRoadmapGraph
@@ -42,6 +44,7 @@ class AssessmentService:
         self,
         use_age: bool | None = None,
         startup_check: bool = True,
+        upstream_client: Optional[UpstreamClient] = None,
     ) -> None:
         # Resolve mode: PATHFINDER_MODE env var takes precedence, then legacy USE_AGE.
         mode = os.environ.get("PATHFINDER_MODE", "").lower()
@@ -59,10 +62,14 @@ class AssessmentService:
 
         self._mode = mode
 
-        self.questionnaires = demo_questionnaires()
-        nodes, edges = demo_roadmap()
-        self._active_roadmap = (nodes, edges)
+        # ── Data source: upstream client (mock REST) or demo fixtures ──
+        if upstream_client is not None:
+            self._load_upstream_data(upstream_client)
+        else:
+            self._load_demo_data()
 
+        # ── Graph backend ──
+        nodes, edges = self._active_roadmap
         if self._mode == "deployed":
             self.graph = AgeRoadmapGraph()
             self._graph_backend = "age"
@@ -70,10 +77,19 @@ class AssessmentService:
             self.graph = InMemoryRoadmapGraph(nodes, edges)
             self._graph_backend = "inmemory"
 
+        self.solver = PathfinderSolver(self.graph)
+
+        if startup_check:
+            self.startup_check()
+
+    def _load_demo_data(self) -> None:
+        """Load demo fixtures (development / test fallback)."""
+        self.questionnaires = demo_questionnaires()
+        nodes, edges = demo_roadmap()
+        self._active_roadmap = (nodes, edges)
         self.questionnaire_engine = QuestionnaireEngine(self.questionnaires)
         self.rule_loader = RuleLoader(self.questionnaires)
         self.rules = self.rule_loader.load_bundle(demo_rule_bundle())
-        self.solver = PathfinderSolver(self.graph)
         self.audit_log = AuditLog()
         self.sessions: dict[str, dict[str, object]] = {}
         self.import_reports = {
@@ -88,8 +104,42 @@ class AssessmentService:
             )
         }
 
-        if startup_check:
-            self.startup_check()
+    def _load_upstream_data(self, client: UpstreamClient) -> None:
+        """Load data from UpstreamClient cache (mock REST or real WP services).
+
+        The UpstreamClient has already fetched all data during FastAPI lifespan startup.
+        We convert its cached dicts/lists into domain models.
+        """
+        # WP2: stakeholder types → questionnaires (uses demo template for now)
+        stakeholder_types = [s["stakeholder_type"] for s in client.stakeholders]
+        self.questionnaires = demo_questionnaires()  # template; real WP2 may customize
+
+        # WP3: roadmap nodes + edges → domain models
+        nodes = client.roadmap_nodes
+        edges = client.roadmap_edges
+        self._active_roadmap = (nodes, edges)
+
+        self.questionnaire_engine = QuestionnaireEngine(self.questionnaires)
+        self.rule_loader = RuleLoader(self.questionnaires)
+
+        # WP8: rules (already domain models from UpstreamClient) + tests
+        self.rules = client.rules
+
+        self.audit_log = AuditLog()
+        self.sessions: dict[str, dict[str, object]] = {}
+        self.import_reports = {
+            "upstream": import_structured_payload(
+                "upstream",
+                {
+                    "stakeholder_types": stakeholder_types,
+                    "roadmap_nodes": [node.to_dict() for node in nodes],
+                    "roadmap_edges": [edge.to_dict() for edge in edges],
+                    "rules": [rule.to_dict() for rule in self.rules],
+                    "rule_tests_count": len(client.rule_tests),
+                    "warnings": [],
+                },
+            )
+        }
 
     def startup_check(self) -> None:
         """Validate backend connectivity at startup.

@@ -4,11 +4,14 @@
 # 审计修订 (2026-05-14, 六席复审): PostgreSQL独立volume, AGE图引擎
 # ═══════════════════════════════════════════════════════════════════════
 #
-# 容器拓扑:
+# 容器拓扑 (8 containers):
 #   traefik (反向代理/TLS) ──→ frontend (nginx + React SPA)
 #                           ──→ backend  (FastAPI, 可水平扩展)
 #   backend ──→ postgres (PG16 + Apache AGE)
 #           ──→ redis   (可选缓存)
+#           ──→ wp2-mock (stakeholder taxonomy)
+#           ──→ wp3-mock (roadmap graph)
+#           ──→ wp8-mock (rules engine)
 #
 # 部署: docker compose up -d
 # 扩容: docker compose up -d --scale backend=3
@@ -117,6 +120,10 @@ services:
       - WP3_API_URL=${WP3_API_URL:-}
       - WP8_API_URL=${WP8_API_URL:-}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
+      # Upstream service URLs (mock containers in demo, real APIs in production)
+      - WP2_API_URL=${WP2_API_URL:-http://wp2-mock:8080/api/v1}
+      - WP3_API_URL=${WP3_API_URL:-http://wp3-mock:8080/api/v1}
+      - WP8_API_URL=${WP8_API_URL:-http://wp8-mock:8080/api/v1}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -179,3 +186,63 @@ services:
       timeout: 3s
       retries: 3
     # 生产环境添加: command: redis-server --requirepass ${REDIS_PASSWORD}
+
+  # ─── WP2 Mock — Stakeholder Taxonomy ───
+  wp2-mock:
+    build:
+      context: ../services/mock
+      dockerfile: Dockerfile.mocks
+    image: scailed/wp2-mock:latest
+    container_name: scailed-wp2-mock
+    restart: unless-stopped
+    command: python wp2_stakeholders.py
+    ports:
+      - "8102:8080"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # ─── WP3 Mock — Roadmap Graph ───
+  wp3-mock:
+    build:
+      context: ../services/mock
+      dockerfile: Dockerfile.mocks
+    image: scailed/wp3-mock:latest
+    container_name: scailed-wp3-mock
+    restart: unless-stopped
+    command: python wp3_roadmap.py
+    ports:
+      - "8103:8080"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # ─── WP8 Mock — Rules Engine ───
+  wp8-mock:
+    build:
+      context: ../services/mock
+      dockerfile: Dockerfile.mocks
+    image: scailed/wp8-mock:latest
+    container_name: scailed-wp8-mock
+    restart: unless-stopped
+    command: python wp8_rules.py
+    ports:
+      - "8108:8080"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
