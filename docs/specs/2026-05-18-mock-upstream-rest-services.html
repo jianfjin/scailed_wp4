@@ -153,36 +153,67 @@
 
   <!-- 03: Data Flow -->
   <section id="data-flow">
-    <div class="sec-head"><span class="idx">03</span><h2>Data Flow</h2></div>
+    <div class="sec-head"><span class="idx">03</span><h2>Data Flow — Complete Round-Trip</h2></div>
 
-    <pre><code>┌──────┐  HTTPS   ┌─────────┐  static/   ┌──────────┐
-│ User │─────────→│ Traefik │──────────→│ Frontend │
-└──────┘          │  :80    │           │ nginx    │
-                  │         │  /api/*   └──────────┘
-                  │         │──────────┐
-                  └─────────┘          │
-                                       ▼
-                              ┌────────────────┐
-                              │    Backend     │
-                              │  FastAPI :8000 │
-                              └──┬──┬──▲───────┘
-                                 │  │  │
-              SQL/AGE ───────────┘  │  └────── aiohttp GET ──────┐
-                         ▼         ▼         (data flows down)   │
-                  ┌──────────┐ ┌──────────┐                      │
-                  │PostgreSQL│ │  Redis 7 │   ┌──────────────────┤
-                  │+AGE      │ │  Cache   │   │ Mock Upstream    │
-                  └──────────┘ └──────────┘   │ ┌────────────┐   │
-                                              │ │wp2 :8102  ─┼───┤
-                                              │ │wp3 :8103  ─┼───┘
-                                              │ │wp8 :8108  ─┼────
-                                              │ └────────────┘   │
-                                              └──────────────────┘</code></pre>
+    <div style="background: var(--paper); border: 1px solid var(--g200); border-radius: 10px; padding: 20px 24px; margin: 16px 0;">
+      <table class="legend-table" style="font-size:12px; margin:0;">
+        <tr><td style="color:#64748b; font-family:var(--mono);">──[REQ]──►</td><td style="color:var(--g700);">HTTP Request (left→right, thin gray)</td></tr>
+        <tr><td style="color:#D97757; font-family:var(--mono);">══[DATA]══►</td><td style="color:var(--g700);">Data flow upstream→downstream (bold orange/cyan)</td></tr>
+        <tr><td style="color:#a78bfa; font-family:var(--mono);">- -[WRITE]- -►</td><td style="color:var(--g700);">Database write (dashed violet)</td></tr>
+      </table>
+    </div>
 
-    <p>
-      Mock Services 是 <strong>Upstream</strong> 数据源。Backend 通过 <code>aiohttp.ClientSession</code>
-      发起 HTTP GET 请求，但 <strong>数据从上游 Mock 服务流向下游 Backend</strong>。
-      启动时 fetch 一次，缓存到内存 —— 后续请求不重新 fetch，直到 Backend 重启。
+    <pre><code>┌────────┐  [REQ]   ┌──────────┐  [REQ]    ┌──────────┐
+│ Client │─────────→│ Traefik  │─────────→│ Frontend │  static page
+└──┬──▲──┘          │   :80    │          │ nginx    │
+   │  │             │          │  [REQ]   └──────────┘
+   │  │             │          │─────────┐
+   │  │             └──────────┘         │
+   │  │                                  ▼
+   │  │                         ┌────────────────────┐
+   │  │                         │      Backend       │
+   │  │  [DATA] JSON assess     │    FastAPI :8000   │
+   │  └─────────────────────────┤                    │
+   │                            └──┬─────────┬───────┘
+   │                               │         │
+   │             [WRITE] SQL ──────┘         └────── [REQ] aiohttp GET ────┐
+   │                  ▼                         ▼                          │
+   │           ┌──────────┐              ┌──────────┐    ┌─────────────────┤
+   │           │PostgreSQL│              │  Redis 7 │    │ Upstream Mock   │
+   │           │+AGE      │              │  Cache   │    │ ┌───────────┐   │
+   │           └──────────┘              └──────────┘    │ │wp2 :8102 ◄├───┤
+   │                                                     │ │[DATA]     │   │
+   │  [DATA] SPA files                                   │ ├───────────┤   │
+   └──────────(via Traefik)──────────────────────────────│ │wp3 :8103 ◄├───┤
+                                                         │ │[DATA]     │   │
+                                                         │ ├───────────┤   │
+                                                         │ │wp8 :8108 ◄├───┘
+                                                         │ │[DATA]     │
+                                                         │ └───────────┘
+                                                         └─────────────────</code></pre>
+
+    <div class="grid-2" style="margin-top:20px;">
+      <div class="spec-card">
+        <div class="label">REQUEST Chain</div>
+        <div class="value" style="font-size:13px; font-weight:400; color:var(--g700);">
+          Client → Traefik → Frontend (page)<br>
+          Client → Traefik → Backend (API)<br>
+          Backend → WP2/WP3/WP8 Mock (fetch)
+        </div>
+      </div>
+      <div class="spec-card">
+        <div class="label">DATA Chain (response)</div>
+        <div class="value" style="font-size:13px; font-weight:400; color:var(--g700);">
+          Mock → Backend (upstream data)<br>
+          Backend → Client (JSON assessment)<br>
+          Frontend → Client (SPA static files)
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:16px;">
+      <strong>关键区分:</strong> HTTP请求发起者 = Backend (aiohttp GET), 但数据流向 = Mock → Backend (上游→下游)。
+      架构图必须分开画 REQUEST 和 DATA 两条线。完整闭环: Client 请求 → Backend 拉取上游 → 数据处理 → 返回 Client。
     </p>
   </section>
 

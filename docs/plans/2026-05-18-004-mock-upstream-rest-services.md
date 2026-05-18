@@ -14,70 +14,61 @@
 - **架构图**: [docs/diagrams/2026-05-18-architecture-8-containers.html](../diagrams/2026-05-18-architecture-8-containers.html)
 - **技术规格**: [docs/specs/2026-05-18-mock-upstream-rest-services.html](../specs/2026-05-18-mock-upstream-rest-services.html)
 
-## 完整 Docker Compose 拓扑 (8容器)
+## 完整 Docker Compose 拓扑 (8容器) + 数据流
 
 ```
-                     ┌──────────────────────────────────────────────────┐
-                     │        Docker Compose — scailed_wp4              │
-                     │                                                  │
-  User ──HTTPS──→ ┌──────────┐                                         │
-                  │ traefik  │  :80 (reverse proxy, TLS, rate-limit)    │
-                  │ v3.7     │                                         │
-                  └────┬─────┘                                         │
-                       │                                               │
-          ┌────────────┼────────────┐                                  │
-          ▼            ▼            │                                  │
-    ┌──────────┐ ┌──────────┐       │                                  │
-    │ frontend │ │ backend  │       │                                  │
-    │ nginx    │ │ FastAPI  │       │                                  │
-    │ React    │ │ :8000    │       │                                  │
-    │ :80(int) │ │ aiohttp  │       │                                  │
-    └──────────┘ └──┬──┬──┬─┘       │                                  │
-                    │  │  │         │                                  │
-         ┌──────────┘  │                                          │
-         ▼              ▼                                          │
-    ┌─────────┐   ┌─────────┐                                      │
-    │postgres │   │ redis 7 │     ┌─────────────────────────────┐  │
-    │PG16+AGE │   │ :6379   │     │   Mock Upstream Services    │  │
-    │:5432    │   │ cache   │     │  ┌──────────────────────┐   │  │
-    │named vol│   │named vol│     │  │ wp2-mock    :8102    │   │  │
-    └─────────┘   └─────────┘     │  │ aiohttp.web          ├──►│  │
-                                  │  │ Stakeholder Taxonomy  │   │  │
-                                  │  ├──────────────────────┤   │  │
-                                  │  │ wp3-mock    :8103    │   │  │
-                                  │  │ aiohttp.web          ├──►│  │
-                                  │  │ Roadmap Nodes/Edges   │   │  │
-                                  │  ├──────────────────────┤   │  │
-                                  │  │ wp8-mock    :8108    │   │  │
-                                  │  │ aiohttp.web          ├──►│  │
-                                  │  │ Rules + Tests         │   │  │
-                                  │  └──────────────────────┘   │  │
-                                  └──────────┬──────────────────┘  │
-                                             │                     │
-                                  ┌──────────┘                     │
-                                  ▼ aiohttp GET (data flows down)  │
-                    ┌─────────┐                                    │
-                    │ backend  │◄─── stakeholder / roadmap / rules │
-                    │ FastAPI  │                                   │
-                    │ :8000    │                                   │
-                    └─────────┘                                   │
-                     └──────────────────────────────────────────────────┘
+                     ┌─────────────────────────────────────────────────────────┐
+                     │              Docker Compose — scailed_wp4                │
+                     │                                                         │
+  Client ──[REQ]──→ ┌──────────┐                                              │
+            ◄─[DATA]─┤ traefik  │  :80 (reverse proxy, TLS, rate-limit)        │
+                     │ v3.7     │                                              │
+                     └────┬─────┘                                              │
+                          │                                                    │
+             ┌────────────┼────────────┐                                       │
+             │            │            │                                       │
+       ┌──────────┐ ┌──────────┐       │                                       │
+       │ frontend │ │ backend  │       │    ┌──────────────────────────────┐   │
+       │ nginx    │ │ FastAPI  │       │    │   Mock Upstream Services     │   │
+       │ React    │ │ :8000    │       │    │  ┌──────────────────────┐    │   │
+       │ :80(int) │ │ aiohttp  ├──[REQ]┼───►│  │ wp2-mock    :8102    │    │   │
+       └──────────┘ │          │◄[DATA]┼────│  │ aiohttp.web          │    │   │
+                    └──┬──┬──┬─┘       │    │  │ Stakeholder Taxonomy  │    │   │
+                       │  │  │         │    │  ├──────────────────────┤    │   │
+            ┌──────────┘  │  │         │    │  │ wp3-mock    :8103    │    │   │
+            ▼              ▼  │         │    │  │ aiohttp.web          │    │   │
+       ┌─────────┐   ┌─────────┐       │    │  │ Roadmap Nodes/Edges   │    │   │
+       │postgres │   │ redis 7 │       │    │  ├──────────────────────┤    │   │
+       │PG16+AGE │   │ :6379   │       │    │  │ wp8-mock    :8108    │    │   │
+       │:5432    │   │ cache   │       │    │  │ aiohttp.web          │    │   │
+       │[WRITE]◄─┤   │[WRITE]◄─┼───────┘    │  │ Rules + Tests         │    │   │
+       └─────────┘   └─────────┘            │  └──────────────────────┘    │   │
+                                            └──────────────────────────────┘   │
+                     └─────────────────────────────────────────────────────────┘
+
+Legend:
+  ──[REQ]──►  Request (HTTP call, left→right)
+  ◄─[DATA]──  Data response (upstream→downstream, right→left)
+  ──[WRITE]►  Database write (Backend→Storage, dashed)
 ```
 
-## 数据流
+### 数据流向三条线
 
 ```
-1. User → Traefik :80                  HTTPS (浏览器 / CLI)
-2. Traefik → Frontend                  Static React SPA (PathPrefix `/`)
-3. Traefik → Backend                   API calls (PathPrefix `/api`, `/v1`, `/health`)
-4. Backend → PostgreSQL                SQL + AGE Cypher (graph node CRUD)
-5. Backend → Redis                     Session cache / rule hot-reload lock
-6. wp2-mock → Backend                  Stakeholder taxonomy data (aiohttp GET)
-7. wp3-mock → Backend                  Roadmap nodes + edges data (aiohttp GET)
-8. wp8-mock → Backend                  Rules + tests data (aiohttp GET)
-```
+① REQUEST 链 (灰色细线):
+   Client → Traefik → Frontend          (page load)
+   Client → Traefik → Backend           (API call: GET /api/v1/assess)
+   Backend → wp2/wp3/wp8 Mock            (aiohttp GET: fetch upstream data)
 
-Note: HTTP requests are initiated BY Backend (client). But data flows FROM upstream Mock Services TO Backend. Arrows above show data direction.
+② DATA 链 (橙色/青色粗线, 上游→下游):
+   wp2/wp3/wp8 Mock → Backend            (stakeholder / roadmap / rules data)
+   Backend → Traefik → Client            (API response: JSON assessment)
+   Frontend → Traefik → Client           (static SPA files)
+
+③ WRITE 链 (紫色虚线, Backend→存储):
+   Backend → PostgreSQL                  (graph node CRUD, SQL + AGE Cypher)
+   Backend → Redis                       (session cache, rule hot-reload lock)
+```
 
 ## 网络隔离
 
