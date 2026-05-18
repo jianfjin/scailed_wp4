@@ -165,24 +165,24 @@
                               ┌────────────────┐
                               │    Backend     │
                               │  FastAPI :8000 │
-                              └───┬──┬──┬──────┘
-                                  │  │  │
-                    SQL/AGE ──────┘  │  └────── aiohttp GET ──────┐
-                         ▼           ▼                            │
-                  ┌──────────┐ ┌──────────┐    ┌─────────────────┐│
-                  │PostgreSQL│ │  Redis 7 │    │  Mock Services  ││
-                  │+AGE      │ │  Cache   │    │  ┌───────────┐  ││
-                  └──────────┘ └──────────┘    │  │wp2 :8102  │←─┘│
-                                               │  │wp3 :8103  │←──┘
-                                               │  │wp8 :8108  │←───┘
-                                               │  └───────────┘  │
-                                               └─────────────────┘</code></pre>
+                              └──┬──┬──▲───────┘
+                                 │  │  │
+              SQL/AGE ───────────┘  │  └────── aiohttp GET ──────┐
+                         ▼         ▼         (data flows down)   │
+                  ┌──────────┐ ┌──────────┐                      │
+                  │PostgreSQL│ │  Redis 7 │   ┌──────────────────┤
+                  │+AGE      │ │  Cache   │   │ Mock Upstream    │
+                  └──────────┘ └──────────┘   │ ┌────────────┐   │
+                                              │ │wp2 :8102  ─┼───┤
+                                              │ │wp3 :8103  ─┼───┘
+                                              │ │wp8 :8108  ─┼────
+                                              │ └────────────┘   │
+                                              └──────────────────┘</code></pre>
 
     <p>
-      Backend在<code>startup</code>事件中初始化<code>UpstreamClient</code>,
-      通过<code>aiohttp.ClientSession</code>并行请求三个mock服务,
-      将返回数据缓存到内存中的graph/rules结构。
-      后续请求不重新fetch —— 缓存到下一次backend重启。
+      Mock Services 是 <strong>Upstream</strong> 数据源。Backend 通过 <code>aiohttp.ClientSession</code>
+      发起 HTTP GET 请求，但 <strong>数据从上游 Mock 服务流向下游 Backend</strong>。
+      启动时 fetch 一次，缓存到内存 —— 后续请求不重新 fetch，直到 Backend 重启。
     </p>
   </section>
 

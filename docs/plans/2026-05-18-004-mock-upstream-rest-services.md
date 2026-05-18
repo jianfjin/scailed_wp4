@@ -34,25 +34,33 @@
     │ :80(int) │ │ aiohttp  │       │                                  │
     └──────────┘ └──┬──┬──┬─┘       │                                  │
                     │  │  │         │                                  │
-         ┌──────────┘  │  └──────────────────┐                         │
-         ▼              ▼                     │                         │
-    ┌─────────┐   ┌─────────┐                 │                         │
-    │postgres │   │ redis 7 │    ┌────────────┼────────────┐           │
-    │PG16+AGE │   │ :6379   │    │     Mock Services       │           │
-    │:5432    │   │ cache   │    │  ┌──────────────────┐   │           │
-    │named vol│   │named vol│    │  │ wp2-mock  :8102  │◄──┤           │
-    └─────────┘   └─────────┘    │  │ aiohttp.web      │   │           │
-                                 │  │ Stakeholders     │   │           │
-                                 │  ├──────────────────┤   │           │
-                                 │  │ wp3-mock  :8103  │◄──┤           │
-                                 │  │ aiohttp.web      │   │           │
-                                 │  │ Roadmap Nodes    │   │           │
-                                 │  ├──────────────────┤   │           │
-                                 │  │ wp8-mock  :8108  │◄──┘           │
-                                 │  │ aiohttp.web      │               │
-                                 │  │ Rules + Tests    │               │
-                                 │  └──────────────────┘               │
-                                 └────────────────────────────────────┘
+         ┌──────────┘  │                                          │
+         ▼              ▼                                          │
+    ┌─────────┐   ┌─────────┐                                      │
+    │postgres │   │ redis 7 │     ┌─────────────────────────────┐  │
+    │PG16+AGE │   │ :6379   │     │   Mock Upstream Services    │  │
+    │:5432    │   │ cache   │     │  ┌──────────────────────┐   │  │
+    │named vol│   │named vol│     │  │ wp2-mock    :8102    │   │  │
+    └─────────┘   └─────────┘     │  │ aiohttp.web          ├──►│  │
+                                  │  │ Stakeholder Taxonomy  │   │  │
+                                  │  ├──────────────────────┤   │  │
+                                  │  │ wp3-mock    :8103    │   │  │
+                                  │  │ aiohttp.web          ├──►│  │
+                                  │  │ Roadmap Nodes/Edges   │   │  │
+                                  │  ├──────────────────────┤   │  │
+                                  │  │ wp8-mock    :8108    │   │  │
+                                  │  │ aiohttp.web          ├──►│  │
+                                  │  │ Rules + Tests         │   │  │
+                                  │  └──────────────────────┘   │  │
+                                  └──────────┬──────────────────┘  │
+                                             │                     │
+                                  ┌──────────┘                     │
+                                  ▼ aiohttp GET (data flows down)  │
+                    ┌─────────┐                                    │
+                    │ backend  │◄─── stakeholder / roadmap / rules │
+                    │ FastAPI  │                                   │
+                    │ :8000    │                                   │
+                    └─────────┘                                   │
                      └──────────────────────────────────────────────────┘
 ```
 
@@ -64,10 +72,12 @@
 3. Traefik → Backend                   API calls (PathPrefix `/api`, `/v1`, `/health`)
 4. Backend → PostgreSQL                SQL + AGE Cypher (graph node CRUD)
 5. Backend → Redis                     Session cache / rule hot-reload lock
-6. Backend → wp2-mock :8102           aiohttp GET /api/v1/stakeholders
-7. Backend → wp3-mock :8103           aiohttp GET /api/v1/roadmap/nodes + /edges
-8. Backend → wp8-mock :8108           aiohttp GET /api/v1/rules
+6. wp2-mock → Backend                  Stakeholder taxonomy data (aiohttp GET)
+7. wp3-mock → Backend                  Roadmap nodes + edges data (aiohttp GET)
+8. wp8-mock → Backend                  Rules + tests data (aiohttp GET)
 ```
+
+Note: HTTP requests are initiated BY Backend (client). But data flows FROM upstream Mock Services TO Backend. Arrows above show data direction.
 
 ## 网络隔离
 
