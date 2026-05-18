@@ -248,6 +248,27 @@
     <code>pg-init/02_schema.sql</code> (7 tables, 2 schemas) ·
     <code>deployment-architecture.html</code> (interactive SVG diagram)
   </div>
+
+  <div class="mermaid-section">
+    <h3>Docker Compose Deployment Topology</h3>
+    <p class="mermaid-note">5 containers, 2 networks, 1 named volume. Verified 2026-05-18 — all healthy.</p>
+    <div class="mermaid-container"><pre class="mermaid">
+flowchart TB
+    USER[User Browser]
+    TRAEFIK[Traefik v3.7 · Reverse Proxy :80]
+    FRONTEND[Nginx + React SPA · :80 internal]
+    BACKEND[FastAPI 3.12 · :8000 internal · xN scalable]
+    POSTGRES[(PostgreSQL 16 + Apache AGE · :5432 · STATEFUL)]
+    REDIS[(Redis 7 · :6379 · optional)]
+    VOLUME[(Named Volume · scailed_pgdata)]
+    USER -->|HTTP| TRAEFIK
+    TRAEFIK -->|PathPrefix /| FRONTEND
+    TRAEFIK -->|PathPrefix /api,/v1,/health| BACKEND
+    BACKEND -->|asyncpg| POSTGRES
+    BACKEND -->|cache| REDIS
+    POSTGRES -.->|persistent| VOLUME
+    </pre></div>
+  </div>
 </section>
 
 <!-- 02c Frontend Alternatives -->
