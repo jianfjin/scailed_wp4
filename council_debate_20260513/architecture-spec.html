@@ -326,6 +326,31 @@ flowchart TB
   </div>
 </section>
 
+<!-- 02d-bis D4.1 Acceptance Architecture (Mermaid) -->
+<section id="acceptance-architecture">
+  <div class="sec-head"><span class="idx">02d-bis</span><h2>D4.1 Acceptance Architecture (Data Flow)</h2></div>
+  <p class="sec-intro">Approved by council audit 2026-05-18. Mermaid diagram from <code>docs/plans/2026-05-18-001-fix-pathfinder-v1-spec-drift-plan.md</code>.</p>
+  <div class="mermaid-section">
+    <div class="mermaid-container">
+      <div class="mermaid">
+flowchart LR
+  Admin["Admin import/reload"] --> Validation["Schema/rule validation"]
+  Validation --> Snapshots["Upstream snapshots + checksums"]
+  Snapshots --> Store["Runtime store (PostgreSQL/AGE)"]
+  Store --> Graph["Roadmap graph projection"]
+  User["Invited demo user"] --> API["FastAPI V1"]
+  API --> Service["AssessmentService"]
+  Service --> Store
+  Service --> Graph
+  Service --> Rules["RuleLoader + ComplianceEvaluator"]
+  Service --> Audit["Append-only audit chain"]
+  Service --> Report["Reviewer report + trace"]
+      </div>
+    </div>
+    <p class="mermaid-note">Core lifecycle: (1) Imports validate and activate data snapshots. (2) Assessment sessions bind questionnaire/rule/schema/snapshot versions. (3) Solver generates deterministic recommendations. (4) Every import, reload, answer, recommendation, report, and degradation decision appends audit evidence. (5) Acceptance tests prove the flow across API, service, persistence, frontend, and deployment.</p>
+  </div>
+</section>
+
 <!-- 02d Database Alternatives -->
 <section id="database-alternatives">
   <div class="sec-head"><span class="idx">02d</span><h2>Database: Alternatives Evaluated</h2></div>

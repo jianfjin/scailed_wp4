@@ -28,6 +28,23 @@ Rejected for V1:
 - microservices
 - Neo4j
 - GraphQL
+
+## System Architecture Diagram
+
+```mermaid
+flowchart LR
+  Admin[Admin import/reload] --> Validation[Schema/rule validation]
+  Validation --> Snapshots[Upstream snapshots + checksums]
+  Snapshots --> Store[Runtime store]
+  Store --> Graph[Roadmap graph projection]
+  User[Invited demo user] --> API[FastAPI V1]
+  API --> Service[AssessmentService]
+  Service --> Store
+  Service --> Graph
+  Service --> Rules[RuleLoader + ComplianceEvaluator]
+  Service --> Audit[Append-only audit chain]
+  Service --> Report[Reviewer report + trace]
+```
 - Kubernetes
 - AI/RAG-generated recommendations
 - full multi-tenant SaaS

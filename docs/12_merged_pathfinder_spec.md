@@ -24,6 +24,30 @@ The `docs/` design is a strong long-term platform vision, but it is too broad fo
 
 Pathfinder V1 is an auditable EHDS readiness path planner: stakeholders answer structured questions, see where they are on the roadmap, receive traceable next steps, and export evidence for review.
 
+## System Architecture (D4.1 Acceptance Baseline)
+
+```mermaid
+flowchart LR
+  Admin[Admin import/reload] --> Validation[Schema/rule validation]
+  Validation --> Snapshots[Upstream snapshots + checksums]
+  Snapshots --> Store[Runtime store]
+  Store --> Graph[Roadmap graph projection]
+  User[Invited demo user] --> API[FastAPI V1]
+  API --> Service[AssessmentService]
+  Service --> Store
+  Service --> Graph
+  Service --> Rules[RuleLoader + ComplianceEvaluator]
+  Service --> Audit[Append-only audit chain]
+  Service --> Report[Reviewer report + trace]
+```
+
+Core lifecycle:
+1. Imports validate and activate data snapshots.
+2. Assessment sessions bind questionnaire/rule/schema/snapshot versions.
+3. Solver generates deterministic recommendations using the active graph/rules.
+4. Every import, reload, answer submission, recommendation, report export, and degradation decision appends audit evidence.
+5. Acceptance tests prove the flow across API, service, persistence, frontend contract, and deployment.
+
 ## Proposal Ground Truth
 
 The proposal says WP4 must develop:
