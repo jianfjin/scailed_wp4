@@ -62,16 +62,18 @@ The Pathfinder V1 delivery (P0-P5) achieved a working 5-container pipeline but d
 **Problem:** `graph_backend` silently fell back to inmemory when PostgreSQL was unreachable. `AssessmentService` accepted placeholder tokens. No component verified its dependencies at initialization.
 
 **Solution:** Add a `startup_check()` method to `AssessmentService` that:
-- Verifies PostgreSQL connectivity if `USE_AGE=1` or deployed mode
+- Verifies PostgreSQL connectivity if `PATHFINDER_MODE=deployed` (env var, per Linus audit)
 - Verifies AGE extension is loaded
 - Crashes on failure with a clear error message, not silent fallback
 - Runs before any API endpoint is served
+- Uses `AssessmentService(startup_check: bool = True)` parameter; tests override via `conftest.py` fixture (per Xiaolong audit)
 
 **Files:**
 - Modify: `pathfinder/services/assessment_service.py`
 - Modify: `pathfinder/api/main.py` (call startup check in lifespan)
+- Create: `tests/conftest.py` (AssessmentService(startup_check=False) fixture)
 
-**Behavior change:** `graph_backend: "inmemory"` is now an explicit `--demo` flag, not a silent default. Deployed mode requires PostgreSQL or refuses to start.
+**Behavior change:** `PATHFINDER_MODE=demo` explicitly opts into inmemory. `PATHFINDER_MODE=deployed` (default) requires PostgreSQL or refuses to start.
 
 ---
 
@@ -81,9 +83,9 @@ The Pathfinder V1 delivery (P0-P5) achieved a working 5-container pipeline but d
 
 **Solution:** Add FastAPI middleware/dependencies that apply automatically to all endpoints:
 
-1. **Audit middleware** — All mutating endpoints (POST/PUT/DELETE) automatically append audit events. Endpoint handlers don't call `audit.log()` manually.
-2. **Auth dependency** — Token validation as a FastAPI dependency injected at router level. Endpoints declare their required token level (`demo` or `admin`).
-3. **Rate limit middleware** — Configurable per-endpoint rate limiting via FastAPI middleware. Default: 100 req/min for demo endpoints, 20 req/min for admin.
+1. **Audit whitelist checker** — Middleware verifies every POST/PUT/DELETE handler produced ≥1 audit event. If none, emits WARNING. Handlers still call `audit.append()` explicitly, but middleware prevents forgetfulness (per Guido+Xiaolong audit compromise).
+2. **Auth dependency** — Token validation as a FastAPI dependency. **Default-deny**: endpoints without explicit `token_level` require admin (per Linus audit). Router-level: `dependencies=[Depends(require_demo_token)]`.
+3. **Rate limit middleware** — Single default 100 req/min, per-endpoint exceptions only (per Xuefeng simplification).
 
 **Files:**
 - Create: `pathfinder/api/middleware.py`
@@ -96,18 +98,19 @@ The Pathfinder V1 delivery (P0-P5) achieved a working 5-container pipeline but d
 
 **Problem:** Docker Compose health checks verify process liveness, not functional integration. The 5-container pipeline could be "healthy" while `graph_backend` was disconnected.
 
-**Solution:** Create `deploy/smoke-test.sh` — a shell script that runs after `docker compose up -d` and:
+**Solution:** Create `deploy/smoke_test.py` — a Python script (per Xiaolong+Guido: bash too fragile for JSON assertions) that runs against the deployed containers and:
 1. Verifies all 5 containers are healthy
 2. Imports demo data via admin endpoint
 3. Creates an assessment via public API
 4. Submits answers and gets recommendations
-5. Verifies `graph_backend` is `age` (not `inmemory`)
+5. Verifies `graph_backend` is `age` (not `inmemory`) — closes RC6 accountability gap
 6. Checks audit events were recorded
 7. Exits 0 on success, non-zero on any failure
+8. Wrapped by `deploy/smoke-test.sh`: `docker compose exec backend python3 /app/deploy/smoke_test.py`
 
 **Files:**
-- Create: `deploy/smoke-test.sh`
-- Modify: `deploy/docker-compose.yml` (optional: add smoke-test service)
+- Create: `deploy/smoke_test.py`
+- Create: `deploy/smoke-test.sh` (thin shell wrapper)
 
 ---
 
@@ -128,6 +131,21 @@ The Pathfinder V1 delivery (P0-P5) achieved a working 5-container pipeline but d
 
 ---
 
+### R6. Governance — Single Acceptance Gate (per 4/4 audit consensus)
+
+**Problem:** Root Cause 6 — "dual responsibility = no responsibility." Local+remote both assumed the other was gatekeeping spec compliance. No reform addressed the human accountability gap.
+
+**Solution:** Add a governance clause to `docs/D4_1_technical_appendix.md`:
+
+> **Acceptance Gate Owner:** The CI smoke test (`deploy/smoke_test.py`) is the sole acceptance gate. If it fails, the PR does not merge. No human override. Local `P4 green` does not override CI smoke-test red.
+
+This eliminates the coordination gap: the machine enforces what two humans could each assume the other was doing.
+
+**Files:**
+- Modify: `docs/D4_1_technical_appendix.md` (add gate ownership section)
+
+---
+
 ## Scope Boundaries
 
 - Do NOT introduce Kubernetes, Helm, or production CI/CD
@@ -139,19 +157,21 @@ The Pathfinder V1 delivery (P0-P5) achieved a working 5-container pipeline but d
 
 ## Implementation Order
 
+Per Xiaolong audit: split into two PRs.
+
 ```
-R1 (acceptance tests) → R2 (startup assertion) → R3 (middleware) → R4 (smoke test) → R5 (tasks verification)
+PR1: R1 (acceptance tests) → R2+R3 (startup assertion + middleware) → R6 (governance)
+PR2: R4 (smoke test) → R5 (tasks verification)
 ```
 
-R1 first because it defines the acceptance criteria all other reforms must satisfy.
-R2+R3 together because they share the `AssessmentService` and `api/main.py` touch points.
-R4 validates R1-R3 at the deployment layer.
-R5 is documentation automation, dependent on R1 test IDs existing.
-
----
+R1 first — define acceptance criteria as failing tests.
+R2+R3 together — shared `AssessmentService` + `api/main.py` touch points, highest risk.
+R6 is a one-sentence docs change, can land anytime.
+R4 validates R1-R3 at deployment layer, R5 is documentation automation.
 
 ## Success Metrics
 
+## Success Metrics
 - All 7 D4.1 acceptance tests pass
 - Starting backend without PostgreSQL (in deployed mode) crashes with clear error, not silent fallback
 - New POST endpoint automatically gets audit logging without manual addition
