@@ -120,10 +120,11 @@ class AgeRoadmapGraph:
     def __init__(self, dsn: str | None = None) -> None:
         import os
 
-        self._dsn = dsn or os.environ.get(
+        raw_dsn = dsn or os.environ.get(
             "DATABASE_URL",
             "postgresql://pathfinder:changeme@localhost:5432/pathfinder",
         )
+        self._dsn = raw_dsn.replace("postgresql+asyncpg://", "postgresql://", 1)
         self._pool = None
         self.nodes: dict[str, RoadmapNode] = {}
         self.edges: list[RoadmapEdge] = []
@@ -189,8 +190,7 @@ class AgeRoadmapGraph:
         if not self._connected or not self._pool:
             await self.connect()
 
-        self.nodes = {node.node_id: node for node in nodes}
-        self.edges = list(edges)
+        self.load_projection(nodes, edges)
 
         async with self._pool.acquire() as conn:  # type: ignore[union-attr]
             for node in nodes:
@@ -221,6 +221,11 @@ class AgeRoadmapGraph:
                         "true" if edge.required else "false",
                     )
                 )
+
+    def load_projection(self, nodes: list[RoadmapNode], edges: list[RoadmapEdge]) -> None:
+        """Update the synchronous graph projection used by the V1 solver."""
+        self.nodes = {node.node_id: node for node in nodes}
+        self.edges = list(edges)
 
     # ------------------------------------------------------------------
     # query interface (same as InMemoryRoadmapGraph)

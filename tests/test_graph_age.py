@@ -61,6 +61,20 @@ class AgeGraphParityTests(unittest.TestCase):
         self.assertIn("edges", data)
         self.assertGreater(len(data["nodes"]), 0)
 
+    def test_dsn_accepts_sqlalchemy_asyncpg_form(self) -> None:
+        graph = AgeRoadmapGraph(dsn="postgresql+asyncpg://user:pass@postgres:5432/pathfinder")
+
+        self.assertEqual(graph._dsn, "postgresql://user:pass@postgres:5432/pathfinder")
+
+    def test_load_projection_updates_sync_interface_without_database(self) -> None:
+        nodes, edges = demo_roadmap()
+        graph = AgeRoadmapGraph(dsn="postgresql://test:test@localhost:5432/test")
+
+        graph.load_projection(nodes[:2], edges[:1])
+
+        self.assertEqual(set(graph.nodes), {node.node_id for node in nodes[:2]})
+        self.assertEqual(graph.edges, edges[:1])
+
     def test_applicable_nodes_filters_by_stakeholder(self) -> None:
         nodes = self.graph.applicable_nodes("biotech-sme")
         self.assertGreater(len(nodes), 0)

@@ -37,9 +37,10 @@ class HealthResponse(BaseModel):
     mode: str
     graph_backend: str
     stakeholder_types: list[str]
-    rule_version: str
+    rule_version: str | None
     audit_events: int
     audit_chain_valid: bool
+    import_reports: dict[str, Any] = Field(default_factory=dict)
 
 
 # ─── Questionnaire ──────────────────────────────────────────────────
@@ -184,7 +185,12 @@ class RoadmapResponse(BaseModel):
 class AdminImportResponse(BaseModel):
     accepted: bool
     mode: str = "demo"
-    message: str
+    message: str = ""
+    source: str
+    checksum: str
+    snapshot_version: str
+    warnings: list[str] = []
+    activated_records: int
 
 
 class AdminReloadResponse(BaseModel):

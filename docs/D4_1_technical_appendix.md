@@ -32,7 +32,7 @@ openspec validate add-merged-pathfinder-v1 --strict
 ```
 
 ## Open Implementation Items
-- PostgreSQL AGE persistence is still represented by deployment SQL and not wired into runtime code.
-- API rate limiting is not yet implemented in-process.
-- Docker Compose boot has not yet been verified in this pass.
+- PostgreSQL AGE is wired as the runtime graph backend with an in-memory V1 solver projection; full table-backed hydration of questionnaires, rules, sessions, and audit data remains future persistence work.
+- API rate limiting is implemented in-process for V1 demo protection; deployed edge rate limiting remains a deployment hardening option.
+- Docker Compose configuration validates, but a full container boot has not yet been verified in this pass.
 - Frontend is React by decision.

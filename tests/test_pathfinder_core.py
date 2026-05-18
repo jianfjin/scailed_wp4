@@ -89,6 +89,62 @@ class PathfinderCoreTests(unittest.TestCase):
         self.assertIn("access-body-review", recommendation["trace"]["roadmap_node_ids"])
         self.assertTrue(report["audit_chain_valid"])
         self.assertIn("Demo/non-production", report["disclaimer"])
+        self.assertEqual(
+            [event.event_type for event in service.audit_log.events()],
+            [
+                "assessment_session_created",
+                "answers_submitted",
+                "recommendation_generated",
+                "report_exported",
+            ],
+        )
+
+    def test_age_mode_wp3_import_updates_active_projection_without_backend_downgrade(self) -> None:
+        service = AssessmentService(use_age=True)
+        payload = {
+            "version": "wp3-age-projection-v1",
+            "nodes": [
+                {
+                    "node_id": "age-import-a",
+                    "label": "AGE import A",
+                    "dimension": "governance",
+                    "maturity_level": 1,
+                    "stakeholder_types": ["all"],
+                },
+                {
+                    "node_id": "age-import-b",
+                    "label": "AGE import B",
+                    "dimension": "governance",
+                    "maturity_level": 2,
+                    "stakeholder_types": ["all"],
+                },
+            ],
+            "edges": [
+                {
+                    "edge_id": "age-import-e1",
+                    "from_node_id": "age-import-a",
+                    "to_node_id": "age-import-b",
+                }
+            ],
+        }
+
+        report = service.import_wp3(payload)
+
+        self.assertTrue(report.accepted)
+        self.assertEqual(service.status()["graph_backend"], "age")
+        self.assertEqual(set(service.graph.nodes), {"age-import-a", "age-import-b"})
+        self.assertEqual(service.graph.shortest_path("age-import-a", "age-import-b")[1].node_id, "age-import-b")
+
+    def test_failed_import_is_audited_and_keeps_chain_valid(self) -> None:
+        service = AssessmentService()
+
+        with self.assertRaises(ValueError):
+            service.import_wp3({"version": "broken", "nodes": [], "edges": []})
+
+        events = service.audit_log.events()
+        self.assertEqual(events[-1].event_type, "data_import_failed")
+        self.assertEqual(events[-1].event_data["source"], "wp3")
+        self.assertTrue(service.audit_log.verify_chain())
 
 
 if __name__ == "__main__":
