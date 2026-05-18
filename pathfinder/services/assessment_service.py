@@ -1,15 +1,20 @@
 """End-to-end demo assessment service.
 
 Supports two graph backends:
-  - InMemoryRoadmapGraph (default, zero-config for demos/tests)
-  - AgeRoadmapGraph (PostgreSQL + Apache AGE for production)
+  - InMemoryRoadmapGraph (demo mode, zero-config for demos/tests)
+  - AgeRoadmapGraph (deployed mode, PostgreSQL + Apache AGE for production)
 
-Set USE_AGE=1 or pass use_age=True to enable the AGE backend.
+Modes (via PATHFINDER_MODE env var):
+  - demo     → InMemoryRoadmapGraph (default, zero-config)
+  - deployed → AgeRoadmapGraph (requires PostgreSQL + Apache AGE)
+
+Legacy: USE_AGE=1 or use_age=True also enables AGE (deprecated).
 """
 
 from __future__ import annotations
 
 import os
+import sys
 from uuid import uuid4
 
 from pathfinder.adapters.demo_data import (
@@ -29,15 +34,32 @@ from pathfinder.core.solver import PathfinderSolver
 
 
 class AssessmentService:
-    def __init__(self, use_age: bool | None = None) -> None:
-        if use_age is None:
-            use_age = os.environ.get("USE_AGE", "").lower() in ("1", "true", "yes")
+    def __init__(
+        self,
+        use_age: bool | None = None,
+        startup_check: bool = True,
+    ) -> None:
+        # Resolve mode: PATHFINDER_MODE env var takes precedence, then legacy USE_AGE.
+        mode = os.environ.get("PATHFINDER_MODE", "").lower()
+        if mode not in ("demo", "deployed"):
+            # Fallback to legacy USE_AGE detection.
+            if use_age is None:
+                use_age = os.environ.get("USE_AGE", "").lower() in ("1", "true", "yes")
+            mode = "deployed" if use_age else "demo"
+            # Log deprecation warning if USE_AGE was used.
+            if mode == "deployed" and not os.environ.get("PATHFINDER_MODE"):
+                print(
+                    "[AssessmentService] USE_AGE is deprecated; set PATHFINDER_MODE=deployed instead.",
+                    file=sys.stderr,
+                )
+
+        self._mode = mode
 
         self.questionnaires = demo_questionnaires()
         nodes, edges = demo_roadmap()
         self._active_roadmap = (nodes, edges)
 
-        if use_age:
+        if self._mode == "deployed":
             self.graph = AgeRoadmapGraph()
             self._graph_backend = "age"
         else:
@@ -61,6 +83,42 @@ class AssessmentService:
                 },
             )
         }
+
+        if startup_check:
+            self.startup_check()
+
+    def startup_check(self) -> None:
+        """Validate backend connectivity at startup.
+
+        In `demo` mode this is a no-op.
+        In `deployed` mode this verifies PG connectivity; crashes on failure.
+        """
+        if self._mode == "demo":
+            return
+
+        import asyncio
+
+        async def _check() -> None:
+            try:
+                await self.graph.connect()
+                await self.graph.disconnect()
+            except Exception as exc:
+                print(
+                    f"[AssessmentService] Deployed mode startup check FAILED: {exc}",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+
+        try:
+            asyncio.run(_check())
+        except RuntimeError:
+            # Already inside a running event loop (shouldn't happen at init time
+            # but guard against it).
+            print(
+                "[AssessmentService] Cannot run startup check: event loop already running. "
+                "Skipping; caller is responsible for verifying connectivity.",
+                file=sys.stderr,
+            )
 
     async def connect_age(self) -> None:
         """Connect to AGE backend and load demo data (async, called once at startup)."""
@@ -254,7 +312,7 @@ class AssessmentService:
     def status(self) -> dict[str, object]:
         return {
             "service": "pathfinder",
-            "mode": "demo",
+            "mode": self._mode,
             "graph_backend": self._graph_backend,
             "stakeholder_types": self.stakeholder_types(),
             "rule_version": self.rule_loader.active_version,

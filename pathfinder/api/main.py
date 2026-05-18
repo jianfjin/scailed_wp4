@@ -1,6 +1,6 @@
 """FastAPI wrapper for the Pathfinder V1 deterministic kernel.
 
-Supports AGE backend via USE_AGE=1 environment variable.
+Supports AGE backend via PATHFINDER_MODE=deployed environment variable.
 All response types are locked via Pydantic schemas in api/schemas.py.
 Error model: 5 standardized codes (AUTH_REQUIRED, FORBIDDEN, NOT_FOUND,
 VALIDATION_ERROR, SERVER_ERROR).
@@ -15,7 +15,15 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware import Middleware as StarletteMiddleware
 
+from pathfinder.api.middleware import (
+    AuditWhitelistMiddleware,
+    DefaultDenyAuthMiddleware,
+    RateLimitMiddleware,
+    require_admin_token,
+    require_demo_token,
+)
 from pathfinder.api.schemas import (
     AdminImportResponse,
     AdminReloadResponse,
@@ -34,24 +42,27 @@ from pathfinder.api.schemas import (
 )
 from pathfinder.services.assessment_service import AssessmentService
 
-_USE_AGE = os.environ.get("USE_AGE", "").lower() in ("1", "true", "yes")
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "development").lower()
+DEMO_TOKEN = os.environ.get("PATHFINDER_DEMO_TOKEN", "demo-token" if ENVIRONMENT != "production" else "")
+ADMIN_TOKEN = os.environ.get("PATHFINDER_ADMIN_TOKEN", "admin-token" if ENVIRONMENT != "production" else "")
+
 _service: AssessmentService | None = None
 
 
 def _get_service() -> AssessmentService:
     global _service
     if _service is None:
-        _service = AssessmentService(use_age=_USE_AGE)
+        _service = AssessmentService(use_age=None)
     return _service
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     service = _get_service()
-    if _USE_AGE:
+    if service._mode == "deployed":
         await service.connect_age()
     yield
-    if _USE_AGE:
+    if service._mode == "deployed":
         await service.disconnect_age()
 
 
@@ -68,6 +79,7 @@ app = FastAPI(
     },
 )
 
+# ── CORS ─────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -76,12 +88,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-ENVIRONMENT = os.environ.get("ENVIRONMENT", "development").lower()
-DEMO_TOKEN = os.environ.get("PATHFINDER_DEMO_TOKEN", "demo-token" if ENVIRONMENT != "production" else "")
-ADMIN_TOKEN = os.environ.get("PATHFINDER_ADMIN_TOKEN", "admin-token" if ENVIRONMENT != "production" else "")
-RATE_LIMIT_MAX_REQUESTS = int(os.environ.get("PATHFINDER_RATE_LIMIT_MAX", "120"))
-RATE_LIMIT_WINDOW_SECONDS = int(os.environ.get("PATHFINDER_RATE_LIMIT_WINDOW_SECONDS", "60"))
-_rate_limit_hits: dict[str, tuple[int, float]] = {}
+# ── Cross-cutting middleware (wired from pathfinder/api/middleware.py) ────────
+# Starlette builds the middleware stack in reverse-add order.
+# Desired request flow (outer → inner): rate-limit → CORS → auth → audit-whitelist → app.
+# So add order: rate-limit, CORS, auth, audit-whitelist.
+
+# Rate limit (outermost protection) — 100 req/min default.
+_rate_limit_middleware = RateLimitMiddleware
+app.add_middleware(RateLimitMiddleware)
+
+# Default-deny auth — unmarked endpoints require admin token.
+app.add_middleware(DefaultDenyAuthMiddleware, admin_token=ADMIN_TOKEN, demo_token=DEMO_TOKEN)
+
+# Audit whitelist checker — warns on missing audit events.
+app.add_middleware(AuditWhitelistMiddleware, get_service=_get_service)
 
 
 def _auth_error(detail: str) -> HTTPException:
@@ -107,41 +127,12 @@ def _rate_limited(detail: str) -> JSONResponse:
     )
 
 
-def require_demo_token(authorization: str | None) -> None:
-    if authorization not in {f"Bearer {DEMO_TOKEN}", f"Bearer {ADMIN_TOKEN}"}:
-        raise _auth_error("invited demo token required")
-
-
-def require_admin_token(authorization: str | None) -> None:
-    if authorization != f"Bearer {ADMIN_TOKEN}":
-        raise _forbidden_error("admin token required")
-
-
 def _audit_context(request: Request) -> dict[str, str | None]:
     forwarded_for = request.headers.get("x-forwarded-for")
     ip = forwarded_for.split(",", 1)[0].strip() if forwarded_for else None
     if not ip and request.client:
         ip = request.client.host
     return {"ip": ip, "user_agent": request.headers.get("user-agent")}
-
-
-@app.middleware("http")
-async def rate_limit(request: Request, call_next):
-    if request.url.path == "/health":
-        return await call_next(request)
-    now = time.monotonic()
-    authorization = request.headers.get("authorization", "")
-    ip = _audit_context(request)["ip"] or "unknown"
-    key = f"{authorization}:{ip}"
-    count, window_start = _rate_limit_hits.get(key, (0, now))
-    if now - window_start >= RATE_LIMIT_WINDOW_SECONDS:
-        count = 0
-        window_start = now
-    count += 1
-    _rate_limit_hits[key] = (count, window_start)
-    if count > RATE_LIMIT_MAX_REQUESTS:
-        return _rate_limited("too many requests")
-    return await call_next(request)
 
 
 # ─── Public ─────────────────────────────────────────────────────────
