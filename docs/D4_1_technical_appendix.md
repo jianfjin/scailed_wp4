@@ -1,5 +1,11 @@
 # D4.1 Technical Appendix
 
+## Acceptance Gate (Council Governance, 2026-05-18)
+
+The CI smoke test (`deploy/smoke_test.py`) is the **sole acceptance gate** for Pathfinder V1. If it fails, the PR does not merge. No human override.
+
+Local `P4 green` does not override CI smoke-test red. This eliminates the dual-responsibility gap identified in the 2026-05-18 council post-mortem.
+
 ## Architecture
 Pathfinder V1 is implemented as a modular monolith:
 
