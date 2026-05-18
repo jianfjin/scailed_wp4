@@ -10,7 +10,7 @@ P0 ✅ e2e闭环 + Docker 5容器 (9 bugs fixed)
 P1 ✅ AGE runtime VM→SSH→本地PG16+AGE连线
 P2 ✅ API schema锁定 (14 Pydantic models, 5 error codes)
 P3 ✅ 前端交互式表单 (220行React TSX, 实时验证)
-P4 ⬜ core tests + p95 latency (demo scale)
+P4 ✅ core tests + p95 latency (7 benchmarks, all sub-ms, 3000x under SLA)
 P5 ⬜ clean install验证
 P6 ⬜ 发送 email_to_lu_zhao_v3
 ```
@@ -56,16 +56,27 @@ P6 ⬜ 发送 email_to_lu_zhao_v3
 | OpenAPI | FastAPI自动生成 |
 | Tests | 13/13 pass |
 
-## P3 — 前端交互式表单 ✅
+## P4 — core tests + p95 latency ✅
 
 | 项目 | 结果 |
 |------|------|
-| NumericInput | range slider (1-5) for maturity questions |
-| MultiChoiceInput | checkboxes for capabilities/flags |
-| 实时验证 | 必填项未完成时Submit disabled |
-| loading/error | 状态管理完成 |
-| 全栈管道 | 问卷→评估→推荐→报告 4步全200 |
-| 前端可访问 | http://localhost ✅ |
+| Benchmark tests | 7 tests, 200 iterations each |
+| p95 E2E (demo scale) | 0.09ms (3000x under 300ms D4.1 target) |
+| p95 E2E (expanded 20n/8r) | 0.14ms |
+| All operations | sub-millisecond (BFS O(V+E) confirmed) |
+| Tests total | 20/20 pass (13 unit + 7 benchmark) |
+
+### Latency Detail
+
+| Operation | p50 | p95 | p99 |
+|-----------|-----|-----|-----|
+| 问卷构建 | 0.03ms | 0.03ms | 0.07ms |
+| 规则评估 | 0.01ms | 0.01ms | 0.01ms |
+| CSP求解器 | 0.04ms | 0.05ms | 0.19ms |
+| E2E推荐 | 0.08ms | 0.09ms | 0.15ms |
+| 扩展20n/8r | 0.07ms | 0.09ms | 0.15ms |
+| 扩展E2E | 0.11ms | 0.14ms | 0.25ms |
+| 报告生成 | 0.22ms | 0.35ms | 0.49ms |
 
 ## Docker Compose 部署架构
 
@@ -115,7 +126,7 @@ scailed-redis       Up   Redis 7         :6379 (internal)
 | api/schemas.py | Pydantic API schemas | 181 | — |
 | api/main.py | FastAPI(AGE lifespan, schema locked) | 181 | 2 tests |
 | frontend/src/main.tsx | React SPA(交互式) | 220 | — |
-| tests/ | 测试套件 | 4 files | 13/13 pass |
+| tests/ | 测试套件 | 5 files | 20/20 pass |
 
 ## 文档基线
 
