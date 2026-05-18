@@ -1,0 +1,32 @@
+[
+  {
+    "stakeholder_type": "biotech-sme",
+    "description": "Small-to-medium biotech enterprise conducting secondary-use research on health data",
+    "capabilities": ["data-catalog", "legal-basis", "secure-processing"],
+    "pain_points": ["ehds_interop_gap", "limited_regulatory_expertise"]
+  },
+  {
+    "stakeholder_type": "ai-factory-operator",
+    "description": "Operator of an AI Factory under the AI Act, training models on EHDS-governed data",
+    "capabilities": ["secure-processing", "audit-log", "data-quality-kpi"],
+    "pain_points": ["cross_border_data_governance", "gdpr_ehds_alignment"]
+  },
+  {
+    "stakeholder_type": "health-data-access-body",
+    "description": "Health Data Access Body (HDAB) reviewing secondary-use permit applications",
+    "capabilities": ["legal-basis", "audit-log", "market_surveillance"],
+    "pain_points": ["legacy_review_process", "ehds_rule_pipeline_gap"]
+  },
+  {
+    "stakeholder_type": "health-data-infrastructure",
+    "description": "Operator of health data infrastructure (HDA, data lake, SPE) serving secondary-use",
+    "capabilities": ["secure-processing", "data-quality-kpi", "data-catalog"],
+    "pain_points": ["multi_tenant_isolation", "certification_timeline"]
+  },
+  {
+    "stakeholder_type": "research-infrastructure",
+    "description": "Academic or clinical research infrastructure accessing EHDS-governed health data",
+    "capabilities": ["data-catalog", "legal-basis"],
+    "pain_points": ["funding_cycle_mismatch", "compliance_burden"]
+  }
+]

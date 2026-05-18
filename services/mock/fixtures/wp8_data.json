@@ -1,0 +1,91 @@
+{
+  "version": "demo-rules-v1",
+  "snapshot_date": "2026-05-15",
+  "rules": [
+    {
+      "rule_id": "WP8-GDPR-REVIEW-001",
+      "rule_type": "preference",
+      "priority": 100,
+      "applies_to": ["all"],
+      "condition": {
+        "field": "regulatory_flags",
+        "operator": "contains",
+        "value": "gdpr-review-needed"
+      },
+      "action": {
+        "title": "GDPR review needed",
+        "text": "Confirm GDPR and ethics review inputs before downstream data access.",
+        "node_id": "legal-basis",
+        "warning": "compliance trace is provisional until WP8 confirms the rule bundle"
+      },
+      "compliance_refs": ["GDPR-Review", "EHDS-Secondary-Use"],
+      "source_doc_ref": "docs/12_merged_pathfinder_spec.md#F5",
+      "rule_version": "demo-rules-v1",
+      "effective_from": null,
+      "effective_until": null,
+      "parent_rule_id": null
+    },
+    {
+      "rule_id": "WP8-UNVERIFIED-002",
+      "rule_type": "preference",
+      "priority": 80,
+      "applies_to": ["all"],
+      "condition": {
+        "field": "regulatory_flags",
+        "operator": "contains",
+        "value": "ehds-rule-unverified"
+      },
+      "action": {
+        "title": "EHDS rule unverified",
+        "text": "Mark compliance output unverified until WP8 rules are loaded.",
+        "warning": "compliance unverified"
+      },
+      "compliance_refs": ["EHDS-Unverified"],
+      "source_doc_ref": "docs/12_merged_pathfinder_spec.md#F9",
+      "rule_version": "demo-rules-v1",
+      "effective_from": null,
+      "effective_until": null,
+      "parent_rule_id": null
+    },
+    {
+      "rule_id": "DATA-CATALOG-GAP-003",
+      "rule_type": "preference",
+      "priority": 50,
+      "applies_to": ["biotech-sme", "research-infrastructure"],
+      "condition": {
+        "field": "missing_capabilities",
+        "operator": "contains",
+        "value": "data-catalog"
+      },
+      "action": {
+        "title": "Data catalog gap",
+        "text": "Create or update a data catalog before requesting secondary-use review.",
+        "node_id": "governance-scope"
+      },
+      "compliance_refs": ["WP3-Roadmap"],
+      "source_doc_ref": "docs/12_merged_pathfinder_spec.md#F4",
+      "rule_version": "demo-rules-v1",
+      "effective_from": null,
+      "effective_until": null,
+      "parent_rule_id": null
+    }
+  ],
+  "tests": [
+    {
+      "name": "gdpr flag triggers GDPR review rule",
+      "state": {
+        "stakeholder_type": "biotech-sme",
+        "target_scenario": "secondary-use-readiness",
+        "answers": {
+          "governance_maturity": 2,
+          "data_maturity": 2,
+          "compliance_maturity": 2,
+          "capabilities": ["secure-processing"],
+          "missing_capabilities": ["data-catalog"],
+          "regulatory_flags": ["gdpr-review-needed"]
+        }
+      },
+      "expected_rule_ids": ["WP8-GDPR-REVIEW-001", "DATA-CATALOG-GAP-003"]
+    }
+  ]
+}

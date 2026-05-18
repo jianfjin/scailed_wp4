@@ -1,0 +1,92 @@
+{
+  "version": "demo-roadmap-v1",
+  "snapshot_date": "2026-05-15",
+  "nodes": [
+    {
+      "node_id": "generic-intake",
+      "label": "Confirm stakeholder baseline",
+      "description": "Capture stakeholder type, target scenario, and current maturity.",
+      "dimension": "governance",
+      "maturity_level": 1,
+      "stakeholder_types": ["all"],
+      "prerequisites": [],
+      "source_wp": "WP3",
+      "source_doc_ref": "demo-data",
+      "confidence": 1.0,
+      "metadata": {}
+    },
+    {
+      "node_id": "governance-scope",
+      "label": "Define governance scope",
+      "description": "Document accountability, owners, and decision boundaries.",
+      "dimension": "governance",
+      "maturity_level": 2,
+      "stakeholder_types": ["all"],
+      "prerequisites": ["generic-intake"],
+      "source_wp": "WP3",
+      "source_doc_ref": "demo-data",
+      "confidence": 1.0,
+      "metadata": {}
+    },
+    {
+      "node_id": "legal-basis",
+      "label": "Confirm legal basis",
+      "description": "Map intended secondary-use scenario to legal and ethics review inputs.",
+      "dimension": "compliance",
+      "maturity_level": 3,
+      "stakeholder_types": ["all"],
+      "prerequisites": ["governance-scope"],
+      "source_wp": "WP8",
+      "source_doc_ref": "WP8-rule-demo",
+      "confidence": 1.0,
+      "metadata": {}
+    },
+    {
+      "node_id": "secure-processing",
+      "label": "Prepare secure processing environment",
+      "description": "Identify SPE, AI Factory, or infrastructure controls needed for the use case.",
+      "dimension": "data",
+      "maturity_level": 4,
+      "stakeholder_types": ["biotech-sme", "ai-factory-operator", "health-data-infrastructure", "research-infrastructure"],
+      "prerequisites": ["legal-basis"],
+      "source_wp": "WP3",
+      "source_doc_ref": "demo-data",
+      "confidence": 1.0,
+      "metadata": {"target_scenarios": ["ai-factory-validation"]}
+    },
+    {
+      "node_id": "access-body-review",
+      "label": "Prepare HDAB review package",
+      "description": "Assemble traceability evidence and readiness report for review discussion.",
+      "dimension": "compliance",
+      "maturity_level": 4,
+      "stakeholder_types": ["health-data-access-body", "biotech-sme", "research-infrastructure"],
+      "prerequisites": ["legal-basis"],
+      "source_wp": "WP8",
+      "source_doc_ref": "demo-data",
+      "confidence": 1.0,
+      "metadata": {"target_scenarios": ["secondary-use-readiness"]}
+    },
+    {
+      "node_id": "readiness-report",
+      "label": "Export readiness evidence",
+      "description": "Export blockers, next steps, rule traces, and roadmap references.",
+      "dimension": "governance",
+      "maturity_level": 5,
+      "stakeholder_types": ["all"],
+      "prerequisites": ["secure-processing", "access-body-review"],
+      "source_wp": "WP3",
+      "source_doc_ref": "demo-data",
+      "confidence": 1.0,
+      "metadata": {}
+    }
+  ],
+  "edges": [
+    {"edge_id": "e1", "from_node_id": "generic-intake", "to_node_id": "governance-scope", "relation_type": "prerequisite", "required": true, "source_doc_ref": "demo-data"},
+    {"edge_id": "e2", "from_node_id": "governance-scope", "to_node_id": "legal-basis", "relation_type": "prerequisite", "required": true, "source_doc_ref": "demo-data"},
+    {"edge_id": "e3", "from_node_id": "legal-basis", "to_node_id": "secure-processing", "relation_type": "prerequisite", "required": true, "source_doc_ref": "demo-data"},
+    {"edge_id": "e4", "from_node_id": "legal-basis", "to_node_id": "access-body-review", "relation_type": "prerequisite", "required": true, "source_doc_ref": "demo-data"},
+    {"edge_id": "e5", "from_node_id": "secure-processing", "to_node_id": "readiness-report", "relation_type": "prerequisite", "required": true, "source_doc_ref": "demo-data"},
+    {"edge_id": "e6", "from_node_id": "access-body-review", "to_node_id": "readiness-report", "relation_type": "prerequisite", "required": true, "source_doc_ref": "demo-data"}
+  ]
+}

@@ -1,0 +1,15 @@
+# docker build -f services/mock/Dockerfile.mocks -t scailed/mock:latest services/mock
+FROM python:3.12-slim
+
+RUN pip install --no-cache-dir aiohttp==3.10.11
+
+WORKDIR /app
+COPY fixtures/ ./fixtures/
+COPY wp2_stakeholders.py wp3_roadmap.py wp8_rules.py ./
+
+EXPOSE 8080
+HEALTHCHECK --interval=15s --timeout=3s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"
+
+# Override with: docker compose run wp2-mock python wp2_stakeholders.py
+CMD ["python", "wp2_stakeholders.py"]
