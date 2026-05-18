@@ -26,14 +26,16 @@ Until WP2, WP3, and WP8 provide structured data, Pathfinder runs with demo fixtu
 - mock-data warning in UI/report output
 
 ## Verification
-Current verification commands:
 
-```powershell
-python -m unittest discover -s tests -v
-python -m compileall pathfinder api
-python -m pathfinder.demo
-npm install
-npm run build
+**Primary acceptance gate**: `make gate` (or `bash deploy/smoke-test.sh`) — the CI smoke test is the sole merge gate. If it fails, no merge.
+
+Supporting verification:
+```bash
+make gate        # smoke + verify + unit tests (merge gate)
+make test        # python3 -m pytest tests/ -v
+python3 scripts/verify_tasks.py --strict   # tasks.md → test coverage
+python3 -m pathfinder.demo                 # CLI demo output
+cd frontend && npm install && npm run build  # frontend build
 openspec validate add-merged-pathfinder-v1 --strict
 ```
 

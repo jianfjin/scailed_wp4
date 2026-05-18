@@ -84,9 +84,15 @@ def main() -> None:
     print(f"tasks.md: {len(items)} checked items ({len(checked)} with test annotations, {len(unchecked)} without)\n")
 
     if not checked:
-        print("No test-annotated checkboxes found. Nothing to verify.")
+        print("No test-annotated checkboxes found.")
+        if strict:
+            print(f"\n[FAIL] Strict mode: {len(unchecked)} checked items have no test annotation.")
+            for line_no, text, _ in unchecked:
+                print(f"  L{line_no}: {text[:80]}")
+            sys.exit(1)
+        print("Nothing to verify. Non-strict mode — informational only.")
         if unchecked:
-            print(f"\n{len(unchecked)} unchecked items have no test mapping (informational only):")
+            print(f"\n{len(unchecked)} unchecked items have no test mapping:")
             for line_no, text, _ in unchecked:
                 print(f"  L{line_no}: {text[:80]}")
         sys.exit(0)
