@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCAILED WP4 — Cypher Execution: In-Memory vs PostgreSQL/AGE</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --bg-code: #1c2129;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d2991d;
+    --orange: #db6d28;
+    --red: #f85149;
+    --purple: #a371f7;
+    --pink: #f778ba;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+  h1 { font-size: 1.75rem; color: #f0f6fc; border-bottom: 1px solid var(--border); padding-bottom: .5rem; margin-bottom: .5rem; }
+  h2 { font-size: 1.3rem; color: var(--accent); margin: 2rem 0 .75rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+  h3 { font-size: 1.1rem; color: #f0f6fc; margin: 1.5rem 0 .5rem; }
+  h4 { color: var(--accent); margin: 1rem 0 .5rem; font-size: .95rem; }
+  p, li { margin: .4rem 0; }
+  .meta { color: var(--text-dim); font-size: .85rem; margin-bottom: 1.5rem; }
+  blockquote {
+    border-left: 3px solid var(--accent);
+    padding: .5rem 1rem;
+    margin: 1rem 0;
+    background: var(--bg-card);
+    border-radius: 0 6px 6px 0;
+    color: var(--text-dim);
+    font-size: .9rem;
+  }
+  blockquote.reveal {
+    border-left-color: var(--red);
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: .82rem;
+    line-height: 1.55;
+    margin: .75rem 0;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: .85rem;
+    background: var(--bg-code);
+    padding: .15em .4em;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+  pre code { background: none; border: none; padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: .88rem;
+  }
+  th, td { text-align: left; padding: .45rem .7rem; border: 1px solid var(--border); }
+  th { background: var(--bg-card); color: #f0f6fc; font-weight: 600; }
+  tr:hover { background: rgba(88,166,255,.04); }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.25rem; margin: 1rem 0;
+  }
+  .card.red { border-color: var(--red); }
+  .card.red h4 { color: var(--red); }
+  .card.green { border-color: var(--green); }
+  .card.green h4 { color: var(--green); }
+  .tag {
+    display: inline-block; padding: .12em .55em; border-radius: 10px;
+    font-size: .78rem; font-weight: 600; margin-right: .3rem;
+  }
+  .tag-yes { background: rgba(63,185,80,.15); color: var(--green); }
+  .tag-no  { background: rgba(248,81,73,.15); color: var(--red); }
+  .tag-res { background: rgba(210,153,29,.15); color: var(--yellow); }
+  ul, ol { padding-left: 1.5rem; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  .footer { color: var(--text-dim); font-size: .8rem; margin-top: 2rem; }
+  .two-col { display: flex; gap: 1rem; flex-wrap: wrap; margin: .75rem 0; }
+  .two-col > div { flex: 1; min-width: 280px; }
+  .trace {
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: .82rem;
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    line-height: 1.7;
+    margin: .75rem 0;
+  }
+  .trace .indent1 { padding-left: 2rem; color: var(--text-dim); }
+  .trace .indent2 { padding-left: 4rem; color: var(--text-dim); }
+  .trace .indent3 { padding-left: 6rem; color: var(--text-dim); }
+  .trace .arrow { color: var(--purple); }
+  .trace .match { color: var(--green); font-weight: 600; }
+  .flow-label {
+    font-size: .8rem; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: .05em; margin-bottom: .3rem;
+  }
+  .verdict {
+    font-size: 1.05rem; padding: 1rem; border-radius: 8px;
+    background: rgba(248,81,73,.06); border: 1px solid var(--red);
+    margin: 1rem 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>SCAILED WP4 — Cypher Execution: In-Memory vs PostgreSQL/AGE</h1>
+
+<p class="meta">
+  <strong>Document version:</strong> 2026-05-19 &nbsp;|&nbsp;
+  <strong>Branch:</strong> feature/mock-upstream-rest-services &nbsp;|&nbsp;
+  <strong>Context:</strong> Line-level trace of both execution paths — the Python BFS that actually runs, and the AGE Cypher path that exists but is never called.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="verdict">
+  <strong style="color:var(--red);">Critical revelation:</strong>
+  <code>AgeRoadmapGraph.shortest_path()</code> <strong>does not use AGE at all.</strong>
+  It runs the exact same Python BFS as <code>InMemoryRoadmapGraph</code>.
+  The <code>_SHORTEST_PATH</code> Cypher template is defined but zero methods call it.
+  AGE currently serves only as a <strong>data write mirror</strong> — the entire query layer bypasses it.
+</div>
+
+<pre><code># graph_age.py line 53-58 — DEFINED, NEVER CALLED
+_SHORTEST_PATH = """
+SELECT * FROM ag_catalog.cypher('pathfinder_graph', $$
+    MATCH p = shortestPath(
+        (a:RoadmapNode {node_id: '%s'})-[*]->(b:RoadmapNode {node_id: '%s'})
+    )
+    RETURN nodes(p)
+$$) AS (path_nodes agtype);
+"""</code></pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>Path 1: In-Memory Python BFS — What Actually Runs</h2>
+
+<p>This is the real execution path. Used by <strong>both</strong> backends — identical algorithm, zero database calls.</p>
+
+<h3>Call Chain</h3>
+
+<div class="trace">
+  <div>AssessmentService</div>
+  <div class="indent1">│</div>
+  <div class="indent1">▼</div>
+  <div>graph.shortest_path("generic-intake", "readiness-report")</div>
+  <div class="indent1">│</div>
+  <div class="indent1">├── <span style="color:var(--yellow)">Step 1:</span> Validate start/target in self.nodes</div>
+  <div class="indent2">if "generic-intake" not in self.nodes → NoFeasiblePathError</div>
+  <div class="indent2">if "readiness-report" not in self.nodes → NoFeasiblePathError</div>
+  <div class="indent1">│</div>
+  <div class="indent1">├── <span style="color:var(--yellow)">Step 2:</span> Build adjacency list from self.edges</div>
+  <div class="indent2">outgoing: dict[str, list[str]] = {}</div>
+  <div class="indent2">for edge in self.edges: <span style="color:var(--text-dim)">← Python list, in-process</span></div>
+  <div class="indent3">outgoing[edge.from_node_id].append(edge.to_node_id)</div>
+  <div class="indent1">│</div>
+  <div class="indent1">├── <span style="color:var(--yellow)">Step 3:</span> BFS queue search</div>
+  <div class="indent2">queue = deque([("generic-intake", ["generic-intake"])])</div>
+  <div class="indent2">seen  = {"generic-intake"}</div>
+  <div class="indent2">&nbsp;</div>
+  <div class="indent2">while queue:</div>
+  <div class="indent3">current, path = queue.popleft()</div>
+  <div class="indent3">if current == "readiness-report":</div>
+  <div class="indent3" style="padding-left:8rem">return tuple(self.nodes[nid] for nid in path)</div>
+  <div class="indent3">for next_node in outgoing[current]:</div>
+  <div class="indent3" style="padding-left:8rem">if next_node not in seen:</div>
+  <div class="indent3" style="padding-left:10rem">seen.add(next_node)</div>
+  <div class="indent3" style="padding-left:10rem">queue.append((next_node, [*path, next_node]))</div>
+</div>
+
+<h3>BFS Trace (6-node demo graph)</h3>
+
+<table>
+  <tr><th>Iteration</th><th>Pop</th><th>Push</th></tr>
+  <tr>
+    <td>1</td>
+    <td><code>generic-intake</code> → [generic-intake]</td>
+    <td>governance-scope</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><code>governance-scope</code> → [generic-intake, governance-scope]</td>
+    <td>legal-basis</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><code>legal-basis</code> → [generic-intake, governance-scope, legal-basis]</td>
+    <td>secure-processing, access-body-review</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><code>secure-processing</code> → [...secure-processing]</td>
+    <td>readiness-report</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><code>readiness-report</code> → [...readiness-report]</td>
+    <td><span style="color:var(--green)">MATCH — RETURN</span></td>
+  </tr>
+</table>
+
+<h3>Return Value</h3>
+
+<pre><code>(
+  RoadmapNode("generic-intake"),
+  RoadmapNode("governance-scope"),
+  RoadmapNode("legal-basis"),
+  RoadmapNode("secure-processing"),
+  RoadmapNode("readiness-report"),
+)</code></pre>
+
+<h3>Data Sources — All In-Memory</h3>
+
+<table>
+  <tr><th>Data</th><th>Location</th><th>Type</th><th>Filled By</th></tr>
+  <tr><td><code>self.nodes</code></td><td><code>graph_age.py</code> line 131</td><td><code>dict[str, RoadmapNode]</code></td><td><code>load_projection()</code> line 233</td></tr>
+  <tr><td><code>self.edges</code></td><td><code>graph_age.py</code> line 132</td><td><code>list[RoadmapEdge]</code></td><td><code>load_projection()</code> line 234</td></tr>
+  <tr><td>Adjacency list</td><td>Built inline line 294-296</td><td><code>dict[str, list[str]]</code></td><td>Each <code>shortest_path()</code> call</td></tr>
+  <tr><td>BFS queue</td><td><code>collections.deque</code></td><td>Python stdlib</td><td>Each <code>shortest_path()</code> call</td></tr>
+</table>
+
+<p><strong>Zero database calls. Zero network. Zero serialization.</strong></p>
+
+<h3>The Dual Write</h3>
+
+<p><code>load_demo_data()</code> always calls <code>load_projection()</code> FIRST (populates query-layer data), THEN writes to AGE (currently write-only):</p>
+
+<pre><code># graph_age.py line 188-229
+async def load_demo_data(self, nodes, edges):
+    # Step A: populate self.nodes + self.edges  ← queries use THESE
+    self.load_projection(nodes, edges)
+
+    # Step B: MERGE into AGE graph  ← currently write-only
+    async with self._pool.acquire() as conn:
+        await conn.execute("SELECT pg_advisory_lock(...);")
+        for node in nodes:
+            await conn.execute(_LOAD_NODE % (...))
+        for edge in edges:
+            await conn.execute(_LOAD_EDGE % (...))
+        await conn.execute("SELECT pg_advisory_unlock(...);")</code></pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>Path 2: AGE Cypher — Exists But Never Called</h2>
+
+<p>This path is reserved for V2. The only code that actually sends Cypher to AGE is <code>cypher_query()</code> — a raw passthrough that no query method uses.</p>
+
+<h3>The Dormant Cypher Template</h3>
+
+<pre><code>-- If you were to call cypher_query(_SHORTEST_PATH % ("from", "to")):
+
+SELECT * FROM ag_catalog.cypher('pathfinder_graph', $$
+    MATCH p = shortestPath(
+        (a:RoadmapNode {node_id: 'generic-intake'})-[*]->
+        (b:RoadmapNode {node_id: 'readiness-report'})
+    )
+    RETURN nodes(p)
+$$) AS (path_nodes agtype);</code></pre>
+
+<h3>What Would Happen (If Called)</h3>
+
+<div class="trace">
+  <div>cypher_query(query_string)</div>
+  <div class="indent1">│</div>
+  <div class="indent1">▼</div>
+  <div>asyncpg → PostgreSQL connection (from self._pool)</div>
+  <div class="indent1">│</div>
+  <div class="indent1">▼</div>
+  <div>PostgreSQL receives SQL string</div>
+  <div class="indent1">│</div>
+  <div class="indent1">▼</div>
+  <div style="color:var(--accent)">ag_catalog.cypher() — AGE extension intercepts:</div>
+  <div class="indent1">│</div>
+  <div class="indent1">├── <span style="color:var(--yellow)">Cypher Parser</span></div>
+  <div class="indent2">Parses: MATCH p = shortestPath((a)...[*]->(b)...)</div>
+  <div class="indent2">Resolves label RoadmapNode → ag_label_vertex table</div>
+  <div class="indent2">Resolves edge traversal</div>
+  <div class="indent1">│</div>
+  <div class="indent1">├── <span style="color:var(--yellow)">Planner</span></div>
+  <div class="indent2">Generates plan against AGE internal tables:</div>
+  <div class="indent3">pathfinder_graph._ag_label_vertex (nodes)</div>
+  <div class="indent3">pathfinder_graph._ag_label_edge (edges)</div>
+  <div class="indent2">shortestPath() → BFS on physical tables</div>
+  <div class="indent1">│</div>
+  <div class="indent1">├── <span style="color:var(--yellow)">Executor</span></div>
+  <div class="indent2">Runs BFS inside PostgreSQL process</div>
+  <div class="indent2">Traverses adjacency in AGE internal format</div>
+  <div class="indent2">Collects matching path as agtype</div>
+  <div class="indent1">│</div>
+  <div class="indent1">└── <span style="color:var(--yellow)">Result packaging</span></div>
+  <div class="indent2">agtype = AGE's JSON superset</div>
+  <div class="indent2">Supports Cypher types: vertices, edges, paths</div>
+  <div class="indent2">Returned as PG composite type (path_nodes agtype)</div>
+  <div class="indent1">│</div>
+  <div class="indent1">▼</div>
+  <div>asyncpg receives rows</div>
+  <div class="indent1">│</div>
+  <div class="indent1">▼</div>
+  <div>Python: [dict(row) for row in rows]</div>
+</div>
+
+<h3>AGE Internal Storage</h3>
+
+<p>When <code>_LOAD_NODE</code> / <code>_LOAD_EDGE</code> execute, AGE stores data in system catalog tables:</p>
+
+<table>
+  <tr><th>AGE Table</th><th>Maps To</th></tr>
+  <tr><td><code>pathfinder_graph._ag_label_vertex</code></td><td>Nodes — one row per <code>RoadmapNode</code></td></tr>
+  <tr><td><code>pathfinder_graph._ag_label_edge</code></td><td>Edges — one row per <code>:PREREQUISITE</code></td></tr>
+</table>
+
+<p style="color:var(--text-dim);font-size:.85rem;">
+  These are standard PostgreSQL tables with AGE's internal column layout (id, properties as agtype).
+  <code>ag_catalog.cypher()</code> translates Cypher → SQL operations on these tables → agtype results.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>Side-by-Side Comparison</h2>
+
+<div class="two-col">
+  <div class="card green">
+    <h4>Python BFS — V1 Actual</h4>
+    <table>
+      <tr><td>Data source</td><td><code>self.nodes</code> (dict) + <code>self.edges</code> (list)</td></tr>
+      <tr><td>Adjacency</td><td>Built inline each call</td></tr>
+      <tr><td>Search</td><td><code>while queue:</code> (Python)</td></tr>
+      <tr><td>Process</td><td>FastAPI worker</td></tr>
+      <tr><td>Network</td><td>Zero</td></tr>
+      <tr><td>Serialization</td><td>None (native objects)</td></tr>
+      <tr><td>6 nodes</td><td>~microseconds</td></tr>
+      <tr><td>10⁵ nodes</td><td>~seconds (pure Python)</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>AGE Cypher — V2 Reserved</h4>
+    <table>
+      <tr><td>Data source</td><td><code>_ag_label_vertex</code> + <code>_ag_label_edge</code> (PG tables)</td></tr>
+      <tr><td>Adjacency</td><td>AGE internal index</td></tr>
+      <tr><td>Search</td><td>PostgreSQL C function BFS</td></tr>
+      <tr><td>Process</td><td>PostgreSQL server</td></tr>
+      <tr><td>Network</td><td>asyncpg TCP round-trip</td></tr>
+      <tr><td>Serialization</td><td>agtype ↔ Python</td></tr>
+      <tr><td>6 nodes</td><td>~milliseconds</td></tr>
+      <tr><td>10⁵ nodes</td><td>~milliseconds (C impl)</td></tr>
+    </table>
+  </div>
+</div>
+
+<p style="text-align:center;color:var(--text-dim);margin:1rem 0;">
+  Crossover point: ~10³–10⁴ nodes with complex constraints
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>What <code>AgeRoadmapGraph</code> Actually Is</h2>
+
+<p>The class name is misleading. It is <strong>not</strong> "a graph backend that queries via AGE." It is a dual-projection container:</p>
+
+<div class="two-col">
+  <div class="card">
+    <h4 style="color:var(--green)">In-Memory Projection</h4>
+    <p style="font-size:.85rem;color:var(--text-dim);">Used for ALL queries</p>
+    <pre style="font-size:.78rem"><code>self.nodes: dict[str, RoadmapNode]
+self.edges:  list[RoadmapEdge]
+
+→ locate_current()
+→ locate_target()
+→ shortest_path()
+→ applicable_nodes()
+→ to_dict()</code></pre>
+  </div>
+  <div class="card">
+    <h4 style="color:var(--orange)">AGE Projection</h4>
+    <p style="font-size:.85rem;color:var(--text-dim);">Used only for writes</p>
+    <pre style="font-size:.78rem"><code>self._pool: asyncpg connection pool
+
+→ _LOAD_NODE  (MERGE via Cypher)
+→ _LOAD_EDGE  (MERGE via Cypher)
+→ cypher_query() — raw passthrough (V2)</code></pre>
+  </div>
+</div>
+
+<h3>All Methods and Their Data Source</h3>
+
+<table>
+  <tr><th>Method</th><th>Uses AGE?</th><th>Data Source</th></tr>
+  <tr><td><code>load_demo_data()</code></td><td><span class="tag tag-yes">YES</span> (write)</td><td>AGE MERGE for persistence</td></tr>
+  <tr><td><code>load_projection()</code></td><td><span class="tag tag-no">NO</span></td><td>Populates <code>self.nodes</code>, <code>self.edges</code></td></tr>
+  <tr><td><code>locate_current()</code></td><td><span class="tag tag-no">NO</span></td><td><code>self.nodes</code> + Python scoring</td></tr>
+  <tr><td><code>locate_target()</code></td><td><span class="tag tag-no">NO</span></td><td><code>self.nodes</code> + Python filter/sort</td></tr>
+  <tr><td><code>shortest_path()</code></td><td><span class="tag tag-no">NO</span></td><td><code>self.edges</code> → adjacency → BFS</td></tr>
+  <tr><td><code>applicable_nodes()</code></td><td><span class="tag tag-no">NO</span></td><td><code>self.nodes</code> + <code>applies_to()</code></td></tr>
+  <tr><td><code>to_dict()</code></td><td><span class="tag tag-no">NO</span></td><td><code>self.nodes</code>, <code>self.edges</code></td></tr>
+  <tr><td><code>cypher_query()</code></td><td><span class="tag tag-res">YES</span> (read, V2)</td><td>Raw SQL pass-through to AGE</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>The Irony</h2>
+
+<div class="card red">
+  <h4>You Pay For</h4>
+  <ul>
+    <li>AGE compile time in Docker build</li>
+    <li><code>LOAD 'age'</code> on every connection init</li>
+    <li>Dual-write: <code>load_projection()</code> + AGE MERGE</li>
+    <li><code>pg_advisory_lock</code> serialization during bulk load</li>
+    <li>agtype serialization overhead</li>
+  </ul>
+</div>
+
+<p style="text-align:center;font-size:1.2rem;margin:1rem 0;">
+  <span style="color:var(--red);">And <code>shortest_path()</code> — the core graph operation — bypasses ALL of it</span><br>
+  <span style="color:var(--text-dim);">running the same Python BFS as the zero-dependency <code>InMemoryRoadmapGraph</code>.</span>
+</p>
+
+<hr>
+
+<p class="footer">
+  Generated by Hermes Agent (峰哥) — 2026-05-19 &nbsp;|&nbsp;
+  SCAILED WP4 Pathfinder System &nbsp;|&nbsp;
+  <a href="./cypher-execution-in-memory-vs-age.md">Markdown version</a>
+</p>
+
+</body>
+</html>
