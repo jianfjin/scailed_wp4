@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCAILED WP4 — PostgreSQL + Apache AGE Graph Architecture</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --bg-code: #1c2129;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d2991d;
+    --orange: #db6d28;
+    --red: #f85149;
+    --purple: #a371f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+  h1 { font-size: 1.75rem; color: #f0f6fc; border-bottom: 1px solid var(--border); padding-bottom: .5rem; margin-bottom: .5rem; }
+  h2 { font-size: 1.3rem; color: var(--accent); margin: 2rem 0 .75rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+  h3 { font-size: 1.1rem; color: #f0f6fc; margin: 1.5rem 0 .5rem; }
+  p, li { margin: .4rem 0; }
+  a { color: var(--accent); }
+  .meta { color: var(--text-dim); font-size: .85rem; margin-bottom: 1.5rem; }
+  blockquote {
+    border-left: 3px solid var(--accent);
+    padding: .5rem 1rem;
+    margin: 1rem 0;
+    background: var(--bg-card);
+    border-radius: 0 6px 6px 0;
+    color: var(--text-dim);
+    font-size: .9rem;
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: .85rem;
+    line-height: 1.55;
+    margin: .75rem 0;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: .85rem;
+    background: var(--bg-code);
+    padding: .15em .4em;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+  pre code { background: none; border: none; padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: .9rem;
+  }
+  th, td {
+    text-align: left;
+    padding: .5rem .75rem;
+    border: 1px solid var(--border);
+  }
+  th { background: var(--bg-card); color: #f0f6fc; font-weight: 600; }
+  tr:hover { background: rgba(88,166,255,.04); }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin: 1rem 0;
+  }
+  .tag {
+    display: inline-block;
+    padding: .15em .6em;
+    border-radius: 10px;
+    font-size: .78rem;
+    font-weight: 600;
+    margin-right: .3rem;
+  }
+  .tag-yes { background: rgba(63,185,80,.15); color: var(--green); }
+  .tag-no  { background: rgba(248,81,73,.15); color: var(--red); }
+  .tag-maybe { background: rgba(210,153,29,.15); color: var(--yellow); }
+  ul, ol { padding-left: 1.5rem; }
+  .arch-row {
+    display: flex; gap: 1rem; flex-wrap: wrap; margin: .75rem 0;
+  }
+  .arch-box {
+    flex: 1; min-width: 200px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1rem;
+  }
+  .arch-box h4 { color: var(--accent); margin-bottom: .5rem; font-size: .95rem; }
+  .arch-box ul { font-size: .85rem; }
+  .flow {
+    display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+    font-family: monospace; font-size: .82rem;
+    padding: 1rem; background: var(--bg-card); border-radius: 8px;
+    border: 1px solid var(--border); margin: .75rem 0;
+  }
+  .flow-arrow { color: var(--text-dim); }
+  .flow-node {
+    background: var(--bg-code); border: 1px solid var(--border);
+    padding: .3rem .6rem; border-radius: 4px; white-space: nowrap;
+  }
+  .flow-node.api { border-color: var(--accent); }
+  .flow-node.db  { border-color: var(--green); }
+  .flow-node.py  { border-color: var(--purple); }
+  .flow-node.sql { border-color: var(--orange); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  .footer { color: var(--text-dim); font-size: .8rem; margin-top: 2rem; }
+</style>
+</head>
+<body>
+
+<h1>SCAILED WP4 — PostgreSQL + Apache AGE Graph Architecture</h1>
+
+<p class="meta">
+  <strong>Document version:</strong> 2026-05-19 &nbsp;|&nbsp;
+  <strong>Branch:</strong> feature/mock-upstream-rest-services &nbsp;|&nbsp;
+  <strong>Council resolution:</strong> 2026-05-13 (Kowloon, unanimous) &nbsp;|&nbsp;
+  <strong>Audit revision:</strong> 2026-05-14 (6-seat review)
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>1. Infrastructure: Docker Image</h2>
+
+<div class="card">
+  <strong>Dockerfile:</strong> <code>deploy/Dockerfile.postgres</code>
+  <table style="margin-top:.5rem">
+    <tr><th>Component</th><th>Source</th></tr>
+    <tr><td>Base</td><td><code>postgres:16-bookworm</code></td></tr>
+    <tr><td>AGE</td><td>Apache AGE <code>PG16/v1.5.0-rc0</code> (compiled from source)</td></tr>
+    <tr><td>Extras</td><td><code>pgvector</code> (reserved for WP9 NLP vector retrieval)</td></tr>
+  </table>
+</div>
+
+<p><strong>Build steps:</strong></p>
+<ol>
+  <li>Install build dependencies (<code>build-essential</code>, <code>postgresql-server-dev-16</code>, <code>libreadline-dev</code>, <code>flex</code>, <code>bison</code>)</li>
+  <li><code>git clone --depth 1</code> Apache AGE, <code>make install</code>, remove source</li>
+  <li>Install <code>postgresql-16-pgvector</code> via apt</li>
+  <li>Purge build dependencies to keep image lean</li>
+</ol>
+
+<h3>Runtime Configuration</h3>
+
+<pre><code># docker-compose.yml — postgres service
+shared_preload_libraries: 'age'    # AGE loaded at PostgreSQL startup
+max_connections: 100
+shared_buffers: 256MB
+effective_cache_size: 768MB
+maintenance_work_mem: 64MB</code></pre>
+
+<table>
+  <tr><th>Setting</th><th>Value</th></tr>
+  <tr><td>Volume</td><td>Named <code>scailed_pgdata</code> → <code>/var/lib/postgresql/data</code> (persistent)</td></tr>
+  <tr><td>Network</td><td><code>backend</code> only — not exposed to frontend or public</td></tr>
+  <tr><td>Healthcheck</td><td><code>pg_isready -U pathfinder -d pathfinder</code></td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>2. Initialization Scripts</h2>
+
+<p>Executed automatically on first container start from <code>deploy/pg-init/</code>:</p>
+
+<table>
+  <tr><th>Script</th><th>Purpose</th></tr>
+  <tr>
+    <td><code>01_enable_extensions.sql</code></td>
+    <td><code>LOAD 'age'</code> → <code>CREATE EXTENSION age</code> + <code>CREATE EXTENSION vector</code></td>
+  </tr>
+  <tr>
+    <td><code>02_schema.sql</code></td>
+    <td>Creates schemas, tables, triggers, indexes, and the AGE graph</td>
+  </tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>3. Schema Design: Dual Schema</h2>
+
+<div class="arch-row">
+  <div class="arch-box">
+    <h4>assess</h4>
+    <ul>
+      <li><code>assessment_sessions</code></li>
+      <li><code>audit_log</code> (append-only)
+        <ul>
+          <li>TRIGGER: no UPDATE</li>
+          <li>TRIGGER: no DELETE</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+  <div class="arch-box">
+    <h4>ref</h4>
+    <ul>
+      <li><code>roadmap_nodes</code></li>
+      <li><code>recommendation_rules</code></li>
+      <li><code>schema_versions</code></li>
+      <li><code>rule_versions</code></li>
+      <li><code>upstream_data_snapshots</code></li>
+    </ul>
+  </div>
+</div>
+
+<h3><code>ref.roadmap_nodes</code></h3>
+<pre><code>node_id          TEXT UNIQUE    -- 'R2.3-A'
+label            TEXT           -- 'Establish DPO'
+description      TEXT
+parent_node      TEXT           -- self-referential for DAG
+prerequisites    TEXT[]         -- ['R1.2', 'R2.1']
+maturity_level   INT CHECK (1-5)
+effort_estimate  TEXT           -- 'low' | 'medium' | 'high'
+related_wp       TEXT           -- 'WP5' | 'WP6' | 'WP7'
+x, y             FLOAT          -- visualization coordinates
+metadata         JSONB</code></pre>
+
+<h3><code>ref.recommendation_rules</code></h3>
+<p>Rule tree with self-referential foreign key <code>parent_rule_id</code>:</p>
+<pre><code>rule_id           TEXT UNIQUE    -- 'R-PHARMA-AI-001'
+parent_rule_id    INT → self      -- tree structure
+rule_type         TEXT            -- eligibility | exclusion | preference | override
+node_id           TEXT → roadmap_nodes
+stakeholder_type  TEXT
+condition         JSONB           -- {"answers":{"q2.1":{"gte":3}}}
+action_title      TEXT
+action_text       TEXT
+compliance_ref    TEXT[]          -- ['GDPR-Art.37', 'EHDS-Art.50']
+priority          INT DEFAULT 0</code></pre>
+
+<h3><code>assess.audit_log</code> — Append-Only Immutable</h3>
+<p>Each row chains to previous via <code>prev_hash</code> (SHA-256), forming a verifiable audit chain. UPDATE and DELETE triggers raise exceptions.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>4. AGE Graph Engine: Dual Representation</h2>
+
+<div class="arch-row">
+  <div class="arch-box">
+    <h4>SQL Table</h4>
+    <p><code>ref.roadmap_nodes</code> stores node metadata with <code>prerequisites TEXT[]</code> encoding edge relationships as arrays.</p>
+  </div>
+  <div class="arch-box">
+    <h4>AGE Cypher Graph</h4>
+    <p><code>pathfinder_graph</code> created by <code>ag_catalog.create_graph()</code>. Nodes use label <code>:RoadmapNode</code>, edges use <code>:PREREQUISITE</code>.</p>
+  </div>
+</div>
+
+<h3>Data Loading: Dual Write</h3>
+
+<p><code>AgeRoadmapGraph.load_demo_data()</code> writes to <strong>both</strong> the in-memory dict and AGE simultaneously, protected by <code>pg_advisory_lock(73109741)</code>:</p>
+
+<pre><code>// Node loading (Cypher via Python string interpolation)
+MERGE (n:RoadmapNode {
+    node_id: 'R2.3-A',
+    label: 'Establish DPO',
+    description: '...',
+    dimension: 'governance',
+    maturity_level: 3,
+    stakeholder_types: '["biotech-sme","all"]',
+    source_wp: 'WP3',
+    source_doc_ref: 'demo-data',
+    confidence: 1.0
+})
+
+// Edge loading
+MATCH (a:RoadmapNode {node_id: 'R1.2'})
+MATCH (b:RoadmapNode {node_id: 'R2.1'})
+MERGE (a)-[:PREREQUISITE {edge_id: 'e3', required: true}]->(b)</code></pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>5. Query Paths: Three-Tier Routing</h2>
+
+<div class="flow">
+  <span class="flow-node api">API Request</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-node py">AssessmentService</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-node py">locate_current()</span>
+  <span class="flow-arrow">→</span>
+  <span style="font-size:.8rem;color:var(--text-dim)">Python BFS (in-memory)</span>
+</div>
+<div class="flow">
+  <span class="flow-node api">API Request</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-node py">AssessmentService</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-node py">shortest_path()</span>
+  <span class="flow-arrow">→</span>
+  <span style="font-size:.8rem;color:var(--text-dim)">Python BFS (adjacency list)</span>
+</div>
+<div class="flow">
+  <span class="flow-node api">API Request</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-node py">AssessmentService</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-node py">cypher_query()</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-node db">AGE Cypher</span>
+  <span class="flow-arrow">→</span>
+  <span style="font-size:.8rem;color:var(--text-dim)">reserved for V2</span>
+</div>
+<div class="flow">
+  <span class="flow-node api">API Request</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-node py">AssessmentService</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-node sql">SQL</span>
+  <span class="flow-arrow">→</span>
+  <span style="font-size:.8rem;color:var(--text-dim)">ref.recommendation_rules</span>
+</div>
+
+<h3>Why Python BFS Instead of AGE <code>shortestPath()</code>?</h3>
+
+<p>The <code>_SHORTEST_PATH</code> Cypher template exists in the code but is <strong>not called</strong>:</p>
+
+<pre><code>// Defined but unused:
+MATCH p = shortestPath(
+  (a:RoadmapNode {node_id: 'X'})-[*]->(b:RoadmapNode {node_id: 'Y'})
+) RETURN nodes(p)</code></pre>
+
+<p>From <code>graph_age.py</code> line 278–286:</p>
+<blockquote>
+  "In production this could delegate to AGE's shortestPath(), but for V1 demo scale
+  (&lt; 10⁴ nodes) BFS is more than sufficient and avoids the openCypher shortestPath()
+  gap in AGE."
+</blockquote>
+
+<h3>Current Truth</h3>
+
+<table>
+  <tr><th>Layer</th><th>Uses AGE?</th><th>Why</th></tr>
+  <tr>
+    <td>Data write</td>
+    <td><span class="tag tag-yes">YES</span></td>
+    <td>MERGE nodes + edges via Cypher</td>
+  </tr>
+  <tr>
+    <td>locate_current</td>
+    <td><span class="tag tag-no">NO</span></td>
+    <td>Python scoring over in-memory dict</td>
+  </tr>
+  <tr>
+    <td>shortest_path</td>
+    <td><span class="tag tag-no">NO</span></td>
+    <td>Python BFS; AGE shortestPath() has known openCypher gaps</td>
+  </tr>
+  <tr>
+    <td>cypher_query</td>
+    <td><span class="tag tag-maybe">RESERVED</span></td>
+    <td>Raw Cypher passthrough for V2 analytics</td>
+  </tr>
+  <tr>
+    <td>Rule matching</td>
+    <td><span class="tag tag-no">NO</span></td>
+    <td>SQL over ref.recommendation_rules</td>
+  </tr>
+</table>
+
+<p style="margin-top:.5rem;color:var(--text-dim);font-size:.9rem;">
+  AGE currently functions as a <strong>data mirror</strong> rather than a <strong>query engine</strong> —
+  the architecture is pragmatic, not dogmatic.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>6. Connection Pooling</h2>
+
+<p><code>AgeRoadmapGraph.connect()</code> uses <code>asyncpg</code>:</p>
+
+<pre><code>pool = await asyncpg.create_pool(
+    dsn=self._dsn,
+    min_size=1, max_size=4,
+    init=_init_connection,
+    server_settings={"search_path": "ag_catalog, '$user', public"},
+)</code></pre>
+
+<h3>Per-Connection Initialization</h3>
+
+<ol>
+  <li><code>SELECT ag_catalog.create_graph('pathfinder_graph')</code> — idempotent, "already exists" ignored</li>
+  <li><code>LOAD 'age'</code> — partial failures silently swallowed</li>
+  <li><code>SET search_path = ag_catalog, '$user', public</code> — Cypher type resolution</li>
+</ol>
+
+<p style="color:var(--text-dim);font-size:.9rem;">
+  This keeps AGE session state on the same connection where Cypher queries execute —
+  the <code>ag_catalog</code> functions (cypher, create_graph, etc.) are only visible inside
+  connections that have issued <code>LOAD 'age'</code>.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>7. Data Flow: End-to-End</h2>
+
+<div class="flow" style="flex-direction:column;align-items:flex-start;gap:.25rem;">
+  <div><span class="flow-node">WP2 Mock</span> <span class="flow-arrow">→</span> stakeholder taxonomy (REST)</div>
+  <div><span class="flow-node">WP3 Mock</span> <span class="flow-arrow">→</span> roadmap graph data (REST)</div>
+  <div><span class="flow-node">WP8 Mock</span> <span class="flow-arrow">→</span> rules engine (REST)</div>
+  <div style="padding-left:1rem;padding-top:.25rem;">↓</div>
+  <div><span class="flow-node api">AssessmentService</span></div>
+  <div style="padding-left:1rem;">├── load_demo_data(nodes, edges)
+    <div style="padding-left:2rem;font-size:.85rem;color:var(--text-dim);">
+      ├── self.nodes = {...} &nbsp;(in-memory dict)<br>
+      ├── self.edges = [...] &nbsp;(in-memory list)<br>
+      └── MERGE into AGE graph &nbsp;(Cypher, advisory-locked)
+    </div>
+  </div>
+  <div style="padding-left:1rem;">├── Questionnaire → StakeholderState
+    <div style="padding-left:2rem;font-size:.85rem;color:var(--text-dim);">
+      └── answers → maturity_scores + capabilities + regulatory_flags
+    </div>
+  </div>
+  <div style="padding-left:1rem;">├── Rule matching: SQL (ref.recommendation_rules)
+    <div style="padding-left:2rem;font-size:.85rem;color:var(--text-dim);">
+      └── condition JSONB → triggered rules
+    </div>
+  </div>
+  <div style="padding-left:1rem;">└── Path computation: Python BFS
+    <div style="padding-left:2rem;font-size:.85rem;color:var(--text-dim);">
+      └── current → target via adjacency list
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>8. Demo Data</h2>
+
+<p><code>pathfinder/adapters/demo_data.py</code> provides <strong>6 nodes × 6 edges</strong>:</p>
+
+<pre style="text-align:center;font-size:.82rem;line-height:1.8;">
+generic-intake ──→ governance-scope ──→ legal-basis ──→ secure-processing ──┐
+                                                    ┌───────────────────────┤
+                                                    ↓                       ↓
+                                         access-body-review ──→ readiness-report
+</pre>
+
+<table>
+  <tr><th>Stakeholder Type</th><th>Description</th></tr>
+  <tr><td><code>biotech-sme</code></td><td>Biotech small/medium enterprise</td></tr>
+  <tr><td><code>ai-factory-operator</code></td><td>AI Factory operator</td></tr>
+  <tr><td><code>health-data-access-body</code></td><td>Health Data Access Body (HDAB)</td></tr>
+  <tr><td><code>health-data-infrastructure</code></td><td>Health data infrastructure provider</td></tr>
+  <tr><td><code>research-infrastructure</code></td><td>Research infrastructure</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>9. Environment Variables</h2>
+
+<table>
+  <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+  <tr>
+    <td><code>DATABASE_URL</code></td>
+    <td><code>postgresql+asyncpg://pathfinder:***@postgres:5432/pathfinder</code></td>
+    <td>Connection string</td>
+  </tr>
+  <tr><td><code>POSTGRES_USER</code></td><td><code>pathfinder</code></td><td>Database user</td></tr>
+  <tr><td><code>POSTGRES_PASSWORD</code></td><td><code>changeme</code></td><td>Database password</td></tr>
+  <tr><td><code>POSTGRES_DB</code></td><td><code>pathfinder</code></td><td>Database name</td></tr>
+  <tr><td><code>USE_AGE</code></td><td><em>(unset)</em></td><td>Set to <code>1</code>/<code>true</code>/<code>yes</code> to force AGE backend</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>10. Architecture Assessment</h2>
+
+<table>
+  <tr><th>Aspect</th><th>Assessment</th></tr>
+  <tr>
+    <td>AGE usage depth</td>
+    <td>Conservative — writes go to AGE, queries stay in Python/SQL</td>
+  </tr>
+  <tr>
+    <td>Rationale</td>
+    <td>V1 demo &lt; 100 nodes; Python BFS is fast enough; AGE <code>shortestPath()</code> has known openCypher gaps</td>
+  </tr>
+  <tr>
+    <td>Dual-write risk</td>
+    <td><code>load_projection()</code> + AGE MERGE are synchronous with advisory lock</td>
+  </tr>
+  <tr>
+    <td>V2 evolution path</td>
+    <td><code>cypher_query()</code> interface ready for complex graph analytics (community detection, centrality, etc.)</td>
+  </tr>
+  <tr>
+    <td>Production readiness</td>
+    <td>AGE compiled, loaded, graph created, data flowing — query layer intentionally deferred</td>
+  </tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>11. Key Files</h2>
+
+<table>
+  <tr><th>File</th><th>Role</th></tr>
+  <tr><td><code>deploy/Dockerfile.postgres</code></td><td>PG16 + AGE + pgvector image build</td></tr>
+  <tr><td><code>deploy/docker-compose.yml</code></td><td>Service orchestration, network isolation, healthchecks</td></tr>
+  <tr><td><code>deploy/pg-init/01_enable_extensions.sql</code></td><td>Extension bootstrap</td></tr>
+  <tr><td><code>deploy/pg-init/02_schema.sql</code></td><td>Schema, tables, triggers, AGE graph creation</td></tr>
+  <tr><td><code>pathfinder/core/graph.py</code></td><td><code>InMemoryRoadmapGraph</code> — pure Python BFS (default)</td></tr>
+  <tr><td><code>pathfinder/core/graph_age.py</code></td><td><code>AgeRoadmapGraph</code> — AGE backend with dual in-memory/AGE projection</td></tr>
+  <tr><td><code>pathfinder/core/models.py</code></td><td><code>RoadmapNode</code>, <code>RoadmapEdge</code>, <code>StakeholderState</code>, <code>PathResult</code></td></tr>
+  <tr><td><code>pathfinder/adapters/demo_data.py</code></td><td>Demo nodes, edges, rules for development</td></tr>
+  <tr><td><code>pathfinder/services/assessment_service.py</code></td><td>Orchestration layer</td></tr>
+  <tr><td><code>tests/test_graph_age.py</code></td><td>AGE backend tests</td></tr>
+</table>
+
+<hr>
+<p class="footer">
+  Generated by Hermes Agent (峰哥) — 2026-05-19 &nbsp;|&nbsp;
+  SCAILED WP4 Pathfinder System &nbsp;|&nbsp;
+  <a href="./postgres-age-graph-architecture.md">Markdown version</a>
+</p>
+
+</body>
+</html>
