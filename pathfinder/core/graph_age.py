@@ -329,6 +329,75 @@ class AgeRoadmapGraph:
             rows = await conn.fetch(query)
         return [dict(row) for row in rows]
 
+    async def shortest_path_cypher(
+        self, start_node_id: str, target_node_id: str, max_hops: int = 12
+    ) -> tuple[RoadmapNode, ...]:
+        """Find shortest path using AGE Cypher variable-length traversal.
+
+        Uses ORDER BY length(p) LIMIT 1 because AGE's openCypher implementation
+        does not support the shortestPath() clause.  For small graphs this is
+        fast enough; for larger graphs prefer the Python BFS path.
+
+        Returns the same tuple[RoadmapNode, ...] as shortest_path() so the
+        solver can treat both backends identically.
+        """
+        if start_node_id not in self.nodes:
+            raise NoFeasiblePathError(f"unknown start node: {start_node_id}")
+        if target_node_id not in self.nodes:
+            raise NoFeasiblePathError(f"unknown target node: {target_node_id}")
+
+        query = (
+            "SELECT * FROM ag_catalog.cypher('pathfinder_graph', $$\n"
+            "    MATCH p = (a:RoadmapNode {node_id: '%s'})-[:PREREQUISITE*1..%d]->"
+            "(b:RoadmapNode {node_id: '%s'})\n"
+            "    RETURN nodes(p) AS path_nodes\n"
+            "    ORDER BY length(p)\n"
+            "    LIMIT 1\n"
+            "$$) AS (path_nodes agtype);"
+        ) % (start_node_id.replace("'", "''"), max_hops, target_node_id.replace("'", "''"))
+
+        rows = await self.cypher_query(query)
+        if not rows:
+            raise NoFeasiblePathError(
+                f"no Cypher path from {start_node_id} to {target_node_id} "
+                f"within {max_hops} hops"
+            )
+
+        # Parse agtype path array: [{id, label, properties: {node_id, ...}}, ...]
+        row = rows[0]
+        path_data = row.get("path_nodes")
+        if path_data is None:
+            raise NoFeasiblePathError(
+                f"Cypher returned no path nodes for {start_node_id} → {target_node_id}"
+            )
+
+        # path_data is a string like '[{...}::vertex, {...}::vertex]'
+        # AGE appends ::vertex / ::edge type casts that break JSON.
+        # Strip them before parsing.
+        import json as _json
+        raw = str(path_data)
+        raw = raw.replace("::vertex", "").replace("::edge", "").replace("::path", "")
+        try:
+            vertices = _json.loads(raw)
+        except _json.JSONDecodeError:
+            raise NoFeasiblePathError(
+                f"failed to parse Cypher path result for {start_node_id} → {target_node_id}"
+            )
+
+        node_ids: list[str] = []
+        for vertex in vertices:
+            props = vertex.get("properties", {})
+            nid = props.get("node_id", "")
+            if nid:
+                node_ids.append(nid)
+
+        if not node_ids:
+            raise NoFeasiblePathError(
+                f"no node_ids extracted from Cypher path {start_node_id} → {target_node_id}"
+            )
+
+        return tuple(self.nodes[nid] for nid in node_ids if nid in self.nodes)
+
 
 # ------------------------------------------------------------------
 # Factory

@@ -37,6 +37,7 @@ type PathfinderReport = {
     next_steps?: Array<{ node_id?: string; label?: string; dimension?: string }>;
     blockers?: string[];
     warnings?: string[];
+    path_backend?: string;
     trace?: {
       answer_ids?: string[];
       roadmap_node_ids?: string[];
@@ -158,6 +159,11 @@ function ReportSummary({ report }: { report: PathfinderReport }) {
   const trace = path?.trace;
   const blocked = path?.status === "blocked";
 
+  const backendLabel =
+    path?.path_backend === "cypher" ? "AGE Cypher" :
+    path?.path_backend === "n/a (blocked)" ? "n/a" :
+    "Python BFS";
+
   return (
     <div className="report-summary">
       <div className="status-row">
@@ -187,8 +193,10 @@ function ReportSummary({ report }: { report: PathfinderReport }) {
             <dd>{path?.current_node || "n/a"}</dd>
             <dt>Target</dt>
             <dd>{path?.target_node || "n/a"}</dd>
-            <dt>Rule version</dt>
-            <dd>{trace?.rule_version || "n/a"}</dd>
+            <dt>Engine</dt>
+            <dd className="path-backend-badge" data-backend={path?.path_backend || "python"}>
+              {backendLabel}
+            </dd>
           </dl>
         </div>
       </div>
@@ -229,6 +237,37 @@ function ReportSummary({ report }: { report: PathfinderReport }) {
   );
 }
 
+/* ─── backend toggle ────────────────────────────────────── */
+
+function BackendToggle({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const isCypher = value === "cypher";
+  return (
+    <div className="backend-toggle">
+      <span className="backend-label">Path engine</span>
+      <button
+        type="button"
+        className={`toggle-btn ${!isCypher ? "active" : ""}`}
+        onClick={() => onChange("python")}
+      >
+        Python BFS
+      </button>
+      <button
+        type="button"
+        className={`toggle-btn ${isCypher ? "active" : ""}`}
+        onClick={() => onChange("cypher")}
+      >
+        AGE Cypher
+      </button>
+    </div>
+  );
+}
+
 /* ─── main app ──────────────────────────────────────────── */
 
 function App() {
@@ -239,6 +278,7 @@ function App() {
   const [report, setReport] = useState<PathfinderReport | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pathBackend, setPathBackend] = useState("python");
 
   useEffect(() => {
     api<{ stakeholder_types: string[] }>("/v1/questionnaires")
@@ -285,7 +325,6 @@ function App() {
     setLoading(true);
     setReport(null);
     try {
-      // extract capabilities/missing/regulatory from answers or use defaults
       const caps = (answers["capabilities"] as string[]) || ["secure-processing"];
       const missing = (answers["missing_capabilities"] as string[]) || [];
       const flags = (answers["regulatory_flags"] as string[]) || [];
@@ -304,7 +343,9 @@ function App() {
         method: "POST",
         body: JSON.stringify({ answers: payload }),
       });
-      await api(`/v1/assessments/${session.assessment_id}/recommendations`, { method: "POST" });
+      await api(`/v1/assessments/${session.assessment_id}/recommendations?path_backend=${pathBackend}`, {
+        method: "POST",
+      });
       const r = await api<PathfinderReport>(`/v1/assessments/${session.assessment_id}/report`);
       setReport(r);
     } catch (err) {
@@ -321,9 +362,12 @@ function App() {
           <h1>SCAILED Pathfinder</h1>
           <p>EHDS readiness path planner. Answer questions → get your roadmap path with full trace.</p>
         </div>
-        <button type="button" onClick={runAssessment} disabled={!allAnswered || loading}>
-          {loading ? "Running…" : "Submit assessment"}
-        </button>
+        <div className="toolbar-actions">
+          <BackendToggle value={pathBackend} onChange={setPathBackend} />
+          <button type="button" onClick={runAssessment} disabled={!allAnswered || loading}>
+            {loading ? "Running…" : "Submit assessment"}
+          </button>
+        </div>
       </section>
 
       <section className="layout">

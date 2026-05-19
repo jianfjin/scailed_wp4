@@ -232,6 +232,68 @@ h1 {
   color: #9d1c1c;
 }
 
+/* ─── backend toggle ──────────────────────────────────────── */
+
+.toolbar-actions {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+}
+
+.backend-toggle {
+  align-items: center;
+  background: #edf0eb;
+  border: 1px solid #ccd4c8;
+  border-radius: 4px;
+  display: flex;
+  gap: 0;
+}
+
+.backend-label {
+  color: #516052;
+  font-size: 12px;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+.toggle-btn {
+  background: transparent;
+  border: 0;
+  color: #516052;
+  cursor: pointer;
+  font-size: 13px;
+  min-height: 34px;
+  padding: 0 14px;
+  transition: background 0.15s;
+}
+
+.toggle-btn.active {
+  background: #1d5d43;
+  color: white;
+}
+
+.toggle-btn:first-of-type {
+  border-radius: 3px 0 0 3px;
+}
+
+.toggle-btn:last-of-type {
+  border-radius: 0 3px 3px 0;
+}
+
+.toggle-btn:not(.active):hover {
+  background: #dce1d9;
+}
+
+.path-backend-badge[data-backend="cypher"] {
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+.path-backend-badge[data-backend="python"] {
+  color: #1d5d43;
+  font-weight: 600;
+}
+
 @media (max-width: 1020px) {
   .layout {
     grid-template-columns: 1fr;

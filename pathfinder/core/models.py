@@ -178,6 +178,7 @@ class PathResult:
     confidence: float
     trace: TraceRecord
     effort_estimate: str = "medium"
+    path_backend: str = "python"  # "python" | "cypher" | "n/a (blocked)"
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)

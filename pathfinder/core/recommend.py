@@ -28,4 +28,5 @@ def build_recommendation(path: PathResult) -> dict[str, object]:
         "confidence": path.confidence,
         "triggered_rules": [rule.to_dict() for rule in path.triggered_rules],
         "trace": path.trace.to_dict(),
+        "path_backend": path.path_backend,
     }

@@ -143,6 +143,7 @@ class RecommendationResponse(BaseModel):
     triggered_rules: list[dict[str, Any]]
     trace: TraceRecordResponse
     confidence: float
+    path_backend: str = "python"  # "python" | "cypher" | "n/a (blocked)"
 
 
 # ─── Report ─────────────────────────────────────────────────────────

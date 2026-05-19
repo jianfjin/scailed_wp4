@@ -257,6 +257,36 @@ class AssessmentService:
         )
         return recommendation
 
+    async def generate_recommendation_async(
+        self,
+        assessment_id: str,
+        ip: str | None = None,
+        user_agent: str | None = None,
+        path_backend: str = "python",
+    ) -> dict[str, object]:
+        session = self.sessions[assessment_id]
+        answers = session.get("answers")
+        if not isinstance(answers, dict):
+            raise ValueError("answers must be submitted before recommendation generation")
+        state = self.questionnaire_engine.build_state(
+            str(session["stakeholder_type"]),
+            str(session["target_scenario"]),
+            answers,
+        )
+        use_cypher = path_backend == "cypher"
+        path = await self.solver.solve_async(state, self.rules, use_cypher=use_cypher)
+        recommendation = build_recommendation(path)
+        session["recommendation"] = recommendation
+        session["status"] = "complete"
+        self.audit_log.append(
+            "recommendation_generated",
+            {"assessment_id": assessment_id, "status": recommendation["status"],
+             "path_backend": path_backend},
+            ip=ip,
+            user_agent=user_agent,
+        )
+        return recommendation
+
     def report(
         self,
         assessment_id: str,

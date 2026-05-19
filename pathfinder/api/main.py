@@ -223,12 +223,15 @@ async def submit_answers(
 
 
 @app.post("/v1/assessments/{assessment_id}/recommendations", response_model=RecommendationResponse)
-def recommendations(
-    assessment_id: str, request: Request, authorization: str | None = Header(default=None)
+async def recommendations(
+    assessment_id: str, request: Request, authorization: str | None = Header(default=None),
+    path_backend: str = "python",
 ) -> dict[str, object]:
     require_demo_token(authorization)
     try:
-        return _get_service().generate_recommendation(assessment_id, **_audit_context(request))
+        return await _get_service().generate_recommendation_async(
+            assessment_id, path_backend=path_backend, **_audit_context(request)
+        )
     except Exception as exc:
         raise _validation_error(str(exc)) from exc
 
