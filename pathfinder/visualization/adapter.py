@@ -41,13 +41,13 @@ def build_view_model(raw_report: dict[str, Any]) -> ReportViewModel:
         audit_chain_valid=bool(raw_report.get("audit_chain_valid", False)),
         stakeholder_type=str(session.get("stakeholder_type", "")),
         target_scenario=str(session.get("target_scenario", "")),
-        total_rules_triggered=len(path.get("triggered_rules", [])),
+        total_rules_triggered=len(path.get("triggered_rules") or []),
         total_blockers=len(path.get("blockers", [])),
         total_steps=len(path.get("next_steps", [])),
     )
 
     # ── Rule evidence (triggered rules → RuleCards) ──────────────────
-    triggered_rules_raw: list[dict] = path.get("triggered_rules", [])
+    triggered_rules_raw: list[dict] = path.get("triggered_rules") or []
     rule_cards: list[RuleCard] = []
     for rule_dict in triggered_rules_raw:
         condition = rule_dict.get("condition", {})
