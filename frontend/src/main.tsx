@@ -280,6 +280,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [pathBackend, setPathBackend] = useState("python");
   const [bannerText, setBannerText] = useState("Loading status…");
+  const [lastAssessmentId, setLastAssessmentId] = useState("");
 
   useEffect(() => {
     api<{ stakeholder_types: string[] }>("/v1/questionnaires")
@@ -351,6 +352,7 @@ function App() {
         method: "POST",
         body: JSON.stringify({ stakeholder_type: stakeholderType, target_scenario: "secondary-use-readiness" }),
       });
+      setLastAssessmentId(session.assessment_id);
       await api(`/v1/assessments/${session.assessment_id}/answers/batch`, {
         method: "POST",
         body: JSON.stringify({ answers: payload }),
@@ -437,6 +439,18 @@ function App() {
           {loading && <p>Running assessment…</p>}
           {!report && !loading && <p>Complete the questionnaire and submit to see your roadmap path.</p>}
           {report && <ReportSummary report={report} />}
+          {report && lastAssessmentId && (
+            <p style={{marginTop:12}}>
+              <a
+                href={`/v1/assessments/${lastAssessmentId}/report?format=html&token=${TOKEN}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{color:"#1d5d43",fontWeight:600}}
+              >
+                View visualization →
+              </a>
+            </p>
+          )}
         </section>
       </section>
     </main>
