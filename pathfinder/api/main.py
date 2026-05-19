@@ -244,8 +244,14 @@ def report(
     request: Request,
     authorization: str | None = Header(default=None),
     format: str = Query(default="json"),
+    token: str = Query(default=""),
 ):
-    require_demo_token(authorization)
+    # Accept token from query param for browser-friendly HTML visualization
+    auth_value = authorization
+    if not auth_value and token:
+        auth_value = f"Bearer {token}"
+    if auth_value not in {f"Bearer {DEMO_TOKEN}", f"Bearer {ADMIN_TOKEN}"}:
+        raise _auth_error("invited demo token required")
     try:
         raw = _get_service().report(assessment_id, **_audit_context(request))
     except Exception as exc:

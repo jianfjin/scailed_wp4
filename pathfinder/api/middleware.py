@@ -198,6 +198,16 @@ class DefaultDenyAuthMiddleware:
                 auth = header_value.decode("latin-1", errors="replace")
                 break
 
+        # Fallback: accept ?token= from query string (browser-friendly HTML viz)
+        if not auth:
+            qs = scope.get("query_string", b"")
+            if qs:
+                from urllib.parse import parse_qs
+                params = parse_qs(qs.decode("latin-1", errors="replace"))
+                token_vals = params.get("token", [])
+                if token_vals and token_vals[0]:
+                    auth = f"Bearer {token_vals[0]}"
+
         # Admin token → full access.
         if auth == self._admin_auth:
             await self.app(scope, receive, send)
