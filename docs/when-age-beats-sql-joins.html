@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCAILED WP4 — When Does AGE Beat SQL JOINs?</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --bg-code: #1c2129;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d2991d;
+    --orange: #db6d28;
+    --red: #f85149;
+    --purple: #a371f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+  h1 { font-size: 1.75rem; color: #f0f6fc; border-bottom: 1px solid var(--border); padding-bottom: .5rem; margin-bottom: .5rem; }
+  h2 { font-size: 1.3rem; color: var(--accent); margin: 2rem 0 .75rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+  h3 { font-size: 1.1rem; color: #f0f6fc; margin: 1.5rem 0 .5rem; }
+  p, li { margin: .4rem 0; }
+  .meta { color: var(--text-dim); font-size: .85rem; margin-bottom: 1.5rem; }
+  blockquote {
+    border-left: 3px solid var(--accent);
+    padding: .5rem 1rem;
+    margin: 1rem 0;
+    background: var(--bg-card);
+    border-radius: 0 6px 6px 0;
+    color: var(--text-dim);
+    font-size: .9rem;
+  }
+  blockquote.warn {
+    border-left-color: var(--yellow);
+  }
+  blockquote.info {
+    border-left-color: var(--green);
+  }
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: .85rem;
+    line-height: 1.55;
+    margin: .75rem 0;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: .85rem;
+    background: var(--bg-code);
+    padding: .15em .4em;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+  pre code { background: none; border: none; padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: .9rem;
+  }
+  th, td {
+    text-align: left;
+    padding: .5rem .75rem;
+    border: 1px solid var(--border);
+  }
+  th { background: var(--bg-card); color: #f0f6fc; font-weight: 600; }
+  tr:hover { background: rgba(88,166,255,.04); }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin: 1rem 0;
+  }
+  .card.accent { border-color: var(--accent); }
+  .card.green  { border-color: var(--green); }
+  .card.red    { border-color: var(--red); }
+  .card h4 { color: var(--accent); margin-bottom: .5rem; font-size: .95rem; }
+  .card.green h4 { color: var(--green); }
+  .card.red h4 { color: var(--red); }
+  .tag {
+    display: inline-block;
+    padding: .15em .6em;
+    border-radius: 10px;
+    font-size: .78rem;
+    font-weight: 600;
+    margin-right: .3rem;
+  }
+  .tag-done { background: rgba(63,185,80,.15); color: var(--green); }
+  .tag-no   { background: rgba(248,81,73,.15); color: var(--red); }
+  .tag-cost { background: rgba(210,153,29,.15); color: var(--yellow); }
+  ul, ol { padding-left: 1.5rem; }
+  .verdict {
+    font-size: 1.1rem; padding: 1rem; border-radius: 8px;
+    background: rgba(248,81,73,.08); border: 1px solid var(--red);
+    margin: 1rem 0; text-align: center;
+  }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  .footer { color: var(--text-dim); font-size: .8rem; margin-top: 2rem; }
+  .two-col { display: flex; gap: 1rem; flex-wrap: wrap; margin: .75rem 0; }
+  .two-col > div { flex: 1; min-width: 280px; }
+</style>
+</head>
+<body>
+
+<h1>SCAILED WP4 — When Does AGE Beat SQL JOINs?</h1>
+
+<p class="meta">
+  <strong>Document version:</strong> 2026-05-19 &nbsp;|&nbsp;
+  <strong>Branch:</strong> feature/mock-upstream-rest-services &nbsp;|&nbsp;
+  <strong>Context:</strong> Follow-up to the PostgreSQL + AGE graph architecture doc — answering why have AGE at all if SQL can do the job.
+</p>
+
+<div class="verdict">
+  <strong>At V1 scale (&lt; 100 nodes), AGE has zero advantage.</strong><br>
+  Python BFS + SQL JOINs are faster, simpler, and have no network overhead.<br>
+  AGE is a strategic reserve — sleeping investment, not active weapon.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>1. Current vs. AGE: Head-to-Head</h2>
+
+<div class="two-col">
+  <div class="card green">
+    <h4>What You Do Now</h4>
+    <p><strong>Shortest path:</strong> Python BFS, O(V+E), dict lookup O(1)</p>
+    <p><strong>Network:</strong> Zero (in-process)</p>
+    <p><strong>Code:</strong> 30 lines of readable Python</p>
+    <p style="margin-top:.5rem;color:var(--green);font-weight:600;">Winner at this scale</p>
+  </div>
+  <div class="card red">
+    <h4>If You Used AGE Cypher</h4>
+    <p><strong>Shortest path:</strong> <code>MATCH p = shortestPath(...)</code> — parser → planner → executor</p>
+    <p><strong>Network:</strong> asyncpg round-trip</p>
+    <p><strong>Code:</strong> 3 lines of Cypher</p>
+    <p style="margin-top:.5rem;color:var(--text-dim);">AGE only wins on <em>expressiveness</em>, not performance</p>
+  </div>
+</div>
+
+<blockquote class="warn">
+  <strong>Honest assessment:</strong> AGE is currently an expensive ornament. Compile cost, dual-write maintenance, advisory lock overhead — all paid, but the query layer doesn't use any of it.
+</blockquote>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>2. When AGE Starts Making Sense</h2>
+
+<p>The threshold is <strong>not</strong> node count. It's <strong>query complexity</strong>.</p>
+
+<h3>2.1 Variable-Length Paths with Edge Constraints</h3>
+
+<blockquote>
+  "Find a path from A to B, skip nodes with maturity_level &lt; 3, and ensure at least one node in the 'compliance' dimension."
+</blockquote>
+
+<div class="two-col">
+  <div>
+    <h4 style="color:var(--red)">SQL Recursive CTE</h4>
+    <pre><code>WITH RECURSIVE path AS (
+  SELECT node_id, ARRAY[node_id] as visited, 0 as depth
+  FROM roadmap_nodes WHERE node_id = 'A'
+  UNION ALL
+  SELECT r.node_id, p.visited || r.node_id, p.depth + 1
+  FROM path p
+  JOIN roadmap_nodes r ON r.node_id = ANY(...)
+  WHERE NOT r.node_id = ANY(p.visited)
+    AND r.maturity_level >= 3
+    AND p.depth < 6
+)</code></pre>
+    <p style="color:var(--text-dim);font-size:.85rem;">Possible, but readability collapses as constraints grow.</p>
+  </div>
+  <div>
+    <h4 style="color:var(--green)">AGE Cypher</h4>
+    <pre><code>MATCH p = (a {node_id:'A'})-[*1..6]-(b {node_id:'B'})
+WHERE ALL(n IN nodes(p) WHERE n.maturity_level >= 3)
+  AND ANY(n IN nodes(p) WHERE n.dimension = 'compliance')
+RETURN p</code></pre>
+    <p style="color:var(--green);font-size:.85rem;">Declarative. Reads like English.</p>
+  </div>
+</div>
+
+<h3>2.2 Graph Analytics</h3>
+
+<table>
+  <tr><th>Operation</th><th>SQL</th><th>Cypher / AGE</th></tr>
+  <tr>
+    <td>Betweenness centrality</td>
+    <td><span style="color:var(--red)">Not feasible</span></td>
+    <td><span style="color:var(--green)">Built-in or one-line extension</span></td>
+  </tr>
+  <tr>
+    <td>Community detection (Louvain)</td>
+    <td><span style="color:var(--red)">Not feasible</span></td>
+    <td><span style="color:var(--green)">Extensible in AGE</span></td>
+  </tr>
+  <tr>
+    <td>"All downstream nodes of X"</td>
+    <td><code>WITH RECURSIVE</code></td>
+    <td><code>(n)-[*]->(m)</code></td>
+  </tr>
+  <tr>
+    <td>Cycle detection (DAG validation)</td>
+    <td><span style="color:var(--orange)">Painful workaround</span></td>
+    <td><code>EXISTS((n)-[*]->(n))</code></td>
+  </tr>
+</table>
+
+<p style="color:var(--text-dim);">None of these are needed in V1. In V2, "how many stakeholders does this compliance path impact?" — SQL can't answer that.</p>
+
+<h3>2.3 Pattern Matching</h3>
+
+<blockquote>
+  "Find all subgraphs matching: stakeholder → compliance_node → blocked by missing_capability"
+</blockquote>
+
+<p>Cypher is a <strong>native graph pattern matching language</strong>. SQL requires nested multi-level JOINs with subqueries. As pattern complexity grows, the SQL version becomes write-only.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>3. The Real State of AGE in This Project</h2>
+
+<table>
+  <tr><th>What's Paid</th><th>What's Received</th></tr>
+  <tr><td><span class="tag tag-cost">COST</span> Compile time in Docker build</td><td><span class="tag tag-no">ZERO</span></td></tr>
+  <tr><td><span class="tag tag-cost">COST</span> Dual-write maintenance</td><td><span class="tag tag-no">ZERO</span></td></tr>
+  <tr><td><span class="tag tag-cost">COST</span> Advisory lock overhead during bulk load</td><td><span class="tag tag-no">ZERO</span></td></tr>
+  <tr><td><span class="tag tag-cost">COST</span> Cypher templates written, tested</td><td><span class="tag tag-no">ZERO</span></td></tr>
+</table>
+
+<p style="font-size:1.1rem;text-align:center;margin:1.5rem 0;">
+  Compile ✓ &nbsp; Load ✓ &nbsp; Graph created ✓ &nbsp; Data flowing ✓ &nbsp;&nbsp;
+  <span style="color:var(--red);font-weight:700;">Querying ✗</span>
+</p>
+
+<p>This is <strong>technical debt with a purpose</strong>, not an architectural defect.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>4. The Defense</h2>
+
+<blockquote class="info">
+  "Better to have AGE running in the container now — schema aligned, data synced, tests passing — than to stop everything and install it when V2 suddenly needs graph analytics."
+</blockquote>
+
+<p>The <code>cypher_query()</code> passthrough interface already exists. The Cypher query templates are written and tested. The switchover cost is <strong>one line of code</strong>.</p>
+
+<div class="card accent">
+  <h4>V2 will demand:</h4>
+  <ul>
+    <li>"Show me the impact radius of changing this regulation"</li>
+    <li>"Which stakeholder paths are blocked by missing capability X?"</li>
+    <li>"Community-detect the roadmap and find isolated requirements"</li>
+  </ul>
+  <p style="margin-top:.5rem;">AGE will be ready. Until then, it's a sleeping investment.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>5. Summary</h2>
+
+<table>
+  <tr><th>Question</th><th>Answer</th></tr>
+  <tr><td>Is AGE faster than SQL for V1 queries?</td><td><strong>No.</strong></td></tr>
+  <tr><td>Is AGE more expressive for complex graph queries?</td><td><strong>Yes</strong> — when complexity crosses the CTE pain threshold.</td></tr>
+  <tr><td>Should we remove AGE?</td><td><strong>No</strong> — marginal cost now, high switching cost later.</td></tr>
+  <tr><td>When does AGE start earning its keep?</td><td><strong>V2</strong>: multi-hop constrained paths, centrality, community detection, pattern matching.</td></tr>
+</table>
+
+<hr>
+
+<p class="footer">
+  Generated by Hermes Agent (峰哥) — 2026-05-19 &nbsp;|&nbsp;
+  SCAILED WP4 Pathfinder System &nbsp;|&nbsp;
+  <a href="./when-age-beats-sql-joins.md">Markdown version</a>
+</p>
+
+</body>
+</html>
