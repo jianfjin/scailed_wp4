@@ -18,11 +18,11 @@ def render_path_svg(steps: tuple[PathStepView, ...]) -> str:
     if not steps:
         return ""
 
-    # Layout parameters
-    col_w = 140  # column width per maturity level
-    node_h = 56  # node height
-    v_gap = 16   # vertical gap between nodes
-    margin = 24
+    # Layout parameters — sized to match surrounding HTML text (~14px base)
+    col_w = 200   # column width per maturity level
+    node_h = 72   # node height
+    v_gap = 20    # vertical gap between nodes
+    margin = 32
 
     # Group nodes by maturity level
     levels: dict[int, list[PathStepView]] = {}
@@ -35,8 +35,7 @@ def render_path_svg(steps: tuple[PathStepView, ...]) -> str:
     height = max_nodes_in_col * (node_h + v_gap) + margin * 2
 
     svg_parts = [
-        f'<svg viewBox="0 0 {width} {height}" style="width:100%; max-width:{width}px; font-family:system-ui,sans-serif;">',
-        # Subtle grid
+        f'<svg viewBox="0 0 {width} {height}" style="width:100%; font-family:system-ui,sans-serif;">',
         f'<rect width="100%" height="100%" fill="#FAF9F5"/>',
     ]
 
@@ -48,12 +47,11 @@ def render_path_svg(steps: tuple[PathStepView, ...]) -> str:
         from_nodes = levels[from_lv]
         to_nodes = levels[to_lv]
 
-        # Connect each from-node to each to-node with simple straight arrows
         for fi, fn in enumerate(from_nodes):
-            fx = from_lv * col_w + margin + col_w - 10  # right edge of node
-            fy = margin + fi * (node_h + v_gap) + node_h // 2  # center
+            fx = from_lv * col_w + margin + col_w - 10
+            fy = margin + fi * (node_h + v_gap) + node_h // 2
             for ti, tn in enumerate(to_nodes):
-                tx = to_lv * col_w + margin + 10  # left edge of node
+                tx = to_lv * col_w + margin + 10
                 ty = margin + ti * (node_h + v_gap) + node_h // 2
                 color = _status_stroke(fn.status)
                 svg_parts.append(
@@ -81,20 +79,20 @@ def render_path_svg(steps: tuple[PathStepView, ...]) -> str:
 
             svg_parts.append(
                 f'<rect x="{x}" y="{y}" width="{col_w - 8}" height="{node_h}" '
-                f'rx="6" fill="{fill}" stroke="{stroke}" stroke-width="1.5"/>'
+                f'rx="8" fill="{fill}" stroke="{stroke}" stroke-width="1.5"/>'
             )
             svg_parts.append(
-                f'<text x="{x + 10}" y="{y + 20}" fill="{text_color}" '
-                f'font-size="12" font-weight="600">{_esc(node.label[:20])}</text>'
+                f'<text x="{x + 14}" y="{y + 26}" fill="{text_color}" '
+                f'font-size="14" font-weight="600">{_esc(node.label[:24])}</text>'
             )
             svg_parts.append(
-                f'<text x="{x + 10}" y="{y + 38}" fill="#87867F" '
-                f'font-size="9">{_esc(node.dimension)} · L{node.maturity_level}</text>'
+                f'<text x="{x + 14}" y="{y + 48}" fill="#87867F" '
+                f'font-size="11">{_esc(node.dimension)} · L{node.maturity_level}</text>'
             )
             # Status badge
             badge_color = _status_stroke(node.status)
             svg_parts.append(
-                f'<circle cx="{x + col_w - 20}" cy="{y + 14}" r="5" fill="{badge_color}"/>'
+                f'<circle cx="{x + col_w - 24}" cy="{y + 18}" r="6" fill="{badge_color}"/>'
             )
 
     svg_parts.append("</svg>")
