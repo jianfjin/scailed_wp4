@@ -16,6 +16,7 @@ from pathfinder.visualization.schemas import (
     ReportViewModel,
     RuleCard,
 )
+from pathfinder.visualization.graph import render_path_svg
 
 
 def render_html(vm: ReportViewModel) -> str:
@@ -25,6 +26,7 @@ def render_html(vm: ReportViewModel) -> str:
         readiness_section=_render_readiness(vm.summary),
         blockers_section=_render_blockers(vm),
         path_section=_render_path(vm.path_steps),
+        path_graph_section=render_path_svg(vm.path_steps),
         evidence_section=_render_evidence(vm),
         trace_json=_json_safe(vm),
         footer=f"Generated {vm.generated_at} · SCAILED WP4 Pathfinder",
@@ -315,6 +317,12 @@ _HTML_TEMPLATE = """\
   <!-- ====== 3. Compliance Path ====== -->
   <h2>Compliance Path</h2>
 {path_section}
+
+  <!-- ====== 3b. Path Graph ====== -->
+  <h2>Path Graph</h2>
+  <div style="overflow-x:auto; padding:8px 0;">
+{path_graph_section}
+  </div>
 
   <!-- ====== 4. Evidence — Triggered Rules ====== -->
   <h2>Evidence: Triggered Rules</h2>
