@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCAILED WP4 — How the Graph is Built</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg-card: #161b22; --bg-code: #1c2129; --border: #30363d;
+    --text: #c9d1d9; --text-dim: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --yellow: #d2991d; --orange: #db6d28; --red: #f85149;
+    --purple: #a371f7; --pink: #f778ba;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+    max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem;
+  }
+  h1 { font-size: 1.75rem; color: #f0f6fc; border-bottom: 1px solid var(--border); padding-bottom: .5rem; margin-bottom: .5rem; }
+  h2 { font-size: 1.3rem; color: var(--accent); margin: 2rem 0 .75rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+  h3 { font-size: 1.1rem; color: #f0f6fc; margin: 1.5rem 0 .5rem; }
+  h4 { color: var(--accent); margin: 1rem 0 .4rem; font-size: .95rem; }
+  p, li { margin: .4rem 0; }
+  .meta { color: var(--text-dim); font-size: .85rem; margin-bottom: 1.5rem; }
+  blockquote {
+    border-left: 3px solid var(--accent); padding: .5rem 1rem; margin: 1rem 0;
+    background: var(--bg-card); border-radius: 0 6px 6px 0;
+    color: var(--text-dim); font-size: .9rem;
+  }
+  pre {
+    background: var(--bg-code); border: 1px solid var(--border);
+    border-radius: 6px; padding: 1rem; overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: .82rem; line-height: 1.55; margin: .75rem 0;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: .85rem; background: var(--bg-code); padding: .15em .4em;
+    border-radius: 3px; border: 1px solid var(--border);
+  }
+  pre code { background: none; border: none; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .88rem; }
+  th, td { text-align: left; padding: .45rem .7rem; border: 1px solid var(--border); }
+  th { background: var(--bg-card); color: #f0f6fc; font-weight: 600; }
+  tr:hover { background: rgba(88,166,255,.04); }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.25rem; margin: 1rem 0;
+  }
+  .tag {
+    display: inline-block; padding: .12em .55em; border-radius: 10px;
+    font-size: .78rem; font-weight: 600; margin-right: .3rem;
+  }
+  .tag-dim { background: rgba(88,166,255,.15); color: var(--accent); }
+  .tag-mem { background: rgba(63,185,80,.15); color: var(--green); }
+  .tag-db  { background: rgba(219,109,40,.15); color: var(--orange); }
+  .tag-imm { background: rgba(167,113,247,.15); color: var(--purple); }
+  ul, ol { padding-left: 1.5rem; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  .footer { color: var(--text-dim); font-size: .8rem; margin-top: 2rem; }
+  .two-col { display: flex; gap: 1rem; flex-wrap: wrap; margin: .75rem 0; }
+  .two-col > div { flex: 1; min-width: 280px; }
+  .flow {
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: .82rem; line-height: 1.7;
+    background: var(--bg-code); border: 1px solid var(--border);
+    border-radius: 6px; padding: 1rem 1.25rem; margin: .75rem 0;
+  }
+  .flow .s1 { color: var(--accent); }
+  .flow .s2 { color: var(--green); }
+  .flow .s3 { color: var(--purple); }
+  .flow .s4 { color: var(--yellow); }
+  .flow .dim { color: var(--text-dim); }
+  .graph-viz {
+    text-align: center; font-family: 'SF Mono', Consolas, monospace;
+    font-size: .88rem; line-height: 2;
+    background: var(--bg-code); border: 1px solid var(--border);
+    border-radius: 6px; padding: 1.5rem; margin: 1rem 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>SCAILED WP4 — How the Graph is Built: Data, Nodes, and Edges</h1>
+
+<p class="meta">
+  <strong>Document version:</strong> 2026-05-19 &nbsp;|&nbsp;
+  <strong>Branch:</strong> feature/mock-upstream-rest-services
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>1. The Raw Data</h2>
+
+<p>Source of truth: <code>services/mock/fixtures/wp3_data.json</code> — <strong>6 nodes + 6 edges</strong>.</p>
+
+<h3>The 6 Nodes</h3>
+
+<table>
+  <tr><th>node_id</th><th>label</th><th>dimension</th><th>maturity</th><th>stakeholder_types</th><th>prerequisites</th></tr>
+  <tr>
+    <td><code>generic-intake</code></td><td>Confirm stakeholder baseline</td>
+    <td><span class="tag tag-dim">governance</span></td><td>1</td><td>all</td><td>—</td>
+  </tr>
+  <tr>
+    <td><code>governance-scope</code></td><td>Define governance scope</td>
+    <td><span class="tag tag-dim">governance</span></td><td>2</td><td>all</td><td>generic-intake</td>
+  </tr>
+  <tr>
+    <td><code>legal-basis</code></td><td>Confirm legal basis</td>
+    <td><span class="tag tag-dim">compliance</span></td><td>3</td><td>all</td><td>governance-scope</td>
+  </tr>
+  <tr>
+    <td><code>secure-processing</code></td><td>Prepare secure processing env</td>
+    <td><span class="tag tag-dim">data</span></td><td>4</td><td>biotech-sme, ai-factory-op, health-data-infra, research-infra</td><td>legal-basis</td>
+  </tr>
+  <tr>
+    <td><code>access-body-review</code></td><td>Prepare HDAB review package</td>
+    <td><span class="tag tag-dim">compliance</span></td><td>4</td><td>hdab, biotech-sme, research-infra</td><td>legal-basis</td>
+  </tr>
+  <tr>
+    <td><code>readiness-report</code></td><td>Export readiness evidence</td>
+    <td><span class="tag tag-dim">governance</span></td><td>5</td><td>all</td><td>secure-processing, access-body-review</td>
+  </tr>
+</table>
+
+<div class="graph-viz">
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;┌─→ <span style="color:var(--accent)">secure-processing</span> ──┐<br>
+  <span style="color:var(--accent)">generic-intake</span> → <span style="color:var(--green)">governance-scope</span> → <span style="color:var(--orange)">legal-basis</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ <span style="color:var(--purple)">readiness-report</span><br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─→ <span style="color:var(--pink)">access-body-review</span> ─┘
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>2. Data Pipeline: Two Paths Converge</h2>
+
+<div class="two-col">
+  <div class="card">
+    <h4>Path A — Demo Mode</h4>
+    <p style="font-size:.85rem;color:var(--text-dim);">Development / tests</p>
+    <div class="flow">
+      <span class="s1">demo_data.py</span><br>
+      <span class="dim">  ↓ hardcoded</span><br>
+      <span class="s2">AssessmentService._load_demo_data()</span><br>
+      <span class="dim">  ↓</span><br>
+      <span class="s3">InMemoryRoadmapGraph(nodes, edges)</span><br>
+      <span class="dim">  ├── self.nodes = {id: RoadmapNode}</span><br>
+      <span class="dim">  ├── self.edges = list[RoadmapEdge]</span><br>
+      <span class="dim">  └── self._outgoing = {from: [to...]}</span>
+    </div>
+    <p style="font-size:.8rem;color:var(--text-dim);margin-top:.5rem;">Zero I/O. Zero network. Pure Python objects.</p>
+  </div>
+  <div class="card">
+    <h4>Path B — Deployed Mode</h4>
+    <p style="font-size:.85rem;color:var(--text-dim);">Production</p>
+    <div class="flow">
+      <span class="s1">wp3_data.json</span> <span class="dim">(disk)</span><br>
+      <span class="dim">  ↓</span><br>
+      <span class="s2">WP3 Mock</span> <span class="dim">(aiohttp :8080)</span><br>
+      <span class="dim">  ↓ HTTP GET</span><br>
+      <span class="s3">UpstreamClient.fetch_roadmap()</span><br>
+      <span class="dim">  ↓ JSON → domain models</span><br>
+      <span class="s4">AssessmentService._load_upstream_data()</span><br>
+      <span class="dim">  ↓</span><br>
+      <span class="s1">AgeRoadmapGraph()</span><br>
+      <span class="dim">  ├── connect() → asyncpg pool</span><br>
+      <span class="dim">  └── load_demo_data()</span><br>
+      <span class="dim">       ├── <span class="tag tag-mem">memory</span> load_projection()</span><br>
+      <span class="dim">       └── <span class="tag tag-db">AGE</span> MERGE into pathfinder_graph</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>3. Domain Models</h2>
+
+<p>Frozen dataclasses in <code>pathfinder/core/models.py</code> — immutable, thread-safe.</p>
+
+<h3>RoadmapNode</h3>
+<pre><code>@dataclass(frozen=True)
+class RoadmapNode:
+    node_id: str              # "generic-intake"
+    label: str                # "Confirm stakeholder baseline"
+    description: str
+    dimension: str            # "governance" | "data" | "compliance"
+    maturity_level: int       # 1-5
+    stakeholder_types: tuple[str, ...]  # ("all",) | ("biotech-sme", ...)
+    prerequisites: tuple[str, ...] = ()
+    source_wp: str = "WP3"
+    source_doc_ref: str = "demo-data"
+    confidence: float = 1.0
+    metadata: dict = {}
+
+    def applies_to(self, stakeholder_type: str) -> bool:
+        return stakeholder_type in self.stakeholder_types or "all" in self.stakeholder_types</code></pre>
+
+<h3>RoadmapEdge</h3>
+<pre><code>@dataclass(frozen=True)
+class RoadmapEdge:
+    edge_id: str              # "e1"
+    from_node_id: str         # "generic-intake"
+    to_node_id: str           # "governance-scope"
+    relation_type: str = "prerequisite"
+    required: bool = True
+    source_doc_ref: str = "demo-data"</code></pre>
+
+<p><code>frozen=True</code> means <span class="tag tag-imm">immutable</span> after creation. Thread-safe, hashable, no accidental mutation.</p>
+
+<p><strong>The key routing logic:</strong> <code>applies_to(stakeholder_type)</code> — a node with <code>("all",)</code> applies to everyone. A node with <code>("biotech-sme", "research-infrastructure")</code> only applies to those two.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>4. Graph Construction: Two Backends, One Interface</h2>
+
+<div class="two-col">
+  <div class="card">
+    <h4 style="color:var(--green)">InMemoryRoadmapGraph</h4>
+    <p style="font-size:.85rem;color:var(--text-dim);">Demo mode — graph.py</p>
+    <pre style="font-size:.78rem"><code>class InMemoryRoadmapGraph:
+    def __init__(self, nodes, edges):
+        self.nodes = {n.node_id: n for n in nodes}
+        self.edges = edges
+        self._outgoing = {}
+        for edge in edges:
+            self._outgoing.setdefault(
+                edge.from_node_id, []
+            ).append(edge.to_node_id)</code></pre>
+    <p style="font-size:.8rem;color:var(--text-dim);">One hash map + one adjacency list. Instant.</p>
+  </div>
+  <div class="card">
+    <h4 style="color:var(--orange)">AgeRoadmapGraph</h4>
+    <p style="font-size:.85rem;color:var(--text-dim);">Deployed mode — graph_age.py</p>
+    <pre style="font-size:.78rem"><code>class AgeRoadmapGraph:
+    def __init__(self, dsn=None):
+        self._dsn = dsn
+        self._pool = None       # lazy
+        self.nodes = {}          # empty!
+        self.edges = []          # empty!
+        self._connected = False</code></pre>
+    <p style="font-size:.8rem;color:var(--text-dim);">Constructor stores DSN only. Data loaded later in connect() + load_demo_data().</p>
+  </div>
+</div>
+
+<h3>The Dual Write — Why Both?</h3>
+
+<pre><code># graph_age.py — load_demo_data()
+async def load_demo_data(self, nodes, edges):
+    # ═══ WRITE 1: In-memory ═══
+    self.load_projection(nodes, edges)
+    #   self.nodes["generic-intake"] = RoadmapNode(...)
+    #   self.edges = [RoadmapEdge("e1", ...), ...]
+
+    # ═══ WRITE 2: AGE graph (advisory locked) ═══
+    async with self._pool.acquire() as conn:
+        await conn.execute("SELECT pg_advisory_lock(73109741);")
+        for node in nodes:
+            await conn.execute(_LOAD_NODE % (...))
+        for edge in edges:
+            await conn.execute(_LOAD_EDGE % (...))
+        await conn.execute("SELECT pg_advisory_unlock(73109741);")</code></pre>
+
+<table>
+  <tr><th>Write target</th><th>Used by</th><th>Purpose</th></tr>
+  <tr>
+    <td><span class="tag tag-mem">memory</span> <code>self.nodes</code> / <code>self.edges</code></td>
+    <td><code>shortest_path()</code>, <code>locate_current()</code>, <code>applicable_nodes()</code></td>
+    <td>Fast Python BFS — no DB call</td>
+  </tr>
+  <tr>
+    <td><span class="tag tag-db">AGE</span> <code>pathfinder_graph</code></td>
+    <td>Nothing yet (<code>cypher_query()</code> available for V2)</td>
+    <td>Reserve — V2 graph analytics</td>
+  </tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>5. Full End-to-End Flow (Deployed Mode)</h2>
+
+<div class="flow">
+<span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;">Phase 1 — Data Source</span><br>
+<span class="dim">  wp3_data.json</span> <span style="color:var(--text-dim)">(on disk, WP3 mock container)</span><br>
+<span class="dim">    ↓ aiohttp.web server, port 8080</span><br>
+<span class="dim">  GET /api/v1/roadmap/nodes  → JSON list of node dicts</span><br>
+<span class="dim">  GET /api/v1/roadmap/edges  → JSON list of edge dicts</span><br>
+<span class="dim">    ↓</span><br>
+<span class="s3">  UpstreamClient.fetch_roadmap()</span><br>
+<span class="dim">    - HTTP GET with retry (3 attempts, exponential backoff)</span><br>
+<span class="dim">    - JSON dict → RoadmapNode / RoadmapEdge domain models</span><br>
+<span class="dim">    - Cached in self.roadmap_nodes / self.roadmap_edges</span><br>
+<br>
+<span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;">Phase 2 — Service Init (FastAPI Lifespan)</span><br>
+<span class="dim">  upstream_client.startup()</span><br>
+<span class="dim">    → fetch_stakeholders()  (WP2)</span><br>
+<span class="dim">    → fetch_roadmap()       (WP3) ← graph data</span><br>
+<span class="dim">    → fetch_rules()         (WP8)</span><br>
+<span class="dim">    ↓</span><br>
+<span class="s2">  AssessmentService(upstream_client=client)</span><br>
+<span class="dim">    → _load_upstream_data(client)</span><br>
+<span class="dim">        self._active_roadmap = (nodes, edges)</span><br>
+<span class="dim">    ↓</span><br>
+<span class="s4">  if deployed: await service.connect_age()</span><br>
+<span class="dim">    → graph.connect()       (asyncpg pool, min=1, max=4)</span><br>
+<span class="dim">    → graph.load_demo_data(nodes, edges)</span><br>
+<span class="dim">        ├── <span class="tag tag-mem">memory</span> load_projection()</span><br>
+<span class="dim">        └── <span class="tag tag-db">AGE</span> MERGE into pathfinder_graph</span><br>
+<br>
+<span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;">Phase 3 — Query</span><br>
+<span class="dim">  POST /v1/assessments/{id}/recommendations</span><br>
+<span class="dim">    → solver.solve(state, rules)</span><br>
+<span class="dim">      → graph.locate_current(state)   ← self.nodes</span><br>
+<span class="dim">      → graph.locate_target(state)    ← self.nodes</span><br>
+<span class="dim">      → graph.shortest_path(from, to) ← self.edges → BFS</span><br>
+<span class="dim">      → rule matching                 ← self.rules</span><br>
+<span class="dim">    → build_recommendation(path)</span><br>
+<span class="dim">    → return PathResult</span><br>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>6. Two Data Sources, Same Models</h2>
+
+<table>
+  <tr><th></th><th>Demo</th><th>Upstream</th></tr>
+  <tr><td>Nodes from</td><td><code>demo_data.demo_roadmap()</code></td><td><code>UpstreamClient</code> → HTTP GET WP3 mock</td></tr>
+  <tr><td>Edges from</td><td><code>demo_data.demo_roadmap()</code></td><td><code>UpstreamClient</code> → HTTP GET WP3 mock</td></tr>
+  <tr><td>Stakeholders</td><td><code>demo_data.demo_questionnaires()</code></td><td><code>UpstreamClient</code> → HTTP GET WP2 mock</td></tr>
+  <tr><td>Rules</td><td><code>demo_data.demo_rule_bundle()</code></td><td><code>UpstreamClient</code> → HTTP GET WP8 mock</td></tr>
+  <tr><td>Graph backend</td><td><code>InMemoryRoadmapGraph</code></td><td><code>AgeRoadmapGraph</code></td></tr>
+</table>
+
+<p style="color:var(--text-dim);">Both paths produce identical <code>list[RoadmapNode] + list[RoadmapEdge]</code> — the graph backend doesn't care where the data came from.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>7. Hot Reload</h2>
+
+<p><code>POST /admin/import/wp3</code> (requires admin-token) allows reloading roadmap data at runtime:</p>
+
+<pre><code>AssessmentService.import_wp3(json_payload)
+  │
+  ├── _roadmap_from_wp3(payload)    ← parse + validate
+  │     for each node dict: validate fields, check duplicates, RoadmapNode(...)
+  │     for each edge dict: validate refs exist, check duplicates, RoadmapEdge(...)
+  │
+  ├── self._active_roadmap = (nodes, edges)
+  │
+  ├── if AGE backend:
+  │     graph.load_projection(nodes, edges)  ← update memory only
+  │   else:
+  │     self.graph = InMemoryRoadmapGraph(nodes, edges)
+  │
+  ├── self.solver = PathfinderSolver(self.graph)
+  └── self.audit_log.append("data_imported", {...})</code></pre>
+
+<p style="color:var(--text-dim);font-size:.85rem;">
+  Hot reload updates the <strong>in-memory</strong> projection immediately.
+  AGE sync on hot reload is not implemented — currently only touches the memory projection.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>8. Data Shape</h2>
+
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>Nodes</td><td>6 (demo), unbounded (upstream)</td></tr>
+  <tr><td>Edges</td><td>6 (demo), unbounded (upstream)</td></tr>
+  <tr><td>Dimensions</td><td>3: governance, data, compliance</td></tr>
+  <tr><td>Stakeholder types</td><td>5: biotech-sme, ai-factory-operator, hdab, health-data-infra, research-infra</td></tr>
+  <tr><td>Maturity scale</td><td>1–5 (integer)</td></tr>
+  <tr><td>Edge relation</td><td>1: prerequisite (extensible)</td></tr>
+  <tr><td>Topology</td><td>Directed Acyclic Graph (DAG) — no cycles by design</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>9. Key Files</h2>
+
+<table>
+  <tr><th>File</th><th>Role</th></tr>
+  <tr><td><code>services/mock/fixtures/wp3_data.json</code></td><td>Raw graph data (nodes + edges as JSON)</td></tr>
+  <tr><td><code>services/mock/wp3_roadmap.py</code></td><td>WP3 mock REST server</td></tr>
+  <tr><td><code>pathfinder/adapters/upstream.py</code></td><td>HTTP client — WP3 JSON → domain models</td></tr>
+  <tr><td><code>pathfinder/adapters/demo_data.py</code></td><td>Hardcoded demo data (dev fallback)</td></tr>
+  <tr><td><code>pathfinder/core/models.py</code></td><td><code>RoadmapNode</code>, <code>RoadmapEdge</code> frozen dataclasses</td></tr>
+  <tr><td><code>pathfinder/core/graph.py</code></td><td><code>InMemoryRoadmapGraph</code></td></tr>
+  <tr><td><code>pathfinder/core/graph_age.py</code></td><td><code>AgeRoadmapGraph</code> — dual memory/AGE</td></tr>
+  <tr><td><code>pathfinder/services/assessment_service.py</code></td><td>Orchestration — loads data, builds graph</td></tr>
+  <tr><td><code>pathfinder/api/main.py</code></td><td>FastAPI — lifespan startup + hot reload</td></tr>
+  <tr><td><code>deploy/pg-init/02_schema.sql</code></td><td>Creates AGE <code>pathfinder_graph</code></td></tr>
+</table>
+
+<hr>
+<p class="footer">
+  Generated by Hermes Agent (峰哥) — 2026-05-19 &nbsp;|&nbsp;
+  SCAILED WP4 Pathfinder System &nbsp;|&nbsp;
+  <a href="./how-the-graph-is-built.md">Markdown version</a>
+</p>
+
+</body>
+</html>
