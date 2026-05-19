@@ -279,11 +279,23 @@ function App() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [pathBackend, setPathBackend] = useState("python");
+  const [bannerText, setBannerText] = useState("Loading status…");
 
   useEffect(() => {
     api<{ stakeholder_types: string[] }>("/v1/questionnaires")
       .then((data) => setTypes(data.stakeholder_types))
       .catch((err) => setError(String(err)));
+    api<{ mode: string; import_reports?: Record<string, unknown> }>("/health")
+      .then((h) => {
+        if (h.mode === "deployed" && h.import_reports?.upstream) {
+          setBannerText("Deployed mode. Mock upstream data loaded (3000 records).");
+        } else if (h.mode === "deployed") {
+          setBannerText("Deployed mode. PostgreSQL + Apache AGE active.");
+        } else {
+          setBannerText("Demo mode. WP2/WP3/WP8 inputs pending.");
+        }
+      })
+      .catch(() => setBannerText("Demo mode. WP2/WP3/WP8 inputs pending."));
   }, []);
 
   useEffect(() => {
@@ -364,7 +376,7 @@ function App() {
         </div>
         <div className="toolbar-actions">
           <BackendToggle value={pathBackend} onChange={setPathBackend} />
-          <button type="button" onClick={runAssessment} disabled={!allAnswered || loading}>
+          <button type="button" className="submit-btn" onClick={runAssessment} disabled={!allAnswered || loading}>
             {loading ? "Running…" : "Submit assessment"}
           </button>
         </div>
@@ -376,7 +388,7 @@ function App() {
           <select id="stakeholder" value={stakeholderType} onChange={(e) => setStakeholderType(e.target.value)}>
             {types.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
-          <div className="banner">Demo mode. WP2/WP3/WP8 inputs pending.</div>
+          <div className="banner">{bannerText}</div>
         </aside>
 
         <section className="panel">
