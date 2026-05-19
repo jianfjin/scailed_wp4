@@ -12,9 +12,9 @@ import os
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware import Middleware as StarletteMiddleware
 
 from pathfinder.api.middleware import (
@@ -42,6 +42,8 @@ from pathfinder.api.schemas import (
 )
 from pathfinder.adapters.upstream import UpstreamClient
 from pathfinder.services.assessment_service import AssessmentService
+from pathfinder.visualization.adapter import build_view_model
+from pathfinder.visualization.renderer import render_html
 
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "development").lower()
 DEMO_TOKEN = os.environ.get("PATHFINDER_DEMO_TOKEN", "demo-token" if ENVIRONMENT != "production" else "")
@@ -236,13 +238,28 @@ async def recommendations(
         raise _validation_error(str(exc)) from exc
 
 
-@app.get("/v1/assessments/{assessment_id}/report", response_model=ReportResponse)
-def report(assessment_id: str, request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
+@app.get("/v1/assessments/{assessment_id}/report")
+def report(
+    assessment_id: str,
+    request: Request,
+    authorization: str | None = Header(default=None),
+    format: str = Query(default="json"),
+):
     require_demo_token(authorization)
     try:
-        return _get_service().report(assessment_id, **_audit_context(request))
+        raw = _get_service().report(assessment_id, **_audit_context(request))
     except Exception as exc:
         raise _validation_error(str(exc)) from exc
+
+    if format == "html":
+        try:
+            vm = build_view_model(raw)
+            html = render_html(vm)
+            return HTMLResponse(content=html)
+        except Exception as exc:
+            raise _validation_error(f"HTML rendering failed: {exc}") from exc
+
+    return raw
 
 
 # ─── Roadmap ────────────────────────────────────────────────────────
