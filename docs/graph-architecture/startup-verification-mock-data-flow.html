@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCAILED WP4 — Startup Verification: Mock Fixture Data Flow</title>
+<style>
+  :root {
+    --bg: #0d1117; --bg-card: #161b22; --bg-code: #1c2129; --border: #30363d;
+    --text: #c9d1d9; --text-dim: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --yellow: #d2991d; --orange: #db6d28; --red: #f85149;
+    --purple: #a371f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+    max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem;
+  }
+  h1 { font-size: 1.75rem; color: #f0f6fc; border-bottom: 1px solid var(--border); padding-bottom: .5rem; margin-bottom: .5rem; }
+  h2 { font-size: 1.3rem; color: var(--accent); margin: 2rem 0 .75rem; border-bottom: 1px solid var(--border); padding-bottom: .25rem; }
+  h3 { font-size: 1.1rem; color: #f0f6fc; margin: 1.5rem 0 .5rem; }
+  p, li { margin: .4rem 0; }
+  .meta { color: var(--text-dim); font-size: .85rem; margin-bottom: 1.5rem; }
+  pre {
+    background: var(--bg-code); border: 1px solid var(--border);
+    border-radius: 6px; padding: 1rem; overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: .82rem; line-height: 1.55; margin: .75rem 0;
+  }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace;
+    font-size: .85rem; background: var(--bg-code); padding: .15em .4em;
+    border-radius: 3px; border: 1px solid var(--border);
+  }
+  pre code { background: none; border: none; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .88rem; }
+  th, td { text-align: left; padding: .45rem .7rem; border: 1px solid var(--border); }
+  th { background: var(--bg-card); color: #f0f6fc; font-weight: 600; }
+  tr:hover { background: rgba(88,166,255,.04); }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.25rem; margin: 1rem 0;
+  }
+  .card.green { border-color: var(--green); }
+  .card.red { border-color: var(--red); }
+  .tag {
+    display: inline-block; padding: .12em .55em; border-radius: 10px;
+    font-size: .78rem; font-weight: 600; margin-right: .3rem;
+  }
+  .tag-up { background: rgba(63,185,80,.15); color: var(--green); }
+  .tag-dn { background: rgba(248,81,73,.15); color: var(--red); }
+  ul, ol { padding-left: 1.5rem; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  .footer { color: var(--text-dim); font-size: .8rem; margin-top: 2rem; }
+  .two-col { display: flex; gap: 1rem; flex-wrap: wrap; margin: .75rem 0; }
+  .two-col > div { flex: 1; min-width: 280px; }
+  .flow {
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: .82rem; line-height: 1.7;
+    background: var(--bg-code); border: 1px solid var(--border);
+    border-radius: 6px; padding: 1rem 1.25rem; margin: .75rem 0;
+  }
+  .json-resp {
+    font-family: 'SF Mono', Consolas, monospace; font-size: .8rem;
+    line-height: 1.6; background: var(--bg-code); border: 1px solid var(--border);
+    border-radius: 6px; padding: .75rem 1rem; margin: .5rem 0;
+  }
+  .highlight { color: var(--green); font-weight: 600; }
+  .dim { color: var(--text-dim); }
+  .cmd { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>SCAILED WP4 — Startup Verification: Mock Fixture Data Flow</h1>
+
+<p class="meta">
+  <strong>Document version:</strong> 2026-05-19 &nbsp;|&nbsp;
+  <strong>Branch:</strong> feature/mock-upstream-rest-services &nbsp;|&nbsp;
+  <strong>Context:</strong> Live verification — running containers confirmed to use mock fixture data via automatic FastAPI startup.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>TL;DR</h2>
+
+<div class="card green">
+  <p>The graph was built <strong>automatically by FastAPI at startup</strong> — not manually.</p>
+  <p>Data source: <span class="tag tag-up">WP3 mock</span> serving <code>wp3_data.json</code> — not hardcoded <code>demo_data.py</code>.</p>
+  <p>Human action required: <code>docker compose up -d --build</code>. That's it.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>1. What Actually Happened</h2>
+
+<div class="flow">
+<span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;">Human</span><br>
+<span class="cmd">docker compose up -d --build</span><br>
+<span class="dim">  one command — no data loading, no API calls, no config</span><br>
+<br>
+<span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;">System — FastAPI lifespan startup (automatic)</span><br>
+<span class="dim">  ├── UpstreamClient.startup()</span><br>
+<span class="dim">  │     GET wp2-mock:8080  → stakeholder taxonomy</span><br>
+<span class="dim">  │     GET wp3-mock:8080  → roadmap nodes + edges  ← wp3_data.json</span><br>
+<span class="dim">  │     GET wp8-mock:8080  → rules</span><br>
+<span class="dim">  │</span><br>
+<span class="dim">  ├── AssessmentService(upstream_client=client)</span><br>
+<span class="dim">  │     → <span class="highlight">_load_upstream_data()</span>  ← NOT _load_demo_data</span><br>
+<span class="dim">  │</span><br>
+<span class="dim">  └── connect_age()</span><br>
+<span class="dim">        → load_demo_data(nodes, edges)</span><br>
+<span class="dim">            ├── load_projection()  → self.nodes / self.edges</span><br>
+<span class="dim">            └── AGE MERGE          → pathfinder_graph</span><br>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>2. Live Verification</h2>
+
+<h3>Health Endpoint — Confirms Data Source</h3>
+
+<p><code>GET /health</code> with <code>Authorization: Bearer demo-token</code></p>
+
+<div class="json-resp">
+<span style="color:var(--text-dim)">{</span><br>
+<span style="color:var(--text-dim)">    "status": "ok",</span><br>
+<span style="color:var(--text-dim)">    "service": "pathfinder",</span><br>
+<span style="color:var(--green)">    "mode": "deployed",</span><br>
+<span style="color:var(--green)">    "graph_backend": "age",</span><br>
+<span style="color:var(--text-dim)">    "stakeholder_types": [</span><br>
+<span style="color:var(--text-dim)">        "ai-factory-operator", "biotech-sme", "health-data-access-body",</span><br>
+<span style="color:var(--text-dim)">        "health-data-infrastructure", "research-infrastructure"</span><br>
+<span style="color:var(--text-dim)">    ],</span><br>
+<span style="color:var(--text-dim)">    "import_reports": {</span><br>
+<span style="color:var(--green)">        "upstream": {                     ← NOT "demo"!</span><br>
+<span style="color:var(--text-dim)">            "source": "upstream",</span><br>
+<span style="color:var(--text-dim)">            "accepted": true,</span><br>
+<span style="color:var(--text-dim)">            "checksum": "df538e6ad...",</span><br>
+<span style="color:var(--text-dim)">            "activated_records": 20,</span><br>
+<span style="color:var(--green)">            "warnings": []                 ← no demo warning!</span><br>
+<span style="color:var(--text-dim)">        }</span><br>
+<span style="color:var(--text-dim)">    }</span><br>
+<span style="color:var(--text-dim)">}</span><br>
+</div>
+
+<h3>What Demo Mode Would Show</h3>
+
+<div class="card red">
+  <p>If the system had fallen back to <code>demo_data.py</code>:</p>
+  <div class="json-resp">
+  <span style="color:var(--text-dim)">{</span><br>
+  <span style="color:var(--red)">    "import_reports": {</span><br>
+  <span style="color:var(--red)">        "demo": {</span><br>
+  <span style="color:var(--red)">            "warnings": ["demo mode: partner WP2/WP3/WP8 inputs not loaded"]</span><br>
+  <span style="color:var(--red)">        }</span><br>
+  <span style="color:var(--red)">    }</span><br>
+  <span style="color:var(--text-dim)">}</span><br>
+  </div>
+  <p style="color:var(--text-dim);font-size:.85rem;">Not present → upstream path confirmed.</p>
+</div>
+
+<h3>Roadmap Endpoint — Confirms Graph Content</h3>
+
+<p><code>GET /v1/roadmap</code> — 6 nodes + 6 edges, matching <code>wp3_data.json</code> exactly:</p>
+
+<table>
+  <tr><th>node_id</th><th>label</th><th>dimension</th><th>maturity</th></tr>
+  <tr><td><code>generic-intake</code></td><td>Confirm stakeholder baseline</td><td>governance</td><td>1</td></tr>
+  <tr><td><code>governance-scope</code></td><td>Define governance scope</td><td>governance</td><td>2</td></tr>
+  <tr><td><code>legal-basis</code></td><td>Confirm legal basis</td><td>compliance</td><td>3</td></tr>
+  <tr><td><code>secure-processing</code></td><td>Prepare secure processing env</td><td>data</td><td>4</td></tr>
+  <tr><td><code>access-body-review</code></td><td>Prepare HDAB review package</td><td>compliance</td><td>4</td></tr>
+  <tr><td><code>readiness-report</code></td><td>Export readiness evidence</td><td>governance</td><td>5</td></tr>
+</table>
+
+<p>6 edges: <code>e1</code>–<code>e6</code>, all <code>relation_type: prerequisite</code>.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>3. The Decision Point</h2>
+
+<p>In <code>AssessmentService.__init__()</code> (<code>assessment_service.py</code> line 66-69):</p>
+
+<pre><code># ── Data source: upstream client (mock REST) or demo fixtures ──
+if upstream_client is not None:
+    self._load_upstream_data(upstream_client)   # ← THIS PATH (deployed)
+else:
+    self._load_demo_data()                      # ← Fallback (dev/test only)</code></pre>
+
+<p>FastAPI lifespan (<code>main.py</code> line 72-76):</p>
+
+<pre><code>_service = AssessmentService(
+    use_age=None,
+    startup_check=False,
+    upstream_client=_upstream_client,  # ← NOT None → triggers upstream path
+)</code></pre>
+
+<p style="color:var(--text-dim);">Since <code>upstream_client</code> is always provided in the lifespan, the deployed path is taken. The demo path only triggers when <code>AssessmentService()</code> is created with no arguments (tests, CLI).</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>4. Container Topology at Verification Time</h2>
+
+<table>
+  <tr><th>Container</th><th>Status</th><th>Ports</th></tr>
+  <tr><td><code>scailed-traefik</code></td><td>Running</td><td>:80→80</td></tr>
+  <tr><td><code>scailed-frontend</code></td><td>Healthy</td><td>80/tcp</td></tr>
+  <tr><td><code>scailed-backend</code></td><td>Healthy</td><td>8000/tcp</td></tr>
+  <tr><td><code>scailed-postgres</code></td><td>Healthy</td><td>5432/tcp</td></tr>
+  <tr><td><code>scailed-redis</code></td><td>Running</td><td>6379/tcp</td></tr>
+  <tr><td><code>scailed-wp2-mock</code></td><td>Healthy</td><td>8102→8080</td></tr>
+  <tr><td><code>scailed-wp3-mock</code></td><td>Healthy</td><td>8103→8080</td></tr>
+  <tr><td><code>scailed-wp8-mock</code></td><td>Healthy</td><td>8108→8080</td></tr>
+</table>
+
+<h3>Verification Commands</h3>
+
+<pre><code># Check mode and data source
+curl -s http://localhost:80/health \
+  -H "Authorization: Bearer demo-token" | python3 -m json.tool
+
+# Check graph contents
+curl -s http://localhost:80/v1/roadmap \
+  -H "Authorization: Bearer demo-token" | python3 -m json.tool
+
+# Check individual node
+curl -s http://localhost:80/v1/roadmap/legal-basis \
+  -H "Authorization: Bearer demo-token" | python3 -m json.tool</code></pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>5. Two Data Sources, One Interface</h2>
+
+<table>
+  <tr><th></th><th>Demo</th><th><span class="tag tag-up">Upstream (Active)</span></th></tr>
+  <tr><td>Trigger</td><td><code>upstream_client is None</code></td><td><code>upstream_client is not None</code></td></tr>
+  <tr><td>Data from</td><td><code>demo_data.demo_roadmap()</code></td><td>WP3 mock → <code>wp3_data.json</code></td></tr>
+  <tr><td>Import key</td><td><code>"demo"</code></td><td><code>"upstream"</code></td></tr>
+  <tr><td>Warning</td><td>"partner WP inputs not loaded"</td><td>(none)</td></tr>
+  <tr><td>Graph content</td><td>6 nodes, 6 edges</td><td>6 nodes, 6 edges</td></tr>
+  <tr><td>Identical?</td><td colspan="2" style="text-align:center;">Yes — same data, two code paths</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>6. How to Switch</h2>
+
+<div class="two-col">
+  <div class="card">
+    <h4>Force Demo Mode</h4>
+    <pre><code># docker-compose.yml
+PATHFINDER_MODE=demo
+
+# Or remove WP3_API_URL to cause
+# upstream fetch failure → demo fallback</code></pre>
+  </div>
+  <div class="card">
+    <h4>Switch to Real WP3 API</h4>
+    <pre><code># docker-compose.yml
+WP3_API_URL=https://real-wp3.consortium.eu/api/v1
+
+# Same UpstreamClient, different URL
+# Zero code change</code></pre>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>7. Key Insight</h2>
+
+<div class="card green">
+  <h4>No one "built the graph manually."</h4>
+  <ol>
+    <li>Docker Compose starts all 8 containers</li>
+    <li>WP3 mock boots, loads <code>wp3_data.json</code> into memory</li>
+    <li>Backend boots, FastAPI lifespan fires</li>
+    <li><code>UpstreamClient</code> HTTP-fetches from WP3 mock (with retry)</li>
+    <li><code>AssessmentService</code> constructs domain models from JSON</li>
+    <li><code>connect_age()</code> dual-writes to memory + PostgreSQL/AGE</li>
+    <li>System is ready — all automatic, zero manual steps</li>
+  </ol>
+  <p style="margin-top:.75rem;color:var(--text-dim);font-size:.85rem;">
+    The <code>/health</code> endpoint is the single source of truth for verifying which path was taken.
+  </p>
+</div>
+
+<hr>
+<p class="footer">
+  Generated by Hermes Agent (峰哥) — 2026-05-19 &nbsp;|&nbsp;
+  SCAILED WP4 Pathfinder System &nbsp;|&nbsp;
+  <a href="./startup-verification-mock-data-flow.md">Markdown version</a>
+</p>
+
+</body>
+</html>
