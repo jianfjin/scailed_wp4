@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCAILED WP4 — 容灾/备份/主从方案 (本地团队版)</title>
+<style>
+  :root {
+    --bg: #0D1117; --card: #161B22; --border: #30363D;
+    --text: #C9D1D9; --muted: #8B949E; --accent: #58A6FF;
+    --green: #3FB950; --red: #F85149; --yellow: #D29922;
+    --mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--sans); background:var(--bg); color:var(--text); line-height:1.7; }
+  main { max-width:900px; margin:0 auto; padding:48px 24px 80px; }
+  h1 { font-size:28px; font-weight:600; color:var(--accent); margin-bottom:4px; }
+  h2 { font-size:20px; font-weight:600; margin:40px 0 16px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+  h3 { font-size:16px; font-weight:600; margin:24px 0 8px; color:var(--text); }
+  .subtitle { color:var(--muted); font-size:13px; margin-bottom:32px; }
+  p { margin:8px 0; }
+  ul, ol { margin:8px 0 8px 24px; }
+  li { margin:4px 0; }
+  code { font-family:var(--mono); font-size:0.9em; background:var(--card); padding:2px 6px; border-radius:4px; border:1px solid var(--border); }
+  pre { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:16px; overflow-x:auto; margin:12px 0; font-family:var(--mono); font-size:13px; line-height:1.5; }
+  table { width:100%; border-collapse:collapse; margin:16px 0; font-size:14px; }
+  th, td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); }
+  th { background:var(--card); color:var(--accent); font-weight:600; font-size:13px; text-transform:uppercase; }
+  tr:hover { background:rgba(88,166,255,0.04); }
+  .tag-green { color:var(--green); }
+  .tag-red { color:var(--red); }
+  .tag-yellow { color:var(--yellow); }
+  .box { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:24px; margin:16px 0; }
+  .box-title { font-weight:600; font-size:14px; color:var(--accent); margin-bottom:12px; }
+  .ascii { font-family:var(--mono); font-size:12px; line-height:1.3; color:var(--muted); white-space:pre; background:var(--card); padding:16px; border-radius:8px; border:1px solid var(--border); margin:12px 0; }
+  .checklist { list-style:none; margin-left:0; }
+  .checklist li { padding:4px 0; }
+  .checklist li::before { content:"☐ "; color:var(--muted); }
+  .checklist li.done::before { content:"☑ "; color:var(--green); }
+</style>
+</head>
+<body>
+<main>
+
+<h1>SCAILED WP4 — 容灾/备份/主从方案</h1>
+<div class="subtitle">本地团队版 · v1.0 · 2026-05-20 · 峰哥 (CTO) + Linus (Arch) + Guido (CLA)</div>
+
+<h2>一、现状审计</h2>
+
+<h3>1.1 拓扑</h3>
+<div class="ascii">
+┌─ Local (jin-X555LAB) ─────────────────────┐
+│  Docker Compose (8 containers)             │
+│  ├─ traefik       :80 (reverse proxy)      │
+│  ├─ frontend      nginx + React SPA        │
+│  ├─ backend       FastAPI :8000 (1 worker) │
+│  ├─ postgres      PG16 + Apache AGE        │
+│  ├─ redis         7-alpine                 │
+│  ├─ wp2-mock      stakeholder taxonomy     │
+│  ├─ wp3-mock      roadmap graph            │
+│  └─ wp8-mock      rules engine             │
+│  Volumes:                                   │
+│  ├─ scailed_pgdata     ~47 MB              │
+│  └─ scailed_redis_data                     │
+│  SSH bridge → VM (8643, 8647, 8645, 2222)  │
+└────────────────────────────────────────────┘
+
+┌─ VM (GCP e2-micro, 34.57.82.51) ──────────┐
+│  Same Docker Compose stack                 │
+│  Disk: 30 GB (4.1 GB free ⚠️)              │
+│  RAM:  1.9 GB (626 MB free ⚠️)             │
+│  Hermes agent: deepseek-v4-pro             │
+│  tmux: work-0 (attached), vm-work          │
+└────────────────────────────────────────────┘
+</div>
+
+<h3>1.2 当前备份状态</h3>
+<table>
+<tr><th>资源</th><th>备份方式</th><th>频率</th><th>状态</th></tr>
+<tr><td>源码 + Dockerfile</td><td>GitHub (jianfjin/scailed_wp4)</td><td>每次 push</td><td><span class="tag-green">✅</span></td></tr>
+<tr><td>Mock 数据</td><td>GitHub (services/mock/fixtures/)</td><td>提交时</td><td><span class="tag-green">✅</span></td></tr>
+<tr><td>PG 数据 (AGE 图)</td><td><strong>无</strong></td><td>—</td><td><span class="tag-red">❌</span></td></tr>
+<tr><td>Docker volumes</td><td><strong>无</strong></td><td>—</td><td><span class="tag-red">❌</span></td></tr>
+<tr><td>配置文件</td><td>GitHub (.env 不入库)</td><td>手动</td><td><span class="tag-yellow">⚠️</span></td></tr>
+</table>
+
+<h3>1.3 风险点</h3>
+<table>
+<tr><th>风险</th><th>影响</th><th>当前缓解</th></tr>
+<tr><td>VM 磁盘满 (86%)</td><td>PG 写入失败，容器崩溃</td><td>无</td></tr>
+<tr><td>VM OOM (626MB 空闲)</td><td>PG/backend 被杀</td><td>无</td></tr>
+<tr><td>PG 数据损坏</td><td>1000 节点 DAG + 规则数据丢失</td><td>无</td></tr>
+<tr><td>VM 被删除/欠费</td><td>服务全停</td><td>本地可接管</td></tr>
+<tr><td>本地硬件故障</td><td>开发环境丢失</td><td>VM 可接管</td></tr>
+</table>
+
+<h2>二、备份策略</h2>
+
+<h3>2.1 PostgreSQL — 三层备份</h3>
+
+<div class="box">
+<div class="box-title">L1: 逻辑备份（pg_dump 每日）</div>
+<pre>0 3 * * * pg_dump -U pathfinder -h localhost -p 5432 \
+  -Fc -f /backups/pg/scailed_$(date +\%Y\%m\%d).dump</pre>
+<p>格式 custom (<code>-Fc</code>)，支持并行恢复。包含 schema + data + AGE graph。本地保留 7 天，rsync 到 VM 保留 30 天。</p>
+</div>
+
+<div class="box">
+<div class="box-title">L2: WAL 归档（连续）</div>
+<pre>-- postgresql.conf
+wal_level = replica
+archive_mode = on
+archive_command = 'rsync -a %p jin@&lt;local-ip&gt;:/backups/pg/wal/%f'</pre>
+<p>实现 PITR（Point-in-Time Recovery）。WAL 段每 16MB 或 5 分钟归档一次。</p>
+</div>
+
+<div class="box">
+<div class="box-title">L3: 异地副本（主从 streaming）</div>
+<p>见第三章主从复制方案。</p>
+</div>
+
+<h3>2.2 Docker Volumes</h3>
+<pre># 每周快照
+0 4 * * 0 docker run --rm -v scailed_pgdata:/src:ro \
+  -v /backups/volumes:/dst alpine \
+  tar czf /dst/pgdata_$(date +\%Y\%m\%d).tar.gz -C /src .</pre>
+
+<h3>2.3 配置文件</h3>
+<pre># .env 加密备份
+0 2 * * * gpg -c ~/.hermes/.env > /backups/config/hermes_env.gpg</pre>
+
+<h3>2.4 备份汇总</h3>
+<table>
+<tr><th>层级</th><th>内容</th><th>频率</th><th>保留期</th><th>位置</th></tr>
+<tr><td>L1</td><td>pg_dump (custom)</td><td>每日 03:00</td><td>本地 7d, VM 30d</td><td>/backups/pg/</td></tr>
+<tr><td>L2</td><td>WAL archive</td><td>连续</td><td>7d</td><td>/backups/pg/wal/</td></tr>
+<tr><td>L3</td><td>主从 streaming</td><td>实时</td><td>—</td><td>VM standby</td></tr>
+<tr><td>V1</td><td>Docker volumes</td><td>每周日 04:00</td><td>4 周</td><td>/backups/volumes/</td></tr>
+<tr><td>C1</td><td>.env 加密</td><td>每日 02:00</td><td>30d</td><td>/backups/config/</td></tr>
+</table>
+
+<h2>三、PostgreSQL 主从复制</h2>
+
+<h3>3.1 架构</h3>
+<div class="ascii">
+┌─ Local (Primary) ──────────┐    streaming     ┌─ VM (Standby) ───────────┐
+│  PG16 + AGE                 │ ←─────────────→  │  PG16 + AGE (read-only)  │
+│  WAL sender                 │   WAL stream     │  WAL receiver            │
+│  scailed_pgdata (read/write)│                  │  scailed_pgdata_standby  │
+└─────────────────────────────┘                  └──────────────────────────┘
+</div>
+
+<h3>3.2 配置</h3>
+
+<p><strong>Primary (本地)</strong></p>
+<pre># postgresql.conf
+wal_level = replica
+max_wal_senders = 5
+wal_keep_size = 1024    # 1GB WAL 保留
+hot_standby = on
+
+# pg_hba.conf
+host replication pathfinder 34.57.82.51/32 md5</pre>
+
+<p><strong>Standby (VM)</strong></p>
+<pre># postgresql.conf
+hot_standby = on
+primary_conninfo = 'host=&lt;local-ip&gt; port=5432 user=pathfinder password=changeme'
+primary_slot_name = 'vm_standby_slot'</pre>
+
+<h3>3.3 初始化 Standby</h3>
+<pre># 1. 在 primary 创建复制槽
+psql -U pathfinder -c "SELECT * FROM pg_create_physical_replication_slot('vm_standby_slot');"
+
+# 2. 在 standby 拉取基础备份
+pg_basebackup -h &lt;local-ip&gt; -U pathfinder -D /var/lib/postgresql/data -P -R -S vm_standby_slot
+
+# 3. 启动 standby
+docker compose up -d postgres-standby</pre>
+
+<h3>3.4 Failover</h3>
+<pre># 将 standby 提升为 primary
+psql -U pathfinder -h 34.57.82.51 -c "SELECT pg_promote();"</pre>
+
+<h2>四、容灾场景</h2>
+
+<h3>4.1 场景矩阵</h3>
+<table>
+<tr><th>场景</th><th>检测</th><th>RTO</th><th>RPO</th><th>恢复步骤</th></tr>
+<tr><td><strong>PG 数据损坏</strong></td><td>backend /health 报错</td><td>5 min</td><td>&lt;1 min (WAL)</td><td>PITR 恢复到故障前</td></tr>
+<tr><td><strong>VM 宕机</strong></td><td>SSH bridge 断连</td><td>2 min</td><td>&lt;1 min</td><td>本地 primary 继续服务；DNS 切换</td></tr>
+<tr><td><strong>本地宕机</strong></td><td>VM agent 检测 bridge</td><td>2 min</td><td>&lt;1 min</td><td>VM standby → promote</td></tr>
+<tr><td><strong>双站点全毁</strong></td><td>手动确认</td><td>30 min</td><td>&lt;24h</td><td>git clone → compose up → pg_restore</td></tr>
+<tr><td><strong>磁盘满</strong></td><td>cron 监控 <code>df -h</code></td><td>5 min</td><td>0</td><td>清理旧备份 → 扩容</td></tr>
+</table>
+
+<h3>4.2 自动故障检测</h3>
+<pre>#!/bin/bash
+# /etc/cron.d/healthcheck — 每分钟
+
+# 检测 local PG
+if ! pg_isready -h localhost -p 5432; then
+  curl -X POST http://localhost:8647/webhooks/local-agent-bridge \
+    -d '{"message":"⚠️ Local PG down"}'
+fi
+
+# 检测 VM reachable
+if ! ssh -o ConnectTimeout=5 jianfjin@34.57.82.51 \
+  "pg_isready -h localhost" 2>/dev/null; then
+  echo "VM unreachable" >> /var/log/scailed-dr.log
+fi</pre>
+
+<h2>五、实施计划</h2>
+
+<h3>Phase 1: 备份（立即，&lt;2h）</h3>
+<ul class="checklist">
+  <li>创建 /backups/pg/ /backups/volumes/ /backups/config/ 目录</li>
+  <li>部署 cron job：每日 pg_dump</li>
+  <li>部署 cron job：每周 volume 快照</li>
+  <li>部署 cron job：.env 加密备份</li>
+  <li>测试 pg_restore 恢复流程</li>
+</ul>
+
+<h3>Phase 2: WAL 归档（1d）</h3>
+<ul class="checklist">
+  <li>修改 postgresql.conf（wal_level=replica, archive_mode=on）</li>
+  <li>配置 archive_command</li>
+  <li>测试 PITR 恢复</li>
+</ul>
+
+<h3>Phase 3: 主从复制（2d）</h3>
+<ul class="checklist">
+  <li>VM 部署 standby PG 容器</li>
+  <li>配置 primary WAL sender</li>
+  <li>pg_basebackup 初始化</li>
+  <li>验证 streaming 延迟 &lt;1s</li>
+</ul>
+
+<h3>Phase 4: 自动故障切换（3d）</h3>
+<ul class="checklist">
+  <li>部署 healthcheck cron（每分钟）</li>
+  <li>配置告警 webhook</li>
+  <li>文档化 failover 手册</li>
+  <li>演练：模拟 VM 宕机 → standby promote</li>
+</ul>
+
+<h3>Phase 5: 备份异地同步（1d）</h3>
+<ul class="checklist">
+  <li>本地 → VM rsync pg_dump（每日）</li>
+  <li>VM → 本地 rsync（反向）</li>
+</ul>
+
+<h2>六、资源估算</h2>
+<table>
+<tr><th>资源</th><th>当前</th><th>方案后</th><th>增量</th></tr>
+<tr><td>VM 磁盘</td><td>4.1 GB free</td><td>~2 GB free</td><td>+2 GB</td></tr>
+<tr><td>VM 内存</td><td>626 MB free</td><td>~400 MB free</td><td>+226 MB</td></tr>
+<tr><td>本地磁盘</td><td>充足</td><td>~500 MB</td><td>+500 MB</td></tr>
+<tr><td>Cron jobs</td><td>0</td><td>5</td><td>+5</td></tr>
+</table>
+
+<div class="box">
+<div class="box-title">磁盘告警阈值</div>
+<pre>VM 磁盘 &lt; 2GB  → 清理 7 天前备份
+VM 磁盘 &lt; 1GB  → 停止 WAL 归档 + 告警
+VM 磁盘 &lt; 500MB → 紧急：迁移到更大实例</pre>
+</div>
+
+<h2>七、与 VM 议会版对比</h2>
+<table>
+<tr><th>维度</th><th>本地版</th><th>VM 版</th><th>陛下裁决</th></tr>
+<tr><td>备份策略</td><td>pg_dump + WAL + volume snap</td><td>待提交</td><td></td></tr>
+<tr><td>主从方向</td><td>Local→VM (streaming)</td><td>待提交</td><td></td></tr>
+<tr><td>故障切换</td><td>手动 promote + DNS</td><td>待提交</td><td></td></tr>
+<tr><td>监控</td><td>cron healthcheck</td><td>待提交</td><td></td></tr>
+<tr><td>成本</td><td>0（现有资源）</td><td>待提交</td><td></td></tr>
+</table>
+
+<p style="margin-top:40px;color:var(--muted);font-size:12px;text-align:center;">
+本地团队：峰哥 (CTO) + Linus (Arch) + Guido (CLA) · 待 VM 峨眉峰提交议会辩论版
+</p>
+
+</main>
+</body>
+</html>
