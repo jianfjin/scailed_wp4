@@ -214,6 +214,8 @@ class AssessmentService:
         ip: str | None = None,
         user_agent: str | None = None,
     ) -> dict[str, object]:
+        if assessment_id not in self.sessions:
+            raise KeyError(f"Assessment not found: {assessment_id}")
         session = self.sessions[assessment_id]
         state = self.questionnaire_engine.build_state(
             str(session["stakeholder_type"]),
@@ -236,6 +238,8 @@ class AssessmentService:
         ip: str | None = None,
         user_agent: str | None = None,
     ) -> dict[str, object]:
+        if assessment_id not in self.sessions:
+            raise KeyError(f"Assessment not found: {assessment_id}")
         session = self.sessions[assessment_id]
         answers = session.get("answers")
         if not isinstance(answers, dict):
@@ -264,6 +268,8 @@ class AssessmentService:
         user_agent: str | None = None,
         path_backend: str = "python",
     ) -> dict[str, object]:
+        if assessment_id not in self.sessions:
+            raise KeyError(f"Assessment not found: {assessment_id}")
         session = self.sessions[assessment_id]
         answers = session.get("answers")
         if not isinstance(answers, dict):
@@ -293,6 +299,8 @@ class AssessmentService:
         ip: str | None = None,
         user_agent: str | None = None,
     ) -> dict[str, object]:
+        if assessment_id not in self.sessions:
+            raise KeyError(f"Assessment not found: {assessment_id}. It may have expired after server restart.")
         session = self.sessions[assessment_id]
         recommendation = session.get("recommendation")
         if not isinstance(recommendation, dict):

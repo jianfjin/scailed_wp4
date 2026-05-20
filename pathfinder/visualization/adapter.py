@@ -224,21 +224,20 @@ def _build_path_steps(
     blocker_texts: list[str],
     current_node: str,
 ) -> list[PathStepView]:
-    """Build PathStepView list with status annotations."""
+    """Build PathStepView list with status annotations.
+    
+    Status rules:
+    - Nodes before current_node: completed
+    - current_node with blockers: blocked  
+    - current_node without blockers: completed
+    - Nodes after current_node with blockers: unreached
+    - Nodes after current_node without blockers: unreached (future steps)
+    """
     if not next_steps:
         return []
 
-    blocked_node_ids: set[str] = set()
-    # Blocked nodes: those referenced by triggered rules' action.node_id
-    for step in next_steps:
-        nid = str(step.get("node_id", ""))
-        # A node is blocked if there are blockers AND it's the first unmet step
-        if blocker_texts and nid == current_node:
-            blocked_node_ids.add(nid)
-
     steps: list[PathStepView] = []
     found_current = False
-    found_blocked = False
 
     for i, step_raw in enumerate(next_steps):
         nid = str(step_raw.get("node_id", ""))
@@ -247,19 +246,16 @@ def _build_path_steps(
         if not found_current:
             if nid == current_node and blocker_texts:
                 status = "blocked"
-                found_blocked = True
                 found_current = True
             elif nid == current_node:
                 status = "completed"
                 found_current = True
             elif blocker_texts and i == 0:
+                # Fallback: first node is the de-facto blocker when
+                # current_node isn't in the next_steps list.
                 status = "blocked"
-                found_blocked = True
             else:
                 status = "completed"
-        elif blocker_texts and not found_blocked and i == 0:
-            status = "blocked"
-            found_blocked = True
 
         steps.append(
             PathStepView(

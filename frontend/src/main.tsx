@@ -153,7 +153,7 @@ function EvidenceList({ title, items }: { title: string; items?: string[] }) {
   );
 }
 
-function ReportSummary({ report }: { report: PathfinderReport }) {
+function ReportSummary({ report, assessmentId }: { report: PathfinderReport; assessmentId?: string }) {
   const path = report.recommended_path;
   const snapshot = report.readiness_snapshot;
   const trace = path?.trace;
@@ -172,7 +172,6 @@ function ReportSummary({ report }: { report: PathfinderReport }) {
       </div>
 
       {report.disclaimer && <p className="notice">{report.disclaimer}</p>}
-      <EvidenceList title="Mock and missing data warnings" items={report.missing_data_warnings} />
 
       <div className="summary-grid">
         <div>
@@ -202,7 +201,6 @@ function ReportSummary({ report }: { report: PathfinderReport }) {
       </div>
 
       <EvidenceList title="Blockers" items={path?.blockers} />
-      <EvidenceList title="Warnings" items={[...(path?.warnings || []), ...(snapshot?.confidence_warnings || [])]} />
 
       {path?.next_steps?.length ? (
         <div className="evidence-block">
@@ -217,6 +215,19 @@ function ReportSummary({ report }: { report: PathfinderReport }) {
           </ol>
         </div>
       ) : null}
+
+      {assessmentId && (
+        <p style={{marginTop:12, marginBottom:8}}>
+          <a
+            href={`/v1/assessments/${assessmentId}/report?format=html&token=${TOKEN}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{color:"#1d5d43",fontWeight:600}}
+          >
+            View visualization →
+          </a>
+        </p>
+      )}
 
       <div className="evidence-block">
         <h3>Trace evidence</h3>
@@ -438,19 +449,7 @@ function App() {
           {error && <p className="error">{error}</p>}
           {loading && <p>Running assessment…</p>}
           {!report && !loading && <p>Complete the questionnaire and submit to see your roadmap path.</p>}
-          {report && <ReportSummary report={report} />}
-          {report && lastAssessmentId && (
-            <p style={{marginTop:12}}>
-              <a
-                href={`/v1/assessments/${lastAssessmentId}/report?format=html&token=${TOKEN}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{color:"#1d5d43",fontWeight:600}}
-              >
-                View visualization →
-              </a>
-            </p>
-          )}
+          {report && <ReportSummary report={report} assessmentId={lastAssessmentId} />}
         </section>
       </section>
     </main>

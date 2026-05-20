@@ -398,15 +398,17 @@ class TestGraphSvgStructure:
     def test_svg_contains_rect_for_each_node(self, mock_report: dict[str, Any]) -> None:
         vm = build_view_model(mock_report)
         svg = render_path_svg(vm.path_steps)
-        # 5 nodes → 5 <rect> elements for node bodies + 1 background = 6
-        assert svg.count("<rect") == 6
+        # 5 nodes + 1 background + 2 shadow glow rects for blocked nodes = 8
+        assert svg.count("<rect") == 8
 
     def test_svg_contains_text_labels(self, mock_report: dict[str, Any]) -> None:
         vm = build_view_model(mock_report)
         svg = render_path_svg(vm.path_steps)
         assert "Self-Assessment" in svg
-        assert "GDPR Compliance Che" in svg  # truncated to 20 chars
-        assert "Data Catalog Setup" in svg
+        assert "GDPR" in svg  # wrapped: "GDPR" / "Compliance Check"
+        assert "Compliance Check" in svg
+        assert "Data" in svg  # wrapped: "Data" / "Catalog Setup"
+        assert "Catalog Setup" in svg
         assert "Audit Trail" in svg
         assert "EHDS Submission" in svg
 

@@ -39,7 +39,13 @@ class PathfinderSolver:
         )
 
         if blockers:
-            steps = (current,)
+            # Compute full chain anyway so graph shows all nodes;
+            # current (first step) is the blocked node.
+            try:
+                steps = self.graph.shortest_path(current.node_id, target.node_id)
+            except NoFeasiblePathError:
+                # Path impossible — show at least current + target for context
+                steps = (current, target)
         else:
             try:
                 steps = self.graph.shortest_path(current.node_id, target.node_id)
@@ -100,8 +106,14 @@ class PathfinderSolver:
 
         path_backend_used = "python"
         if blockers:
-            steps = (current,)
+            # Compute full chain anyway so graph shows all nodes;
+            # current (first step) is the blocked node.
             path_backend_used = "n/a (blocked)"
+            try:
+                steps = self.graph.shortest_path(current.node_id, target.node_id)
+            except NoFeasiblePathError:
+                # Path impossible — show at least current + target for context
+                steps = (current, target)
         elif use_cypher and isinstance(self.graph, AgeRoadmapGraph):
             try:
                 steps = await self.graph.shortest_path_cypher(
@@ -110,14 +122,16 @@ class PathfinderSolver:
                 path_backend_used = "cypher"
             except NoFeasiblePathError as exc:
                 blockers = (str(exc),)
-                steps = (current,)
+                # Path impossible — show at least current + target for context
+                steps = (current, target)
                 path_backend_used = "cypher (failed)"
         else:
             try:
                 steps = self.graph.shortest_path(current.node_id, target.node_id)
             except NoFeasiblePathError as exc:
                 blockers = (str(exc),)
-                steps = (current,)
+                # Path impossible — show at least current + target for context
+                steps = (current, target)
 
         trace = TraceRecord(
             answer_ids=tuple(sorted(state.answers)),
