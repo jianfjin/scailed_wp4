@@ -30,6 +30,165 @@ from pathfinder.core.models import (
 logger = logging.getLogger(__name__)
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# Schema Normalization Layer (Council Resolution 2026-05-20, 5/5 vote)
+#
+# Each WP can deliver data in multiple schema versions.  The normalizer
+# mapping translates raw field names into the canonical names that the
+# domain-model constructors expect.
+#
+# To add a new schema version:
+#   1. Add a mapping dict under the version key below.
+#   2. The key is the RAW field name, the value is the CANONICAL name.
+#   3. Fields NOT listed are passed through unchanged with a warning.
+#   4. Unknown schema_version → ValueError at startup (fail fast).
+# ═══════════════════════════════════════════════════════════════════════
+
+# ── WP2: Stakeholder Taxonomy ────────────────────────────────────────
+
+_WP2_NORMALIZERS: dict[str, dict[str, str]] = {
+    "v1": {
+        "stakeholder_type": "stakeholder_type",
+        "description":      "description",
+        "capabilities":     "capabilities",
+        "pain_points":      "pain_points",
+    },
+    # CHARITE WP2 real-data schema (predicted — Council analysis §2)
+    "charite_v1": {
+        "id":               "stakeholder_type",
+        "label":            "description",
+        "capabilities":     "capabilities",
+        "pain_points":      "pain_points",
+    },
+}
+
+# ── WP3: Roadmap Nodes / Edges ───────────────────────────────────────
+
+_WP3_NODE_NORMALIZERS: dict[str, dict[str, str]] = {
+    "v1": {
+        "node_id":           "node_id",
+        "label":             "label",
+        "description":       "description",
+        "dimension":         "dimension",
+        "maturity_level":    "maturity_level",
+        "stakeholder_types": "stakeholder_types",
+        "prerequisites":     "prerequisites",
+        "source_wp":         "source_wp",
+        "source_doc_ref":    "source_doc_ref",
+        "confidence":        "confidence",
+        "metadata":          "metadata",
+    },
+    # Epidata WP3 real-data schema (predicted)
+    "epidata_v1": {
+        "id":                "node_id",
+        "title":             "label",
+        "desc":              "description",
+        "dimension":         "dimension",
+        "level":             "maturity_level",
+        "applicable_to":     "stakeholder_types",
+        "requires":          "prerequisites",
+        "source_wp":         "source_wp",
+        "source_doc_ref":    "source_doc_ref",
+        "confidence":        "confidence",
+        "metadata":          "metadata",
+    },
+}
+
+_WP3_EDGE_NORMALIZERS: dict[str, dict[str, str]] = {
+    "v1": {
+        "edge_id":       "edge_id",
+        "from_node_id":  "from_node_id",
+        "to_node_id":    "to_node_id",
+        "relation_type": "relation_type",
+        "required":      "required",
+        "source_doc_ref":"source_doc_ref",
+    },
+}
+
+# ── WP8: Rules ───────────────────────────────────────────────────────
+
+_WP8_RULE_NORMALIZERS: dict[str, dict[str, str]] = {
+    "v1": {
+        "rule_id":         "rule_id",
+        "rule_type":       "rule_type",
+        "priority":        "priority",
+        "applies_to":      "applies_to",
+        "condition":       "condition",
+        "action":          "action",
+        "compliance_refs": "compliance_refs",
+        "source_doc_ref":  "source_doc_ref",
+        "rule_version":    "rule_version",
+        "parent_rule_id":  "parent_rule_id",
+    },
+}
+
+
+def _normalize_record(
+    raw: dict,
+    mapping: dict[str, str],
+    version: str,
+    label: str = "",
+) -> dict:
+    """Translate raw field names to canonical names using an explicit mapping.
+
+    Council invariants (Dijkstra):
+      I1 – output contains all keys from mapping.values()
+      I2 – idempotent on already-normalized records
+      I4 – unknown fields logged, not silently dropped
+    """
+    normalized: dict = {}
+    mapped_keys: set[str] = set()
+
+    for raw_key, raw_value in raw.items():
+        canonical = mapping.get(raw_key)
+        if canonical is not None:
+            normalized[canonical] = raw_value
+            mapped_keys.add(raw_key)
+        else:
+            logger.warning(
+                "Schema drift [%s v%s]: unknown field %r (value kept as-is)",
+                label, version, raw_key,
+            )
+            normalized[raw_key] = raw_value
+
+    # I1 check: are all expected canonical keys present?
+    expected = set(mapping.values())
+    missing = expected - set(normalized.keys())
+    if missing:
+        logger.warning(
+            "Schema drift [%s v%s]: missing canonical fields %s after normalization",
+            label, version, sorted(missing),
+        )
+
+    return normalized
+
+
+def _normalize_list(
+    raw_list: list,
+    mapping: dict[str, str],
+    version: str,
+    label: str = "",
+) -> list[dict]:
+    """Normalize every record in a list."""
+    return [_normalize_record(r, mapping, version, label) for r in raw_list]
+
+
+def _resolve_normalizer(
+    normalizers: dict[str, dict[str, str]],
+    version: str | None,
+    label: str = "",
+) -> dict[str, str]:
+    """Dispatch to the correct normalizer for a schema version."""
+    version = version or "v1"
+    if version not in normalizers:
+        raise UpstreamClientError(
+            f"Unsupported {label} schema version: {version!r}. "
+            f"Known versions: {sorted(normalizers.keys())}"
+        )
+    logger.info("Using %s normalizer version: %s", label, version)
+    return normalizers[version]
+
+
 class UpstreamClientError(Exception):
     """Raised when an upstream fetch fails after retries."""
 
@@ -96,19 +255,25 @@ class UpstreamClient:
 
     # ── WP2: Stakeholder Taxonomy ────────────────────────────────────
 
-    async def fetch_stakeholders(self) -> list[dict]:
+    async def fetch_stakeholders(self, schema_version: str | None = None) -> list[dict]:
         """GET /api/v1/stakeholders → raw stakeholder type records."""
         url = f"{self.wp2_url}/stakeholders"
         data = await self._fetch_json(url, "WP2 stakeholders")
         if not isinstance(data, list):
             raise UpstreamClientError(f"WP2 expected list, got {type(data).__name__}")
-        self.stakeholders = data
-        logger.info("Loaded %d stakeholder types from WP2", len(data))
-        return data
+
+        mapping = _resolve_normalizer(_WP2_NORMALIZERS, schema_version, "WP2")
+        normalized = _normalize_list(data, mapping, schema_version or "v1", "WP2")
+
+        self.stakeholders = normalized
+        logger.info("Loaded %d stakeholder types from WP2", len(normalized))
+        return normalized
 
     # ── WP3: Roadmap Graph ───────────────────────────────────────────
 
-    async def fetch_roadmap(self) -> tuple[list[RoadmapNode], list[RoadmapEdge]]:
+    async def fetch_roadmap(
+        self, schema_version: str | None = None
+    ) -> tuple[list[RoadmapNode], list[RoadmapEdge]]:
         """GET /api/v1/roadmap/nodes + /edges → domain model lists."""
         nodes_data = await self._fetch_json(
             f"{self.wp3_url}/roadmap/nodes", "WP3 roadmap nodes"
@@ -116,6 +281,12 @@ class UpstreamClient:
         edges_data = await self._fetch_json(
             f"{self.wp3_url}/roadmap/edges", "WP3 roadmap edges"
         )
+
+        # ── Normalize field names per schema version ──
+        node_mapping = _resolve_normalizer(_WP3_NODE_NORMALIZERS, schema_version, "WP3 nodes")
+        edge_mapping = _resolve_normalizer(_WP3_EDGE_NORMALIZERS, schema_version, "WP3 edges")
+        nodes_data = _normalize_list(nodes_data, node_mapping, schema_version or "v1", "WP3 nodes")
+        edges_data = _normalize_list(edges_data, edge_mapping, schema_version or "v1", "WP3 edges")
 
         nodes = [
             RoadmapNode(
@@ -155,11 +326,14 @@ class UpstreamClient:
 
     # ── WP8: Rules + Tests ───────────────────────────────────────────
 
-    async def fetch_rules(self) -> list[Rule]:
+    async def fetch_rules(self, schema_version: str | None = None) -> list[Rule]:
         """GET /api/v1/rules → compliance Rule domain models."""
         data = await self._fetch_json(f"{self.wp8_url}/rules", "WP8 rules")
         if not isinstance(data, list):
             raise UpstreamClientError(f"WP8 expected list, got {type(data).__name__}")
+
+        mapping = _resolve_normalizer(_WP8_RULE_NORMALIZERS, schema_version, "WP8 rules")
+        data = _normalize_list(data, mapping, schema_version or "v1", "WP8 rules")
 
         rules = [
             Rule(
