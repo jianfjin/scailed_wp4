@@ -72,13 +72,15 @@ log "Schema dump complete: ${SCHEMA_FILE} (${SCHEMA_SIZE} bytes)"
 CATALOG_FILE="${BACKUP_DIR}/pathfinder_${TS}_catalog.json"
 log "Extracting AGE catalog metadata ..."
 
-docker exec "${CONTAINER}" bash -c \
-    "psql -U '${PG_USER}' -d '${PG_DB}' -t -A -q \
+docker exec "${CONTAINER}" bash -c "
+    psql -U '${PG_USER}' -d '${PG_DB}' -c 'ANALYZE' > /dev/null 2>&1
+    psql -U '${PG_USER}' -d '${PG_DB}' -t -A -q \
     -c \"SELECT json_build_object(
         'ts', now(),
         'db', current_database(),
         'tables', (SELECT json_agg(json_build_object('schema', schemaname, 'table', relname, 'rows', n_live_tup))
-                   FROM pg_stat_user_tables),
+                   FROM pg_stat_user_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')),
+        'total_rows', (SELECT sum(n_live_tup) FROM pg_stat_user_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')),
         'age_graphs', (SELECT json_agg(json_build_object('namespace', ag_graph.namespace::text, 'graph', ag_graph.name))
                        FROM ag_catalog.ag_graph),
         'age_labels', (SELECT json_agg(json_build_object('namespace', g.namespace::text, 'label', l.name, 'kind', l.kind::text))
