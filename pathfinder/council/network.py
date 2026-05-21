@@ -1,0 +1,260 @@
+"""
+Paperclip Inner Circle — Relationship Network
+
+15 members. Each is a node. Each pair has a directed edge with an affinity score.
+Affinity changes based on council interactions. Thresholds trigger events.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from enum import StrEnum
+from typing import Dict, List, Optional, Tuple
+
+# ═══════════════════════════════════════════════════════════════════════
+# Core Types
+# ═══════════════════════════════════════════════════════════════════════
+
+
+class EventType(StrEnum):
+    AGREE_VOTE = "agree_vote"           # voted same way → +affinity
+    DISAGREE_VOTE = "disagree_vote"     # voted opposite → -affinity
+    PUBLIC_PRAISE = "public_praise"     # complimented in debate → +affinity
+    PUBLIC_CRITICISM = "public_criticism"  # attacked in debate → -affinity
+    DEFENDED = "defended"               # defended someone → +++affinity
+    BETRAYED = "betrayed"               # switched sides → ---affinity
+    IGNORED = "ignored"                 # argument dismissed without response → -affinity
+    COLLABORATION = "collaboration"     # co-authored plan → ++affinity
+
+
+class RelationState(StrEnum):
+    HOSTILE = "hostile"       # affinity < -50
+    COLD = "cold"             # -50 to -20
+    NEUTRAL = "neutral"       # -20 to 20
+    WARM = "warm"             # 20 to 50
+    CLOSE = "close"           # 50 to 75
+    INTIMATE = "intimate"     # > 75
+
+
+@dataclass
+class Person:
+    member_id: str               # feifei, musk, andrej, ...
+    name: str                    # Fei-Fei Li, Elon Musk, ...
+    title: str                   # Chief AI Scientist
+    model: str                   # kimi-2.6 / deepseek-v4-pro / deepseek-v4-flash
+    language: str                # EN / CN
+    personality: List[str] = field(default_factory=list)  # traits
+    mood: str = "neutral"        # current emotional state
+    bio: str = ""                # short background
+
+
+@dataclass
+class Relationship:
+    """Directed edge between two council members."""
+    from_id: str
+    to_id: str
+    affinity: float = 0.0        # -100 (hate) to +100 (love)
+    history: List[Tuple[str, float]] = field(default_factory=list)  # (event, delta)
+    last_interaction: str = ""   # timestamp of last event
+    real_world_connection: str = ""  # "PhD advisor", "co-founder", "relative", etc.
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Affinity Mechanics
+# ═══════════════════════════════════════════════════════════════════════
+
+class AffinityEngine:
+    """Computes affinity deltas and triggers state transitions."""
+
+    # ── Base deltas per event type ──
+    BASE_DELTA: Dict[EventType, float] = {
+        EventType.AGREE_VOTE:       3.0,
+        EventType.DISAGREE_VOTE:   -2.0,
+        EventType.PUBLIC_PRAISE:    8.0,
+        EventType.PUBLIC_CRITICISM: -10.0,
+        EventType.DEFENDED:         15.0,
+        EventType.BETRAYED:        -25.0,
+        EventType.IGNORED:         -4.0,
+        EventType.COLLABORATION:    12.0,
+    }
+
+    # ── Thresholds for state transitions ──
+    DATING_THRESHOLD: float = 70.0      # affinity > 70 → private meetings, "dating"
+    INTIMATE_THRESHOLD: float = 85.0    # affinity > 85 → intimate relationship
+    HOSTILE_THRESHOLD: float = -55.0    # affinity < -55 → open hostility, attacks
+    FEUD_THRESHOLD: float = -75.0       # affinity < -75 → active sabotage, veto each other
+
+    # ── Modifiers ──
+    HISTORY_DECAY: float = 0.98         # Each vote cycle, affinity drifts 2% toward 0
+    REAL_WORLD_BONUS: float = 15.0      # Pre-existing positive relationship offset
+    REAL_WORLD_PENALTY: float = -20.0   # Pre-existing negative relationship offset
+    PERSONALITY_AMPLIFIER: float = 1.5  # Strong personalities amplify deltas
+    GRUDGE_HOLDING: float = 0.5         # Negative affinity decays slower (grudges linger)
+    ROMANCE_COOLDOWN: int = 5           # Events between intimacy changes after this many cycles
+
+    def __init__(self):
+        self._cycle: int = 0
+        self._cooldowns: Dict[Tuple[str, str], int] = {}
+
+    def process_event(
+        self, rel: Relationship, event: EventType, cycle: int
+    ) -> Tuple[float, List[str]]:
+        """Apply an event, return new affinity + triggered state transitions."""
+        delta = self.BASE_DELTA[event]
+
+        # ── Personality modifiers ──
+        rel.subject = None  # simplified for now
+        delta = self._apply_personality_modifier(rel.from_id, delta)
+        delta = self._apply_real_world_offset(rel, delta)
+
+        # ── Grudge modifier: negative deltas stick harder ──
+        if delta < 0:
+            delta *= (1.0 + self.GRUDGE_HOLDING)
+
+        old_affinity = rel.affinity
+        new_affinity = max(-100.0, min(100.0, old_affinity + delta))
+        rel.affinity = new_affinity
+        rel.history.append((event.value, delta))
+        self._cycle = cycle
+
+        # ── State transitions ──
+        triggers: List[str] = []
+        old_state = self._classify(old_affinity)
+        new_state = self._classify(new_affinity)
+
+        if new_state != old_state:
+            triggers.append(f"STATE_CHANGE: {old_state} → {new_state}")
+
+        # Dating trigger
+        if old_affinity < self.DATING_THRESHOLD <= new_affinity:
+            triggers.append("DATING_STARTED: private meetings begin")
+        elif old_affinity >= self.DATING_THRESHOLD > new_affinity:
+            triggers.append("DATING_ENDED")
+
+        # Intimacy trigger
+        if old_affinity < self.INTIMATE_THRESHOLD <= new_affinity:
+            triggers.append("INTIMATE: relationship deepens")
+        elif old_affinity >= self.INTIMATE_THRESHOLD > new_affinity:
+            triggers.append("BREAKUP: intimate relationship ends")
+
+        # Hostility trigger
+        if old_affinity > self.HOSTILE_THRESHOLD >= new_affinity:
+            triggers.append("HOSTILITY: open attacks begin")
+        elif old_affinity <= self.HOSTILE_THRESHOLD < new_affinity:
+            triggers.append("DETENTE: hostilities cease")
+
+        # Feud trigger
+        if old_affinity > self.FEUD_THRESHOLD >= new_affinity:
+            triggers.append("FEUD: active sabotage begins")
+
+        return new_affinity, triggers
+
+    def decay(self, rel: Relationship) -> float:
+        """Natural affinity drift toward 0 over time (no interaction)."""
+        rel.affinity *= self.HISTORY_DECAY
+        return rel.affinity
+
+    def _classify(self, affinity: float) -> str:
+        if affinity < -50:
+            return "hostile"
+        if affinity < -20:
+            return "cold"
+        if affinity < 20:
+            return "neutral"
+        if affinity < 50:
+            return "warm"
+        if affinity < 75:
+            return "close"
+        return "intimate"
+
+    def _apply_personality_modifier(self, member_id: str, delta: float) -> float:
+        """Volatile personalities amplify both positive and negative deltas."""
+        volatile = {"musk", "linus", "jobs", "sam", "dijkstra"}
+        if member_id in volatile:
+            return delta * self.PERSONALITY_AMPLIFIER
+        return delta
+
+    def _apply_real_world_offset(self, rel: Relationship, delta: float) -> float:
+        """Real-world history biases first-impression delta by up to 20%."""
+        if rel.real_world_connection:
+            if any(w in rel.real_world_connection.lower() for w in
+                   ["advisor", "student", "co-founder", "relative", "mentor"]):
+                return delta * 1.2 if delta > 0 else delta * 0.8
+            if any(w in rel.real_world_connection.lower() for w in
+                   ["lawsuit", "rival", "competitor", "fired"]):
+                return delta * 0.7 if delta > 0 else delta * 1.3
+        return delta
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Council Network
+# ═══════════════════════════════════════════════════════════════════════
+
+# Pre-seeded real-world relationships (one direction shown; symmetric
+# by default unless marked asymmetric with *)
+
+REAL_WORLD_EDGES = [
+    # Advisor / Student
+    ("feifei", "andrej", 40, "PhD advisor — Fei-Fei supervised Andrej at Stanford"),
+    ("andrej", "feifei", 45, "PhD student — deep respect for his advisor"),
+    ("andrew", "andrej", 30, "Stanford colleague, both taught CS/AI courses"),
+    ("andrej", "andrew", 30, ""),
+    ("feifei", "andrew", 25, "Stanford AI faculty colleagues"),
+    ("andrew", "feifei", 25, ""),
+    ("feifei", "demi", 15, "Stanford connection — Demi was a Stanford researcher"),
+    ("demi", "feifei", 20, "Admires Fei-Fei's work in computer vision"),
+
+    # OpenAI founders / co-workers
+    ("musk", "sam", -45, "Co-founded OpenAI; now lawsuit — deep animosity"),
+    ("sam", "musk", -50, "Co-founded OpenAI; now adversarial — views Musk as hostile"),
+    ("sam", "andrej", 25, "Overlapped at OpenAI; respects Karpathy's technical depth"),
+    ("andrej", "sam", 15, "Worked at OpenAI under Altman's leadership"),
+    ("musk", "andrej", 20, "Hired Karpathy at Tesla for Autopilot vision"),
+    ("andrej", "musk", 15, "Tesla Autopilot — respects Musk's ambition, wary of volatility"),
+
+    # Semiconductor relatives + rivals
+    ("jensen", "lisasu", 10, "Distant relatives, both Taiwanese-American semiconductor leaders"),
+    ("lisasu", "jensen", 10, "Distant relatives; professional respect, market competitors"),
+    ("jensen", "lisasu", -5, "*Asymmetric: NVIDIA dominates AI chips; AMD fights for share"),
+    ("lisasu", "jensen", -5, "*Asymmetric: AMD CPU strong; NVIDIA GPU dominant — tense market rivalry"),
+
+    # Tech industry overlaps
+    ("jobs", "musk", -15, "Jobs-era Apple vs Musk ambition — mutual suspicion of style"),
+    ("musk", "jobs", -10, "Disrespects Apple's closed ecosystem"),
+    ("jobs", "linus", -20, "Apple vs open-source — Jobs famously hostile to Linux"),
+    ("linus", "jobs", -25, "Apple's walled garden — Linus' philosophical opposite"),
+    ("linus", "musk", -5, "Musk's 'move fast' vs Linus' 'never break userspace'"),
+    ("musk", "linus", -5, ""),
+    ("guido", "linus", 15, "Open source allies — Python + Linux share philosophy"),
+    ("linus", "guido", 15, "Respects Python's design principles"),
+    ("guido", "dijkstra", 20, "Dutch computing heritage — mutual respect across generations"),
+    ("dijkstra", "guido", 20, "Fellow Dutchman, different era but shared precision"),
+
+    # Sam Altman strategic connections
+    ("sam", "demi", 10, "Both YC / startup ecosystem; Demi's Pika Labs is AI generation"),
+    ("demi", "sam", 5, "Startup founder in Sam's orbit — cautious of OpenAI's dominance"),
+
+    # Lisa Su hardware connections
+    ("lisasu", "xiaolong", 5, "Hardware meets software engineering"),
+    ("xiaolong", "lisasu", 5, ""),
+    ("lisasu", "jensen", -5, "*Asymmetric: market rivals"),
+
+    # Andrej's connections across Tesla + OpenAI + Stanford
+    ("andrej", "demi", 10, "Both Stanford AI, both shipped AI products to consumers"),
+    ("demi", "andrej", 15, "Respects Karpathy's deep learning teaching + shipping experience"),
+
+    # Fei-Fei's ethical AI connections
+    ("feifei", "sam", -10, "Human-centered AI vs OpenAI's aggressive deployment — philosophical tension"),
+    ("sam", "feifei", -5, "Respects her academically but disagrees on speed vs safety"),
+    ("feifei", "musk", 5, "Both concerned about AI safety, different approaches"),
+    ("musk", "feifei", 5, ""),
+
+    # Andrew Ng connections
+    ("andrew", "feifei", 25, "Stanford AI colleagues"),
+    ("andrew", "sam", 5, "Both believe in AI democratization, different methods"),
+    ("andrew", "demi", 10, "Education + startup — Andrew's teaching reach, Demi's product execution"),
+    ("andrew", "andrej", 30, "Both premier AI educators (Coursera + CS231n / Zero to Hero)"),
+]
+
+# New members who have no pre-existing relationships get neutral (affinity 0).
+# These will evolve purely through council interactions.
