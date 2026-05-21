@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCAILED WP4 — DR Runbook (P5)</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --dim: #8b949e; --green: #3fb950;
+    --blue: #58a6ff; --orange: #d2991d; --red: #f85149; --purple: #bc8cff;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+    line-height: 1.6; padding: 2rem; max-width: 960px; margin: 0 auto;
+  }
+  h1 { color: var(--red); font-size: 1.6rem; border-bottom: 2px solid var(--red); padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
+  h2 { color: var(--blue); font-size: 1.2rem; margin: 2rem 0 0.5rem; border-left: 3px solid var(--blue); padding-left: 0.75rem; }
+  h3 { color: var(--orange); font-size: 1rem; margin: 1.2rem 0 0.4rem; }
+  .meta { color: var(--dim); font-size: 0.85rem; margin-bottom: 1.5rem; }
+  .meta span { margin-right: 1.5rem; }
+  .status { color: var(--green); font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 0.45rem 0.7rem; border: 1px solid var(--border); }
+  th { background: var(--surface); color: var(--blue); }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem; overflow-x: auto; margin: 0.5rem 0; font-size: 0.82rem; line-height: 1.5; }
+  code { color: var(--orange); }
+  pre code { color: var(--text); }
+  .box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin: 1rem 0; }
+  .box-title { color: var(--red); font-weight: 700; font-size: 1rem; margin-bottom: 0.75rem; }
+  .scenario { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin: 1.5rem 0; }
+  .scenario-title { color: var(--orange); font-weight: 700; font-size: 1.05rem; margin-bottom: 0.5rem; }
+  .scenario-trigger { color: var(--dim); font-size: 0.85rem; margin-bottom: 0.5rem; }
+  .rto { color: var(--green); }
+  .rpo { color: var(--blue); }
+  .tag { display: inline-block; padding: 0.12rem 0.45rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600; margin-right: 0.3rem; }
+  .tag-red { background: #3a1a1a; color: var(--red); border: 1px solid #5a2a2a; }
+  .tag-orange { background: #3a2a1a; color: var(--orange); border: 1px solid #5a3a2a; }
+  .tag-green { background: #1a3a2a; color: var(--green); border: 1px solid #2a5a3a; }
+  .qr { background: #0a0f14; border: 2px solid var(--red); border-radius: 10px; padding: 1.5rem; margin: 2rem 0; font-size: 0.82rem; }
+  .qr h3 { color: var(--red); border: none; padding: 0; margin: 0 0 1rem; font-size: 1.1rem; text-align: center; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+  .footer { color: var(--dim); font-size: 0.8rem; text-align: center; margin-top: 2rem; }
+  .kv { display: grid; grid-template-columns: 190px 1fr; gap: 0.2rem 0.5rem; font-size: 0.88rem; }
+  .kv-key { color: var(--dim); }
+</style>
+</head>
+<body>
+
+<h1>🚨 SCAILED WP4 — DR Runbook (P5)</h1>
+<div class="meta">
+  <span>📅 2026-05-21</span>
+  <span class="status">✅ Complete</span>
+  <span>🗳️ Joint 16/0</span>
+</div>
+
+<div class="box">
+  <div class="box-title">📋 实施概要 / Summary</div>
+  <p><strong>P5 灾难恢复手册。</strong>覆盖 5 种故障场景，从本地 Docker 崩溃到异地全毁。每场景含恢复步骤、预估时间、验证清单。目标 RPO ≤ 24h，RTO ≤ 1h。</p>
+</div>
+
+<h2>System Profile</h2>
+<div class="kv">
+  <span class="kv-key">Database</span><span class="kv-val">PostgreSQL 16 + Apache AGE 1.5.0</span>
+  <span class="kv-key">DB size</span><span class="kv-val">~9.6 MB</span>
+  <span class="kv-key">Backup size</span><span class="kv-val">~72 KB / day</span>
+  <span class="kv-key">Local backup</span><span class="kv-val"><code>/backups/pg/</code> — 7-day retention</span>
+  <span class="kv-key">Cloud backup</span><span class="kv-val">Cloudflare R2 <code>scailed-backups/pg/</code> — €0</span>
+  <span class="kv-key">Containers</span><span class="kv-val">8 (traefik, frontend, backend, postgres, redis, wp2/3/8-mock)</span>
+  <span class="kv-key">RPO target</span><span class="kv-val">≤ 24 hours</span>
+  <span class="kv-key">RTO target</span><span class="kv-val">≤ 60 minutes</span>
+</div>
+
+<!-- S1 -->
+<div class="scenario">
+  <div class="scenario-title">S1: PostgreSQL Corruption <span class="tag tag-red">MOST LIKELY</span></div>
+  <div class="scenario-trigger">Bad migration · DROP TABLE · filesystem error on pgdata</div>
+  <p>
+    <span class="rto">RTO: ~15 min</span> &nbsp;
+    <span class="rpo">RPO: 0–24 h</span>
+  </p>
+  <pre><code># 1. Stop app
+docker compose stop backend frontend
+
+# 2. Verify backup
+bash deploy/verify_restore.sh
+
+# 3. Wipe + recreate volume
+docker compose stop postgres
+docker volume rm scailed_pgdata
+docker volume create scailed_pgdata
+docker compose up -d postgres
+sleep 10
+
+# 4. Restore
+DUMP=$(ls /backups/pg/latest/pathfinder_*.dump)
+docker cp "$DUMP" scailed-postgres:/tmp/restore.dump
+docker exec scailed-postgres pg_restore -U pathfinder -d pathfinder \
+  --clean --if-exists /tmp/restore.dump
+
+# 5. Verify + restart
+bash deploy/verify_restore.sh
+docker compose up -d backend frontend
+curl -f http://localhost/health</code></pre>
+</div>
+
+<!-- S2 -->
+<div class="scenario">
+  <div class="scenario-title">S2: Host Disk Failure</div>
+  <div class="scenario-trigger">Disk corruption · accidental rm -rf · OS reinstall</div>
+  <p><span class="rto">RTO: ~40 min</span> &nbsp; <span class="rpo">RPO: 0–24 h</span></p>
+  <pre><code># 1. Fresh OS + deps
+sudo apt install -y docker.io git rclone
+
+# 2. Clone + configure
+git clone https://github.com/jianfjin/scailed_wp4.git ~/projects/scailed_wp4
+bash ~/projects/scailed_wp4/deploy/setup-r2.sh
+
+# 3. Pull from R2
+mkdir -p /backups/pg
+rclone sync r2:scailed-backups/pg/ /backups/pg/latest/
+
+# 4. Build + start + restore
+cd ~/projects/scailed_wp4/deploy
+docker compose up -d --build
+sleep 30
+DUMP=$(ls /backups/pg/latest/pathfinder_*.dump)
+docker cp "$DUMP" scailed-postgres:/tmp/restore.dump
+docker exec scailed-postgres pg_restore -U pathfinder -d pathfinder \
+  --clean --if-exists /tmp/restore.dump
+bash deploy/verify_restore.sh
+
+# 5. Re-establish cron (backup + verify)</code></pre>
+</div>
+
+<!-- S3 -->
+<div class="scenario">
+  <div class="scenario-title">S3: R2 Unavailable</div>
+  <div class="scenario-trigger">R2 outage · token expiry</div>
+  <p><span class="rto">RTO: ~5 min</span> &nbsp; <span class="rpo">RPO: N/A (local safe)</span></p>
+  <pre><code># Local backups unaffected. Just switch remote:
+rclone config create wasabi s3 provider=Wasabi ...
+export SCAILED_RCLONE_REMOTE=wasabi
+bash deploy/backup.sh  # syncs to Wasabi now</code></pre>
+</div>
+
+<!-- S4 -->
+<div class="scenario">
+  <div class="scenario-title">S4: Complete Site Loss <span class="tag tag-red">WORST CASE</span></div>
+  <div class="scenario-trigger">Fire · flood · theft · physical destruction</div>
+  <p><span class="rto">RTO: ~60 min</span> &nbsp; <span class="rpo">RPO: 0–24 h</span></p>
+  <pre><code># Same as S2. Only R2 survives.
+# New machine → git clone → rclone pull → docker compose up → pg_restore → verify
+# Also restore: Hermes agent config, SSH keys, VM bridge if applicable.</code></pre>
+</div>
+
+<!-- S5 -->
+<div class="scenario">
+  <div class="scenario-title">S5: Silent Data Corruption</div>
+  <div class="scenario-trigger">Bit rot · buggy code · AGE inconsistency</div>
+  <p><span class="rto">RTO: ~30 min + re-apply</span> &nbsp; <span class="rpo">RPO: detection-dependent</span></p>
+  <pre><code># Weekly verify catches this. Find last clean backup:
+for dir in /backups/pg/202*; do
+  bash deploy/verify_restore.sh "$dir"
+done
+# Restore from last known-good, then re-apply legitimate changes.</code></pre>
+</div>
+
+<!-- Quick Reference -->
+<div class="qr">
+  <h3>🚨 EMERGENCY QUICK REFERENCE</h3>
+  <pre><code>1. DON'T PANIC.  Local + R2 = two independent copies.
+2. Stop app:   docker compose stop backend frontend
+3. Verify:     bash deploy/verify_restore.sh
+4. Identify:   Which scenario? (S1–S5)
+5. Execute:    Follow scenario procedure above.
+
+Key paths:
+  Local:    /backups/pg/
+  Cloud:    r2:scailed-backups/pg/
+  Deploy:   ~/projects/scailed_wp4/deploy/
+  Docker:   ~/projects/scailed_wp4/deploy/docker-compose.yml
+
+Restore one-liner:
+  docker cp &lt;dump&gt; scailed-postgres:/tmp/r.dump &&
+  docker exec scailed-postgres pg_restore -U pathfinder -d pathfinder
+    --clean --if-exists /tmp/r.dump
+
+  RTO: ≤ 60 min  ·  RPO: ≤ 24 h  ·  Cost: €0</code></pre>
+</div>
+
+<h2>Test Log</h2>
+<table>
+  <tr><th>Date</th><th>Scenario</th><th>Result</th><th>RTO</th></tr>
+  <tr><td>2026-05-21</td><td>V1–V4 verify</td><td><span class="tag tag-green">PASS</span></td><td>N/A</td></tr>
+  <tr><td>2026-05-21</td><td>S1 dry-run</td><td><span class="tag tag-green">PASS</span></td><td>~15 min</td></tr>
+</table>
+
+<hr>
+<div class="footer">
+  SCAILED WP4 — DataWego DR Runbook · Joint 16/0 · 2026-05-21
+</div>
+
+</body>
+</html>
