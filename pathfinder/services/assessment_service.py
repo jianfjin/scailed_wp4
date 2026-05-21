@@ -70,12 +70,13 @@ class AssessmentService:
 
         # ── Graph backend ──
         nodes, edges = self._active_roadmap
+        self._graph_backend = "age" if self._mode == "deployed" else "inmemory"
+        self._age_unavailable = False
+
         if self._mode == "deployed":
             self.graph = AgeRoadmapGraph()
-            self._graph_backend = "age"
         else:
             self.graph = InMemoryRoadmapGraph(nodes, edges)
-            self._graph_backend = "inmemory"
 
         self.solver = PathfinderSolver(self.graph)
 
@@ -145,31 +146,44 @@ class AssessmentService:
         """Validate backend connectivity at startup.
 
         In `demo` mode this is a no-op.
-        In `deployed` mode this verifies PG connectivity; crashes on failure.
+        In `deployed` mode this verifies PG connectivity; on failure,
+        degrades to NetworkX fallback with explicit markers (OpenSpec 2.2).
         """
-        if self._mode == "demo":
+        if self._mode != "deployed":
             return
 
         import asyncio
 
-        async def _check() -> None:
+        async def _check() -> bool:
             try:
                 await self.graph.connect()
                 await self.graph.disconnect()
+                return True
             except Exception as exc:
-                raise StartupCheckError(
-                    f"deployed mode startup check failed: {exc}"
-                ) from exc
+                print(
+                    f"[startup_check] AGE connection failed ({exc}), "
+                    f"degrading to NetworkX fallback.",
+                    file=sys.stderr,
+                )
+                return False
 
         try:
-            asyncio.get_running_loop()
+            loop = asyncio.get_running_loop()
+            ok = loop.run_until_complete(_check()) if False else None  # unreachable
         except RuntimeError:
-            asyncio.run(_check())
-            return
+            ok = asyncio.run(_check())
 
-        raise StartupCheckError(
-            "cannot run deployed mode startup check inside an active event loop"
-        )
+        if not ok:
+            nodes, edges = self._active_roadmap
+            self.graph = InMemoryRoadmapGraph(nodes, edges)
+            self._graph_backend = "networkx_fallback"
+            self._age_unavailable = True
+            self.solver = PathfinderSolver(self.graph)
+            print(
+                "[startup_check] Switched to NetworkX fallback. "
+                "Confidence will be 0.0 until AGE is restored.",
+                file=sys.stderr,
+            )
 
     async def connect_age(self) -> None:
         """Connect to AGE backend and load demo data (async, called once at startup)."""
@@ -251,6 +265,19 @@ class AssessmentService:
         )
         path = self.solver.solve(state, self.rules)
         recommendation = build_recommendation(path)
+
+        # OpenSpec 2.2 / Linus plan: degradation marker when AGE unavailable
+        if self._age_unavailable:
+            recommendation["confidence"] = 0.0
+            recommendation["path_backend"] = self._graph_backend
+            recommendation.setdefault("warnings", [])
+            if not recommendation["warnings"]:
+                recommendation["warnings"] = []
+            recommendation["warnings"].append(
+                "DEGRADED: AGE backend unavailable, using NetworkX fallback. "
+                "Confidence set to 0.0. Restore AGE for accurate recommendations."
+            )
+
         session["recommendation"] = recommendation
         session["status"] = "complete"
         self.audit_log.append(
@@ -399,7 +426,7 @@ class AssessmentService:
         return report
 
     def status(self) -> dict[str, object]:
-        return {
+        result: dict[str, object] = {
             "service": "pathfinder",
             "mode": self._mode,
             "graph_backend": self._graph_backend,
@@ -409,6 +436,10 @@ class AssessmentService:
             "audit_chain_valid": self.audit_log.verify_chain(),
             "import_reports": {key: report.to_dict() for key, report in self.import_reports.items()},
         }
+        if self._age_unavailable:
+            result["degraded"] = True
+            result["degraded_reason"] = "AGE backend unavailable, using NetworkX fallback"
+        return result
 
     def _questionnaires_from_wp2(self, payload: dict[str, object]) -> list[Questionnaire]:
         version = self._required_string(payload, "version")

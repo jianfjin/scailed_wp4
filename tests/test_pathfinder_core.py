@@ -150,13 +150,18 @@ class PathfinderCoreTests(unittest.TestCase):
         self.assertTrue(service.audit_log.verify_chain())
 
     def test_deployed_mode_startup_check_raises_when_age_connect_fails(self) -> None:
+        # OpenSpec 2.2: startup_check now degrades gracefully instead of raising
         with patch.dict(os.environ, {"PATHFINDER_MODE": "deployed"}, clear=False):
             with patch(
                 "pathfinder.core.graph_age.AgeRoadmapGraph.connect",
                 side_effect=RuntimeError("database unavailable"),
             ):
-                with self.assertRaisesRegex(StartupCheckError, "database unavailable"):
-                    AssessmentService()
+                svc = AssessmentService()  # no longer raises
+                self.assertTrue(svc._age_unavailable)
+                self.assertEqual(svc._graph_backend, "networkx_fallback")
+                status = svc.status()
+                self.assertTrue(status.get("degraded"))
+                self.assertIn("fallback", str(status.get("degraded_reason", "")))
 
 
 if __name__ == "__main__":

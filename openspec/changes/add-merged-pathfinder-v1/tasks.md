@@ -7,7 +7,7 @@
 
 ## 2. Core Engine
 - [x] 2.1 Implement domain models for stakeholder state, roadmap nodes/edges, rules, path results, recommendations, snapshots, and audit events. (test: test_pathfinder_core.PathfinderCoreTests.test_demo_supports_five_stakeholder_types)
-- [ ] 2.2 Implement database migrations, PostgreSQL AGE graph storage, and NetworkX test fallback.
+- [x] 2.2 Implement database migrations, PostgreSQL AGE graph storage, and NetworkX test fallback. (test: test_networkx_fallback)
 - [x] 2.3 Implement questionnaire engine and stakeholder-state conversion. (test: test_pathfinder_core.PathfinderCoreTests.test_questionnaire_validates_numeric_bounds)
 - [x] 2.4 Implement rule parser, schema validation, compiler, conflict checks, loader, and `.test.yaml` runner. (test: test_pathfinder_core.PathfinderCoreTests.test_rule_loader_rejects_failed_tests)
 - [x] 2.5 Implement path solver, compliance evaluator, recommendation ranking, confidence calculation, and graceful degradation. (test: test_benchmark.PathfinderBenchmark.test_03_solver_latency)
