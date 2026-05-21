@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCAILED WP4 — DR P3: 4-Layer Verification</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --dim: #8b949e; --green: #3fb950;
+    --blue: #58a6ff; --orange: #d2991d; --red: #f85149;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+    line-height: 1.6; padding: 2rem; max-width: 900px; margin: 0 auto;
+  }
+  h1 { color: var(--blue); font-size: 1.6rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
+  h2 { color: var(--green); font-size: 1.2rem; margin: 1.5rem 0 0.5rem; }
+  .meta { color: var(--dim); font-size: 0.85rem; margin-bottom: 1.5rem; }
+  .meta span { margin-right: 1.5rem; }
+  .status { color: var(--green); font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border: 1px solid var(--border); }
+  th { background: var(--surface); color: var(--blue); }
+  td { font-size: 0.9rem; }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; overflow-x: auto; margin: 0.75rem 0; font-size: 0.85rem; }
+  .box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin: 1rem 0; }
+  .box-title { color: var(--blue); font-weight: 600; margin-bottom: 0.75rem; }
+  .tag { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.78rem; font-weight: 600; margin-right: 0.3rem; }
+  .tag-green { background: #1a3a2a; color: var(--green); border: 1px solid #2a5a3a; }
+  .pass-row td { color: var(--green); }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 0.3rem; font-size: 0.9rem; }
+  .kv-key { color: var(--dim); }
+  .flow { display: flex; flex-direction: column; gap: 0.3rem; margin: 1rem 0; padding: 0 2rem; font-size: 0.85rem; }
+  .flow-step { display: flex; gap: 1rem; align-items: baseline; }
+  .flow-num { color: var(--blue); font-weight: bold; min-width: 40px; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+  .footer { color: var(--dim); font-size: 0.8rem; text-align: center; margin-top: 2rem; }
+</style>
+</head>
+<body>
+
+<h1>SCAILED WP4 — DR P3: 4-Layer Verification</h1>
+<div class="meta">
+  <span>📅 2026-05-21</span>
+  <span class="status">✅ Complete</span>
+  <span>🗳️ Joint 16/0</span>
+</div>
+
+<div class="box">
+  <div class="box-title">📋 实施概要 / Summary</div>
+  <p><strong>P3 四层恢复验证已完成。</strong>每周六 04:00 cron 自动执行 sha256 → schema restore → AGE catalog → total rows。首次全通过。</p>
+</div>
+
+<h2>4-Layer Verification Results</h2>
+<table>
+  <tr><th>Layer</th><th>Content</th><th>Method</th><th>First Run</th></tr>
+  <tr class="pass-row"><td>V1</td><td>File integrity</td><td><code>sha256sum -c</code></td><td>✅ PASS</td></tr>
+  <tr class="pass-row"><td>V2</td><td>Schema restore</td><td><code>pg_restore --schema-only</code> → temp DB</td><td>✅ 4 tables</td></tr>
+  <tr class="pass-row"><td>V3</td><td>AGE catalog</td><td>Graph + label count vs live</td><td>✅ 1 graph / 4 labels</td></tr>
+  <tr class="pass-row"><td>V4</td><td>Data volume</td><td>Total rows + DB size vs catalog</td><td>✅ 2800 rows / 9.6MB</td></tr>
+</table>
+
+<h2>How It Works</h2>
+<div class="flow">
+  <div class="flow-step"><span class="flow-num">V1</span> sha256sum -c → verify all backup files match checksums</div>
+  <div class="flow-step"><span class="flow-num">V2</span> pg_restore → create temp DB → restore schema-only → count tables</div>
+  <div class="flow-step"><span class="flow-num">V3</span> Compare ag_graph count + ag_label count vs live DB</div>
+  <div class="flow-step"><span class="flow-num">V4</span> ANALYZE → compare sum(n_live_tup) + db size vs catalog</div>
+</div>
+
+<h2>Files</h2>
+<table>
+  <tr><th>File</th><th>Purpose</th></tr>
+  <tr><td><code>deploy/verify_restore.sh</code></td><td>4-layer verification script</td></tr>
+  <tr><td><code>deploy/backup.sh</code></td><td>V1 checksum generation (daily)</td></tr>
+</table>
+
+<h2>Cron</h2>
+<pre><code># DR verification: V2+V3+V4 weekly (Sat 04:00)
+0 4 * * 6 /home/jin/projects/scailed_wp4/deploy/verify_restore.sh >> /backups/pg/verify_cron.log 2>&1</code></pre>
+
+<h2>Manual Verification</h2>
+<pre><code>bash deploy/verify_restore.sh
+tail -20 /backups/pg/verify.log</code></pre>
+
+<hr>
+<div class="footer">
+  SCAILED WP4 — DataWego DR · P3 Complete · 2026-05-21
+</div>
+
+</body>
+</html>
