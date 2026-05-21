@@ -26,3 +26,17 @@
 - 📝 Noted: 2 (N6, N8)
 
 **阻断 bug: 0。非阻断建议: 0 未处理。**
+
+---
+
+## T1 Guido Review — LOW Gaps (2026-05-21)
+
+来源: [Guido T1 Review](../reviews/t1-guido-review.md)
+
+| # | 来源 | 内容 | 处理 |
+|---|------|------|------|
+| L8 | Guido | 幂等性测试 — 同一答案两次提交应返回相同推荐 | 📋 Defer |
+| L9 | Guido | 空答案报告测试 — 未提交答案时请求报告的错误处理 | 📋 Defer |
+| L10 | Guido | 跨会话一致性 — rule_version 跨独立会话一致 | 📋 Defer |
+
+**理由**: 3 项均为边缘案例，当前 208 tests / 0 failures 覆盖核心路径。V2 迭代时纳入 `tests/test_e2e_edge_cases.py`。
