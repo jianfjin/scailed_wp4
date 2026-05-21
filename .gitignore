@@ -22,3 +22,4 @@ Thumbs.db
 node_modules/
 dist/
 R2_scailed_backups_token
+docs/private/
