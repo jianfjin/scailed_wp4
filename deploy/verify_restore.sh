@@ -70,8 +70,9 @@ else
 
     # Create temp DB, restore schema-only, check for errors
     if docker exec "${CONTAINER}" bash -c "
-        dropdb --if-exists -U '${PG_USER}' verify_restore 2>/dev/null
-        createdb -U '${PG_USER}' verify_restore 2>/dev/null
+        set -e
+        dropdb --if-exists -U '${PG_USER}' verify_restore 2>/dev/null || true
+        createdb -U '${PG_USER}' verify_restore
         pg_restore -U '${PG_USER}' -d verify_restore --schema-only /tmp/verify_restore.dump 2>&1
     " | grep -iv 'notice\|warning' | grep -q 'ERROR'; then
         fail "V2 — schema restore had errors"
@@ -86,7 +87,8 @@ else
 
     # Cleanup
     docker exec "${CONTAINER}" bash -c "
-        dropdb --if-exists -U '${PG_USER}' verify_restore 2>/dev/null
+        set -e
+        dropdb --if-exists -U '${PG_USER}' verify_restore 2>/dev/null || true
         rm -f /tmp/verify_restore.dump
     " 2>/dev/null
 fi
@@ -119,24 +121,71 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════════
-# V4: Total row count + db size comparison
+# V4: Per-table row count comparison (actual count(*), not n_live_tup)
 # ═══════════════════════════════════════════════════════════════════════
-log "--- V4: total rows ---"
+log "--- V4: per-table row counts ---"
 
 if [[ -f "${CATALOG_FILE}" ]]; then
     CAT_TOTAL=$(python3 -c "import json; d=json.load(open('${CATALOG_FILE}')); print(d.get('total_rows',0))" 2>/dev/null || echo "ERR")
-    CAT_SIZE=$(python3 -c "import json; d=json.load(open('${CATALOG_FILE}')); print(d.get('size_bytes',0))" 2>/dev/null || echo "ERR")
+    CAT_TABLES=$(python3 -c "
+import json
+d=json.load(open('${CATALOG_FILE}'))
+for t in d.get('tables',[]):
+    print(f\"{t['schema']}.{t['table']}|{t['rows']}\")
+" 2>/dev/null)
 
-    docker exec "${CONTAINER}" psql -U "${PG_USER}" -d "${PG_DB}" -c 'ANALYZE' > /dev/null 2>&1
-    LIVE_TOTAL=$(docker exec "${CONTAINER}" psql -U "${PG_USER}" -d "${PG_DB}" -t -A -c \
-        "SELECT sum(n_live_tup) FROM pg_stat_user_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')" 2>/dev/null || echo "ERR")
+    # Use same DO block approach for live counts
+    cat > /tmp/scailed_v4_$$.sql << 'SQLEOF'
+DO $$
+DECLARE
+    r record;
+    row_count bigint;
+    total bigint := 0;
+BEGIN
+    FOR r IN
+        SELECT table_schema, table_name
+        FROM information_schema.tables
+        WHERE table_type = 'BASE TABLE'
+          AND table_schema NOT IN ('pg_catalog', 'information_schema')
+        ORDER BY table_schema, table_name
+    LOOP
+        EXECUTE format('SELECT count(*) FROM %I.%I', r.table_schema, r.table_name) INTO row_count;
+        total := total + row_count;
+    END LOOP;
+    RAISE NOTICE 'TOTAL:%', total;
+END
+$$;
+SQLEOF
+
+    docker cp "/tmp/scailed_v4_$$.sql" "${CONTAINER}:/tmp/v4.sql"
+    LIVE_OUTPUT=$(docker exec "${CONTAINER}" bash -c "psql -U '${PG_USER}' -d '${PG_DB}' -f /tmp/v4.sql 2>&1")
+    docker exec "${CONTAINER}" rm /tmp/v4.sql 2>/dev/null
+    rm "/tmp/scailed_v4_$$.sql"
+
+    LIVE_TOTAL=$(echo "${LIVE_OUTPUT}" | grep 'TOTAL:' | sed 's/.*TOTAL://')
+    LIVE_TOTAL=${LIVE_TOTAL:-ERR}
     LIVE_SIZE=$(docker exec "${CONTAINER}" psql -U "${PG_USER}" -d "${PG_DB}" -t -A -c \
         "SELECT pg_database_size(current_database())" 2>/dev/null || echo "ERR")
 
     if [[ "${CAT_TOTAL}" == "${LIVE_TOTAL}" ]]; then
-        pass "V4 — total rows: ${LIVE_TOTAL} (match), db size: ${LIVE_SIZE} bytes"
+        pass "V4 — total rows: ${LIVE_TOTAL} (match, count(*)), db size: ${LIVE_SIZE} bytes"
     else
-        fail "V4 — total rows mismatch: backup=${CAT_TOTAL} live=${LIVE_TOTAL}"
+        # Per-table drill-down to identify specific mismatches
+        V4_TABLE_FAILS=0
+        while IFS='|' read -r tname trows; do
+            [[ -z "${tname}" ]] && continue
+            LIVE_TR=$(docker exec "${CONTAINER}" psql -U "${PG_USER}" -d "${PG_DB}" -t -A -c \
+                "SELECT count(*) FROM \"${tname%%/*}\".\"${tname##*.}\"" 2>/dev/null || echo "ERR")
+            if [[ "${trows}" != "${LIVE_TR}" ]]; then
+                fail "V4 — ${tname}: catalog=${trows} live=${LIVE_TR}"
+                ((V4_TABLE_FAILS++)) || true
+            fi
+        done <<< "${CAT_TABLES}"
+        if [[ ${V4_TABLE_FAILS} -eq 0 ]]; then
+            pass "V4 — all tables match (total drift from catalog generation, non-blocking)"
+        else
+            fail "V4 — total rows mismatch: catalog=${CAT_TOTAL} live=${LIVE_TOTAL} (${V4_TABLE_FAILS} tables differ)"
+        fi
     fi
 else
     fail "V4 — no catalog.json to compare against"

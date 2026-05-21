@@ -87,13 +87,45 @@ def pg_age_stats(pg_container_running: bool) -> dict:
 
 @pytest.fixture(scope="session")
 def pg_total_rows(pg_container_running: bool) -> int:
-    """Total rows across user tables (ANALYZE first)."""
-    _psql("ANALYZE")
-    result = _psql(
-        "SELECT COALESCE(sum(n_live_tup), 0) FROM pg_stat_user_tables "
-        "WHERE schemaname NOT IN ('pg_catalog','information_schema')"
-    )
-    return int(result) if result else 0
+    """Total rows across user tables (actual count(*))."""
+    import tempfile, subprocess, os
+    sql = """DO $$
+DECLARE
+    r record;
+    row_count bigint;
+    total bigint := 0;
+BEGIN
+    FOR r IN
+        SELECT table_schema, table_name
+        FROM information_schema.tables
+        WHERE table_type = 'BASE TABLE'
+          AND table_schema NOT IN ('pg_catalog', 'information_schema')
+    LOOP
+        EXECUTE format('SELECT count(*) FROM %I.%I', r.table_schema, r.table_name) INTO row_count;
+        total := total + row_count;
+    END LOOP;
+    RAISE NOTICE 'TOTAL:%', total;
+END
+$$;"""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.sql', delete=False) as f:
+        f.write(sql)
+        tmpname = f.name
+    try:
+        subprocess.run(["docker", "cp", tmpname, f"{PG_CONTAINER}:/tmp/v4_test.sql"],
+                       capture_output=True, timeout=5, check=True)
+        result = subprocess.run(
+            ["docker", "exec", PG_CONTAINER, "bash", "-c",
+             f"psql -U {PG_USER} -d {PG_DB} -f /tmp/v4_test.sql 2>&1"],
+            capture_output=True, text=True, timeout=10,
+        )
+        for line in result.stdout.split("\n"):
+            if "TOTAL:" in line:
+                return int(line.split("TOTAL:")[1].strip())
+        return 0
+    finally:
+        os.unlink(tmpname)
+        subprocess.run(["docker", "exec", PG_CONTAINER, "rm", "-f", "/tmp/v4_test.sql"],
+                       capture_output=True, timeout=3)
 
 
 @pytest.fixture

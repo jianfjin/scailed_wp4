@@ -206,7 +206,7 @@ Step 4: Re-establish VM bridge (if needed)
 ```
 Step 1: Identify corruption scope
   bash deploy/verify_restore.sh
-  # V4 will flag: "total rows mismatch: catalog=2800 live=2500"
+  # V4 will flag: "total rows mismatch: catalog=5595 live=2500"
   # V3 may flag: "AGE mismatch: backup(1g/4l) vs live(1g/2l)"
 
 Step 2: Identify when corruption started

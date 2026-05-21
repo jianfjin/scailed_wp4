@@ -72,25 +72,51 @@ log "Schema dump complete: ${SCHEMA_FILE} (${SCHEMA_SIZE} bytes)"
 CATALOG_FILE="${BACKUP_DIR}/pathfinder_${TS}_catalog.json"
 log "Extracting AGE catalog metadata ..."
 
-docker exec "${CONTAINER}" bash -c "
-    psql -U '${PG_USER}' -d '${PG_DB}' -c 'ANALYZE' > /dev/null 2>&1
-    psql -U '${PG_USER}' -d '${PG_DB}' -t -A -q \
-    -c \"SELECT json_build_object(
+# Write catalog SQL to temp file (avoids nested-quote hell)
+cat > /tmp/scailed_catalog_${TS}.sql << 'SQLEOF'
+DO $$
+DECLARE
+    r record;
+    table_list jsonb := '[]'::jsonb;
+    row_count bigint;
+    total bigint := 0;
+BEGIN
+    FOR r IN
+        SELECT table_schema, table_name
+        FROM information_schema.tables
+        WHERE table_type = 'BASE TABLE'
+          AND table_schema NOT IN ('pg_catalog', 'information_schema')
+        ORDER BY table_schema, table_name
+    LOOP
+        EXECUTE format('SELECT count(*) FROM %I.%I', r.table_schema, r.table_name) INTO row_count;
+        table_list := table_list || jsonb_build_object(
+            'schema', r.table_schema,
+            'table', r.table_name,
+            'rows', row_count
+        );
+        total := total + row_count;
+    END LOOP;
+    RAISE NOTICE '%', json_build_object(
         'ts', now(),
         'db', current_database(),
-        'tables', (SELECT json_agg(json_build_object('schema', schemaname, 'table', relname, 'rows', n_live_tup))
-                   FROM pg_stat_user_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')),
-        'total_rows', (SELECT sum(n_live_tup) FROM pg_stat_user_tables WHERE schemaname NOT IN ('pg_catalog','information_schema')),
+        'tables', table_list,
+        'total_rows', total,
         'age_graphs', (SELECT json_agg(json_build_object('namespace', ag_graph.namespace::text, 'graph', ag_graph.name))
                        FROM ag_catalog.ag_graph),
         'age_labels', (SELECT json_agg(json_build_object('namespace', g.namespace::text, 'label', l.name, 'kind', l.kind::text))
                        FROM ag_catalog.ag_label l JOIN ag_catalog.ag_graph g ON g.graphid = l.graph),
         'age_vertex_count', (SELECT count(*) FROM ag_catalog.ag_label),
         'size_bytes', pg_database_size(current_database())
-    )\" > /tmp/catalog_${TS}.json" 2>&1
+    )::text;
+END
+$$;
+SQLEOF
 
-docker cp "${CONTAINER}:/tmp/catalog_${TS}.json" "${CATALOG_FILE}"
-docker exec "${CONTAINER}" rm "/tmp/catalog_${TS}.json"
+docker cp "/tmp/scailed_catalog_${TS}.sql" "${CONTAINER}:/tmp/catalog.sql"
+docker exec "${CONTAINER}" bash -c "psql -U '${PG_USER}' -d '${PG_DB}' -f /tmp/catalog.sql 2>&1" \
+    | grep 'NOTICE:' | sed 's/.*NOTICE:  //' > "${CATALOG_FILE}"
+docker exec "${CONTAINER}" rm /tmp/catalog.sql
+rm "/tmp/scailed_catalog_${TS}.sql"
 
 log "Catalog metadata saved: ${CATALOG_FILE}"
 
