@@ -4,6 +4,15 @@ Supports two graph backends:
   - InMemoryRoadmapGraph (demo mode, zero-config for demos/tests)
   - AgeRoadmapGraph (deployed mode, PostgreSQL + Apache AGE for production)
 
+When the AGE backend is unavailable in deployed mode, the system degrades
+to InMemoryRoadmapGraph with explicit markers (confidence=0.0,
+_path_backend="networkx_fallback", DEGRADED warning).
+
+NOTE: The string "networkx_fallback" is retained for API backward
+compatibility. It actually refers to InMemoryRoadmapGraph -- the internal
+graph engine builds on NetworkX, but the outermost class name is
+InMemoryRoadmapGraph. See pathfinder/core/graph.py for the implementation.
+
 Modes (via PATHFINDER_MODE env var):
   - demo     → InMemoryRoadmapGraph (default, zero-config)
   - deployed → AgeRoadmapGraph (requires PostgreSQL + Apache AGE)
@@ -147,7 +156,9 @@ class AssessmentService:
 
         In `demo` mode this is a no-op.
         In `deployed` mode this verifies PG connectivity; on failure,
-        degrades to NetworkX fallback with explicit markers (OpenSpec 2.2).
+        degrades to InMemoryRoadmapGraph with explicit markers (OpenSpec 2.2).
+        The _graph_backend label "networkx_fallback" is a legacy API name;
+        the actual fallback backend is InMemoryRoadmapGraph.
         """
         if self._mode != "deployed":
             return
@@ -162,7 +173,7 @@ class AssessmentService:
             except Exception as exc:
                 print(
                     f"[startup_check] AGE connection failed ({exc}), "
-                    f"degrading to NetworkX fallback.",
+                    f"degrading to InMemoryRoadmapGraph fallback.",
                     file=sys.stderr,
                 )
                 return False
@@ -180,7 +191,7 @@ class AssessmentService:
             self._age_unavailable = True
             self.solver = PathfinderSolver(self.graph)
             print(
-                "[startup_check] Switched to NetworkX fallback. "
+                "[startup_check] Switched to InMemoryRoadmapGraph fallback. "
                 "Confidence will be 0.0 until AGE is restored.",
                 file=sys.stderr,
             )
@@ -274,7 +285,7 @@ class AssessmentService:
             if not recommendation["warnings"]:
                 recommendation["warnings"] = []
             recommendation["warnings"].append(
-                "DEGRADED: AGE backend unavailable, using NetworkX fallback. "
+                "DEGRADED: AGE backend unavailable, using InMemoryRoadmapGraph fallback. "
                 "Confidence set to 0.0. Restore AGE for accurate recommendations."
             )
 
@@ -309,6 +320,20 @@ class AssessmentService:
         use_cypher = path_backend == "cypher"
         path = await self.solver.solve_async(state, self.rules, use_cypher=use_cypher)
         recommendation = build_recommendation(path)
+
+        # OpenSpec 2.2 / Linus plan: degradation marker when AGE unavailable
+        # Must mirror generate_recommendation() exactly so the API path is covered.
+        if self._age_unavailable:
+            recommendation["confidence"] = 0.0
+            recommendation["path_backend"] = self._graph_backend
+            recommendation.setdefault("warnings", [])
+            if not recommendation["warnings"]:
+                recommendation["warnings"] = []
+            recommendation["warnings"].append(
+                "DEGRADED: AGE backend unavailable, using InMemoryRoadmapGraph fallback. "
+                "Confidence set to 0.0. Restore AGE for accurate recommendations."
+            )
+
         session["recommendation"] = recommendation
         session["status"] = "complete"
         self.audit_log.append(
@@ -389,7 +414,11 @@ class AssessmentService:
             self.graph.load_projection(nodes, edges)
         else:
             self.graph = InMemoryRoadmapGraph(nodes, edges)
-            self._graph_backend = "inmemory"
+            # Preserve "networkx_fallback" marker when AGE is unavailable.
+            # Without this guard, import_wp3 would silently overwrite the
+            # fallback status to "inmemory", making degradation invisible.
+            if not self._age_unavailable:
+                self._graph_backend = "inmemory"
         self.solver = PathfinderSolver(self.graph)
         self.import_reports["wp3"] = report
         self.audit_log.append(
@@ -438,7 +467,7 @@ class AssessmentService:
         }
         if self._age_unavailable:
             result["degraded"] = True
-            result["degraded_reason"] = "AGE backend unavailable, using NetworkX fallback"
+            result["degraded_reason"] = "AGE backend unavailable, using InMemoryRoadmapGraph fallback"
         return result
 
     def _questionnaires_from_wp2(self, payload: dict[str, object]) -> list[Questionnaire]:
