@@ -120,7 +120,9 @@ bash ~/projects/scailed_wp4/deploy/setup-r2.sh
 
 # 3. Pull from R2
 mkdir -p /backups/pg
-rclone sync r2:scailed-backups/pg/ /backups/pg/latest/
+rclone sync r2:scailed-backups/pg/ /backups/pg/
+# Creates timestamped dirs; re-link 'latest'
+ln -sfn $(ls -td /backups/pg/20* | head -1) /backups/pg/latest
 
 # 4. Build + start + restore
 cd ~/projects/scailed_wp4/deploy

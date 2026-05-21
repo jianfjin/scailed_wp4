@@ -96,7 +96,10 @@ Step 3: Configure rclone for R2
 
 Step 4: Pull latest backup from R2
   mkdir -p /backups/pg
-  rclone sync r2:scailed-backups/pg/ /backups/pg/latest/
+  rclone sync r2:scailed-backups/pg/ /backups/pg/
+  # Creates: /backups/pg/20260521_030000/pathfinder_*.dump etc.
+  # Then re-create 'latest' symlink:
+  ln -sfn $(ls -td /backups/pg/20* | head -1) /backups/pg/latest
 
 Step 5: Build and start containers
   cd ~/projects/scailed_wp4/deploy
@@ -207,8 +210,8 @@ Step 1: Identify corruption scope
   # V3 may flag: "AGE mismatch: backup(1g/4l) vs live(1g/2l)"
 
 Step 2: Identify when corruption started
-  for dir in /backups/pg/202*; do
-    bash deploy/verify_restore.sh "$dir"  # point to old backup
+  for dir in /backups/pg/20*; do
+    bash deploy/verify_restore.sh "$dir"  # verify specific backup
   done
   # Find last clean backup before corruption
 

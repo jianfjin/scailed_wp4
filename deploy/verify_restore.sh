@@ -19,10 +19,19 @@ fail() { log "❌ FAIL: $*"; FAILURES=$((FAILURES + 1)); }
 FAILURES=0
 
 # ─── Find latest backup ───────────────────────────────────────────────
-if [[ -L "${BACKUP_ROOT}/latest" ]]; then
+if [[ -n "${1:-}" ]]; then
+    # Explicit backup dir (for runbook S5: point-in-time verification)
+    if [[ -d "$1" ]]; then
+        LATEST=$(readlink -f "$1")
+        log "Using explicit backup: ${LATEST}"
+    else
+        log "FATAL: Backup dir not found: $1"
+        exit 1
+    fi
+elif [[ -L "${BACKUP_ROOT}/latest" ]]; then
     LATEST=$(readlink -f "${BACKUP_ROOT}/latest")
 else
-    log "FATAL: No latest backup symlink. Run backup.sh first."
+    log "FATAL: No latest backup symlink. Run backup.sh first or pass path: $0 /backups/pg/20260520_030000"
     exit 1
 fi
 

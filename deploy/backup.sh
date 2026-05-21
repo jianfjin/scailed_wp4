@@ -108,6 +108,8 @@ log "Checksums written: ${CHECKSUM_FILE}"
 RCLONE_REMOTE="${SCAILED_RCLONE_REMOTE:-r2}"
 RCLONE_PATH="${SCAILED_RCLONE_PATH:-scailed-backups/pg}"
 
+RCLONE_FAILED=0
+
 if command -v rclone &>/dev/null && rclone listremotes 2>/dev/null | grep -q "^${RCLONE_REMOTE}:"; then
     log "Syncing to ${RCLONE_REMOTE}:${RCLONE_PATH} ..."
     if rclone sync "${BACKUP_DIR}" "${RCLONE_REMOTE}:${RCLONE_PATH}/" \
@@ -121,6 +123,7 @@ if command -v rclone &>/dev/null && rclone listremotes 2>/dev/null | grep -q "^$
         log "Cloud sync OK: ${RCLONE_REMOTE}:${RCLONE_PATH}/"
     else
         log "WARN: Cloud sync FAILED (exit=$?). Local backup is safe. Check ${BACKUP_ROOT}/rclone.log"
+        RCLONE_FAILED=1
     fi
 else
     log "SKIP: rclone remote '${RCLONE_REMOTE}' not configured. Run deploy/setup-r2.sh to set up."
@@ -151,4 +154,12 @@ log "Retention cleanup: ${DELETED} old backup(s) removed (policy: ${RETENTION_DA
 # ═══════════════════════════════════════════════════════════════════════
 ln -sfn "${TS}" "${BACKUP_ROOT}/latest"
 log "Backup complete. latest → ${TS}"
+
+# Final exit: non-zero (2) if rclone was configured but sync failed.
+# Local backup is safe; exit 2 signals "partial failure" to cron/Monitoring.
+if [[ ${RCLONE_FAILED:-0} -eq 1 ]]; then
+    log "Exit code: 2 (local OK, cloud sync FAILED)"
+    exit 2
+fi
+
 log "=== DONE ==="
