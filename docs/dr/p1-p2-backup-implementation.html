@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCAILED WP4 — DR P1+P2: Backup & Cloud Sync</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --dim: #8b949e;
+    --green: #3fb950;
+    --blue: #58a6ff;
+    --orange: #d2991d;
+    --red: #f85149;
+    --accent: #1f6feb;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    line-height: 1.6; padding: 2rem; max-width: 900px; margin: 0 auto;
+  }
+  h1 { color: var(--blue); font-size: 1.6rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 0.5rem; }
+  h2 { color: var(--green); font-size: 1.2rem; margin: 1.5rem 0 0.5rem; }
+  .meta { color: var(--dim); font-size: 0.85rem; margin-bottom: 1.5rem; }
+  .meta span { margin-right: 1.5rem; }
+  .status { color: var(--green); font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border: 1px solid var(--border); }
+  th { background: var(--surface); color: var(--blue); font-weight: 600; }
+  td { font-size: 0.9rem; }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; overflow-x: auto; margin: 0.75rem 0; font-size: 0.85rem; color: var(--text); }
+  code { color: var(--orange); }
+  pre code { color: var(--text); }
+  .box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin: 1rem 0; }
+  .box-title { color: var(--blue); font-weight: 600; margin-bottom: 0.75rem; }
+  .arch { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; font-size: 0.82rem; margin: 1.5rem 0; }
+  .arch-row { display: flex; gap: 1.5rem; align-items: center; }
+  .arch-node { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem 0.75rem; text-align: center; min-width: 120px; }
+  .arch-arrow { color: var(--dim); font-size: 1.2rem; }
+  .tag { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.78rem; font-weight: 600; margin-right: 0.3rem; }
+  .tag-green { background: #1a3a2a; color: var(--green); border: 1px solid #2a5a3a; }
+  .tag-blue { background: #1a2a3a; color: var(--blue); border: 1px solid #2a3a5a; }
+  .kv { display: grid; grid-template-columns: 200px 1fr; gap: 0.3rem; font-size: 0.9rem; }
+  .kv-key { color: var(--dim); }
+  .kv-val { color: var(--text); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+  .footer { color: var(--dim); font-size: 0.8rem; text-align: center; margin-top: 2rem; }
+</style>
+</head>
+<body>
+
+<h1>SCAILED WP4 — DR Implementation: P1+P2</h1>
+<div class="meta">
+  <span>📅 2026-05-21</span>
+  <span class="status">✅ Complete</span>
+  <span>💰 Budget: €0</span>
+  <span>🗳️ Joint 16/0</span>
+</div>
+
+<div class="box">
+  <div class="box-title">📋 实施概要 / Summary</div>
+  <p><strong>P1+P2 容灾备份已部署完成。</strong>每日 03:00 cron 自动执行 pg_dump → sha256 → rclone → Cloudflare R2。本地 7 天留存，云端异地 R2（€0 免费额度）。联合议会 16/0 全票通过。</p>
+</div>
+
+<h2>Overview</h2>
+<table>
+  <tr><th>Phase</th><th>Content</th><th>Status</th></tr>
+  <tr><td>P1</td><td>backup.sh — pg_dump + sha256 + AGE catalog + 7-day retention + cron</td><td><span class="tag tag-green">DONE</span></td></tr>
+  <tr><td>P2</td><td>rclone → Cloudflare R2 sync (€0, auto-detect)</td><td><span class="tag tag-green">DONE</span></td></tr>
+</table>
+
+<h2>Architecture</h2>
+<div class="arch">
+  <div class="arch-node" style="color:var(--dim)">cron @ 03:00 daily</div>
+  <div class="arch-arrow">▼</div>
+  <div class="arch-row">
+    <div class="arch-node">pg_dump -Fc<br><span style="color:var(--dim)">+ schema</span></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node">sha256<br><span style="color:var(--dim)">+ AGE catalog</span></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-node">rclone sync<br><span style="color:var(--dim)">→ R2 (€0)</span></div>
+  </div>
+  <div class="arch-row" style="margin-top:0.5rem">
+    <div class="arch-node" style="min-width:160px">/backups/pg/<br><span style="color:var(--dim)">7-day local</span></div>
+    <div style="min-width:30px"></div>
+    <div class="arch-node" style="min-width:160px">checksums.sha256</div>
+    <div style="min-width:30px"></div>
+    <div class="arch-node" style="min-width:200px">Cloudflare R2<br><span style="color:var(--dim)">scailed-backups/pg</span></div>
+  </div>
+</div>
+
+<h2>Artifacts per Backup</h2>
+<pre><code>/backups/pg/20260521_142231/
+├── pathfinder_20260521_142231.dump          # pg_dump -Fc (50 KB)
+├── pathfinder_20260521_142231_schema.sql    # Schema-only (6.5 KB)
+├── pathfinder_20260521_142231_catalog.json  # AGE graph metadata
+└── checksums.sha256                          # V1: file integrity</code></pre>
+
+<h2>R2 Cloud Sync</h2>
+<div class="kv">
+  <span class="kv-key">Provider</span><span class="kv-val">Cloudflare R2</span>
+  <span class="kv-key">Bucket</span><span class="kv-val"><code>scailed-backups</code></span>
+  <span class="kv-key">Region</span><span class="kv-val">Western Europe (WEUR)</span>
+  <span class="kv-key">Cost</span><span class="kv-val" style="color:var(--green)">€0 (10 GB free tier — 0.0006% used)</span>
+  <span class="kv-key">Sync method</span><span class="kv-val"><code>rclone sync --checksum</code></span>
+  <span class="kv-key">Token</span><span class="kv-val">Admin Read & Write, TTL Forever</span>
+  <span class="kv-key">Endpoint</span><span class="kv-val"><code>52fdf946227d32558d000f6208377c87.r2.cloudflarestorage.com</code></span>
+</div>
+
+<h2>Files</h2>
+<table>
+  <tr><th>File</th><th>Purpose</th></tr>
+  <tr><td><code>deploy/backup.sh</code></td><td>Main backup script (P1+P2 combined)</td></tr>
+  <tr><td><code>deploy/setup-r2.sh</code></td><td>One-time R2 rclone configuration</td></tr>
+</table>
+
+<h2>Cron</h2>
+<pre><code># SCAILED WP4 — PostgreSQL daily backup at 03:00
+0 3 * * * /home/jin/projects/scailed_wp4/deploy/backup.sh >> /backups/pg/cron.log 2>&1</code></pre>
+
+<h2>Environment Variables</h2>
+<table>
+  <tr><th>Variable</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>SCAILED_PG_CONTAINER</code></td><td><code>scailed-postgres</code></td><td>Docker container name</td></tr>
+  <tr><td><code>SCAILED_PG_USER</code></td><td><code>pathfinder</code></td><td>PostgreSQL user</td></tr>
+  <tr><td><code>SCAILED_PG_DB</code></td><td><code>pathfinder</code></td><td>Database name</td></tr>
+  <tr><td><code>SCAILED_BACKUP_ROOT</code></td><td><code>/backups/pg</code></td><td>Local backup directory</td></tr>
+  <tr><td><code>SCAILED_RETENTION_DAYS</code></td><td><code>7</code></td><td>Local retention policy</td></tr>
+  <tr><td><code>SCAILED_RCLONE_REMOTE</code></td><td><code>r2</code></td><td>rclone remote name</td></tr>
+  <tr><td><code>SCAILED_RCLONE_PATH</code></td><td><code>scailed-backups/pg</code></td><td>R2 path prefix</td></tr>
+</table>
+
+<h2>Verification</h2>
+<pre><code># Run backup manually
+bash deploy/backup.sh
+
+# Check R2
+rclone ls r2:scailed-backups/pg/
+
+# Check cron
+crontab -l | grep backup</code></pre>
+
+<hr>
+<div class="footer">
+  SCAILED WP4 — DataWego DR · Joint Resolution 16/0 · 2026-05-21
+</div>
+
+</body>
+</html>
