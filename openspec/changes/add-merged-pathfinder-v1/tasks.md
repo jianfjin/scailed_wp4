@@ -3,7 +3,7 @@
 - [x] 1.2 Define WP2 stakeholder taxonomy, WP3 roadmap, and WP8 rule input contracts. (test: test_acceptance_baseline.AcceptanceBaselineTests.test_all_demo_stakeholders_have_complete_questionnaires)
 - [x] 1.3 Define schema versions, sample inputs, rule DSL, and paired rule test format. (test: test_pathfinder_core.PathfinderCoreTests.test_rule_loader_runs_paired_tests)
 - [x] 1.4 Create mock-data package, `IP_BOUNDARY.md`, repo skeleton, and Docker Compose skeleton. (test: test_acceptance_baseline.AcceptanceBaselineTests.test_three_stakeholder_paths_are_ready_and_traceable)
-- [ ] 1.5 Verify one sample import, one questionnaire, one assessment session, one hard-coded traceable recommendation, and local Docker Compose boot.
+- [x] 1.5 Verify one sample import, one questionnaire, one assessment session, one hard-coded traceable recommendation, and local Docker Compose boot. (test: test_e2e_openspec_1_5)
 
 ## 2. Core Engine
 - [x] 2.1 Implement domain models for stakeholder state, roadmap nodes/edges, rules, path results, recommendations, snapshots, and audit events. (test: test_pathfinder_core.PathfinderCoreTests.test_demo_supports_five_stakeholder_types)
