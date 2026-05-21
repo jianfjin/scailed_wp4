@@ -17,23 +17,45 @@ from typing import Dict, List, Optional, Tuple
 
 
 class EventType(StrEnum):
-    AGREE_VOTE = "agree_vote"           # voted same way → +affinity
-    DISAGREE_VOTE = "disagree_vote"     # voted opposite → -affinity
-    PUBLIC_PRAISE = "public_praise"     # complimented in debate → +affinity
-    PUBLIC_CRITICISM = "public_criticism"  # attacked in debate → -affinity
-    DEFENDED = "defended"               # defended someone → +++affinity
-    BETRAYED = "betrayed"               # switched sides → ---affinity
-    IGNORED = "ignored"                 # argument dismissed without response → -affinity
-    COLLABORATION = "collaboration"     # co-authored plan → ++affinity
+    # ── Council interactions ──
+    AGREE_VOTE = "agree_vote"
+    DISAGREE_VOTE = "disagree_vote"
+    PUBLIC_PRAISE = "public_praise"
+    PUBLIC_CRITICISM = "public_criticism"
+    DEFENDED = "defended"
+    BETRAYED = "betrayed"
+    IGNORED = "ignored"
+    # ── Collaboration ──
+    COLLABORATION = "collaboration"
+    SHIPPED = "shipped"                 # Demi: delivered working artifact +18
+    CODE_REVIEW_APPROVAL = "code_review_approval"  # Linus: approved merge +8
+    JOINT_PAPER = "joint_paper"         # Sam: co-authored spec +10
+    ALLIANCE_FORMED = "alliance_formed" # Sam: formal council alliance +12
+    MENTORSHIP = "mentorship"           # Fei-Fei: advisor relationship +5
+    DATA_SHARED = "data_shared"         # Fei-Fei: shared training data +7
+    # ── Competition / Conflict ──
+    SIDED_WITH_ENEMY = "sided_with_enemy"   # Sam: supported opponent -15
+    STOLEN_CREDIT = "stolen_credit"         # Sam: took credit for others' work -20
+    TALENT_POACHED = "talent_poached"       # Lisa: hired away team member -20
+    SHARED_ENEMY = "shared_enemy"           # Musk: +3/cycle transitive
+    # ── Hardware (Lisa) ──
+    CHIP_SUCCESS = "chip_success"           # +8~15
+    CHIP_FAILURE = "chip_failure"           # -5~10
+    RESOURCE_SHARED = "resource_shared"     # +3
+    RESOURCE_DENIED = "resource_denied"     # -10
 
 
 class RelationState(StrEnum):
-    HOSTILE = "hostile"       # affinity < -50
-    COLD = "cold"             # -50 to -20
-    NEUTRAL = "neutral"       # -20 to 20
-    WARM = "warm"             # 20 to 50
-    CLOSE = "close"           # 50 to 75
-    INTIMATE = "intimate"     # > 75
+    FEUD = "feud"                # < -75  Irreconcilable — mutual veto, no co-authorship
+    HOSTILE = "hostile"          # -55 to -75  Opposition — active blocking
+    RIVAL = "rival"              # -35 to -55  Rivalry — competing, edge in debates (Sam)
+    COLD = "cold"                # -20 to -35  Cold — distant, minimal interaction
+    NEUTRAL = "neutral"          # -20 to +20  Baseline
+    CORDIAL = "cordial"          # +20 to +35  Professional respect
+    RESPECT = "respect"          # +35 to +50  Respect — productive disagreement, shared vision
+    WARM = "warm"                # +50 to +65  Warm — collaboration preference
+    ALLIANCE = "alliance"        # +65 to +80  Alliance — co-sign proposals, defend publicly
+    DEEP_ALLIANCE = "deep_alliance"  # > +80  Deep Alliance — unconditional trust, co-invest
 
 
 @dataclass
@@ -76,21 +98,53 @@ class AffinityEngine:
         EventType.BETRAYED:        -25.0,
         EventType.IGNORED:         -4.0,
         EventType.COLLABORATION:    12.0,
+        EventType.SHIPPED:         18.0,
+        EventType.CODE_REVIEW_APPROVAL: 8.0,
+        EventType.JOINT_PAPER:     10.0,
+        EventType.ALLIANCE_FORMED:  12.0,
+        EventType.MENTORSHIP:       5.0,
+        EventType.DATA_SHARED:      7.0,
+        EventType.SIDED_WITH_ENEMY: -15.0,
+        EventType.STOLEN_CREDIT:   -20.0,
+        EventType.TALENT_POACHED:  -20.0,
+        EventType.SHARED_ENEMY:     3.0,
+        EventType.CHIP_SUCCESS:    10.0,
+        EventType.CHIP_FAILURE:    -7.0,
+        EventType.RESOURCE_SHARED:  3.0,
+        EventType.RESOURCE_DENIED: -10.0,
     }
 
-    # ── Thresholds for state transitions ──
-    DATING_THRESHOLD: float = 70.0      # affinity > 70 → private meetings, "dating"
-    INTIMATE_THRESHOLD: float = 85.0    # affinity > 85 → intimate relationship
-    HOSTILE_THRESHOLD: float = -55.0    # affinity < -55 → open hostility, attacks
-    FEUD_THRESHOLD: float = -75.0       # affinity < -75 → active sabotage, veto each other
+    # ── Thresholds ──
+    ALLIANCE_THRESHOLD: float = 70.0
+    DEEP_ALLIANCE_THRESHOLD: float = 85.0
+    RESPECT_THRESHOLD: float = 35.0
+    HOSTILE_THRESHOLD: float = -55.0
+    FEUD_THRESHOLD: float = -75.0
+    RIVAL_THRESHOLD: float = -35.0
 
-    # ── Modifiers ──
-    HISTORY_DECAY: float = 0.98         # Each vote cycle, affinity drifts 2% toward 0
-    REAL_WORLD_BONUS: float = 15.0      # Pre-existing positive relationship offset
-    REAL_WORLD_PENALTY: float = -20.0   # Pre-existing negative relationship offset
-    PERSONALITY_AMPLIFIER: float = 1.5  # Strong personalities amplify deltas
-    GRUDGE_HOLDING: float = 0.5         # Negative affinity decays slower (grudges linger)
-    ROMANCE_COOLDOWN: int = 5           # Events between intimacy changes after this many cycles
+    # ── Decay ──
+    POSITIVE_DECAY: float = 0.98       # Positive edges: 2%/cycle toward 0
+    NEGATIVE_DECAY: float = 0.99       # Negative edges: 1%/cycle (grudges last longer)
+    GRUDGE_DECAY_MULT: float = 0.5     # Grudge holders decay at 0.5x normal rate
+
+    # ── Personality ──
+    VOLATILE: set = {"musk", "linus", "jobs", "sam", "dijkstra", "jensen"}
+    GRUDGE_HOLDERS: set = {"linus", "jobs", "dijkstra"}
+    PERSONALITY_AMPLIFIER: float = 1.5
+    FEIFEI_DAMPENER: float = 0.7       # Fei-Fei: measured, slow to shift
+    MUSK_POSITIVE_AMP: float = 1.5     # Musk: excited fast
+    MUSK_NEGATIVE_AMP: float = 1.2     # Musk: doesn't stay mad (unless betrayed)
+
+    # ── Special mechanics ──
+    BETRAYAL_FLOOR: float = -40.0      # Once betrayed, affinity can't rise above -40
+    HYSTERESIS_CAP: float = 0.5        # After feud, recovery capped at 50% of pre-feud peak
+    OSCILLATION_LIMIT: float = 20.0    # Volatile-volatile pairs: max swing per cycle
+    PROPAGATION_RATE: float = 0.05     # 5% of edge changes propagate to adjacent edges
+    DIMINISHING_RETURNS: float = 0.8   # Same event type repeated: 80% of previous delta
+
+    # ── Romance (narrative flavor only — council vetoed "dating" label) ──
+    ROMANCE_THRESHOLD: float = 70.0
+    BREAKUP_THRESHOLD: float = 40.0
 
     def __init__(self):
         self._cycle: int = 0
