@@ -1,592 +1,1017 @@
 {
-  "/home/jin/projects/scailed_wp4/e2e_output/m3_e2e_demo_d50f5aa.json": {
-    "mtime": 1779046400.799495,
-    "ast_hash": "6b95fe5f733d240cec82543101949b89",
-    "semantic_hash": "6b95fe5f733d240cec82543101949b89"
-  },
-  "/home/jin/projects/scailed_wp4/e2e_output/m3_e2e_docker_d50f5aa.json": {
-    "mtime": 1779047632.021264,
-    "ast_hash": "77287c53a4e06670540d87268e080c1f",
-    "semantic_hash": "77287c53a4e06670540d87268e080c1f"
-  },
-  "/home/jin/projects/scailed_wp4/api/main.py": {
-    "mtime": 1779024954.6668668,
-    "ast_hash": "ef84d92a27fccc007bf3e897b8d00e7a",
-    "semantic_hash": "ef84d92a27fccc007bf3e897b8d00e7a"
-  },
-  "/home/jin/projects/scailed_wp4/api/__init__.py": {
-    "mtime": 1779024954.6663077,
-    "ast_hash": "7f76d07415b98dfa7a320acfa4cb687f",
-    "semantic_hash": "7f76d07415b98dfa7a320acfa4cb687f"
-  },
-  "/home/jin/projects/scailed_wp4/frontend/vite.config.ts": {
-    "mtime": 1779024954.6689336,
-    "ast_hash": "5b65b6f1d673ae615e1e29ff67e961ae",
-    "semantic_hash": "5b65b6f1d673ae615e1e29ff67e961ae"
-  },
-  "/home/jin/projects/scailed_wp4/frontend/tsconfig.json": {
-    "mtime": 1779024954.6689336,
-    "ast_hash": "6aaf156bd25d825459472479ea0b7ee8",
-    "semantic_hash": "6aaf156bd25d825459472479ea0b7ee8"
-  },
-  "/home/jin/projects/scailed_wp4/frontend/package.json": {
-    "mtime": 1779024954.6683342,
-    "ast_hash": "fc8258700bb4913b3409f87c5565fa26",
-    "semantic_hash": "fc8258700bb4913b3409f87c5565fa26"
-  },
-  "/home/jin/projects/scailed_wp4/frontend/src/main.tsx": {
-    "mtime": 1779082446.6903772,
-    "ast_hash": "36f6386b2ee54741af8b5b55ecaf1bf4",
-    "semantic_hash": "36f6386b2ee54741af8b5b55ecaf1bf4"
-  },
-  "/home/jin/projects/scailed_wp4/deploy/pg-init/02_schema.sql": {
-    "mtime": 1778880790.8375697,
-    "ast_hash": "36cd194ac68d534b02276c9ae844c502",
-    "semantic_hash": "36cd194ac68d534b02276c9ae844c502"
-  },
-  "/home/jin/projects/scailed_wp4/deploy/pg-init/01_enable_extensions.sql": {
-    "mtime": 1778880790.8360913,
-    "ast_hash": "177b53b4cbefddc3deedeba04ec0be2c",
-    "semantic_hash": "177b53b4cbefddc3deedeba04ec0be2c"
-  },
-  "/home/jin/projects/scailed_wp4/docs/contracts/wp3_roadmap.schema.json": {
-    "mtime": 1779024954.6680508,
-    "ast_hash": "a8414be320829f86d896ec69557b2e7a",
-    "semantic_hash": "a8414be320829f86d896ec69557b2e7a"
-  },
-  "/home/jin/projects/scailed_wp4/docs/contracts/wp8_rules.schema.json": {
-    "mtime": 1779024954.6680508,
-    "ast_hash": "87aec28faf34e57ac86c5f9d9aabfa18",
-    "semantic_hash": "87aec28faf34e57ac86c5f9d9aabfa18"
-  },
-  "/home/jin/projects/scailed_wp4/docs/contracts/wp2_stakeholder_taxonomy.schema.json": {
-    "mtime": 1779024954.6673079,
-    "ast_hash": "24baaf54356210c2e9027d01d140a78e",
-    "semantic_hash": "24baaf54356210c2e9027d01d140a78e"
-  },
-  "/home/jin/projects/scailed_wp4/pathfinder/__init__.py": {
-    "mtime": 1779024954.6693077,
-    "ast_hash": "b115ca0b63c39ffe9becc6e22b1fd9d2",
-    "semantic_hash": "b115ca0b63c39ffe9becc6e22b1fd9d2"
-  },
-  "/home/jin/projects/scailed_wp4/pathfinder/demo.py": {
-    "mtime": 1779027200.5535374,
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/demo.py": {
+    "mtime": 1779035998.3271465,
     "ast_hash": "eb8bd69e2b4c676372890888b6f610ad",
-    "semantic_hash": "eb8bd69e2b4c676372890888b6f610ad"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/services/assessment_service.py": {
-    "mtime": 1779024954.6717114,
-    "ast_hash": "ed7398a4c11a9c327e869e7491d9a9a3",
-    "semantic_hash": "ed7398a4c11a9c327e869e7491d9a9a3"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/__init__.py": {
+    "mtime": 1779017570.4186528,
+    "ast_hash": "b115ca0b63c39ffe9becc6e22b1fd9d2",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/services/__init__.py": {
-    "mtime": 1779024954.6713078,
-    "ast_hash": "4f2cec223026cf4ed7d7c4ee6194a8e7",
-    "semantic_hash": "4f2cec223026cf4ed7d7c4ee6194a8e7"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/council/network.py": {
+    "mtime": 1779379476.9947853,
+    "ast_hash": "2ee6bd3b26c8249403dd6be70af78acf",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/adapters/__init__.py": {
-    "mtime": 1779024954.6693077,
-    "ast_hash": "f1a5772b772029dc3ad97906725ac60e",
-    "semantic_hash": "f1a5772b772029dc3ad97906725ac60e"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/api/schemas.py": {
+    "mtime": 1779281851.4468143,
+    "ast_hash": "949b0993fdf70a364f79632ac592add7",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/adapters/demo_data.py": {
-    "mtime": 1779024954.6696708,
-    "ast_hash": "f2527ddef999bcb008de25323aa221f4",
-    "semantic_hash": "f2527ddef999bcb008de25323aa221f4"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/api/main.py": {
+    "mtime": 1779281851.442814,
+    "ast_hash": "761afdbfa025713ff6311108455ba989",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/api/main.py": {
-    "mtime": 1779052764.2426648,
-    "ast_hash": "294f3bbc55d2811144750221e41b2b96",
-    "semantic_hash": "294f3bbc55d2811144750221e41b2b96"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/api/middleware.py": {
+    "mtime": 1779281851.4468143,
+    "ast_hash": "14918b9ea07f855e283de3ddd40ec528",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/api/__init__.py": {
-    "mtime": 1779024954.6696708,
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/api/__init__.py": {
+    "mtime": 1779017570.4226532,
     "ast_hash": "e242be22cd428a764da47fbcb7dc02a6",
-    "semantic_hash": "e242be22cd428a764da47fbcb7dc02a6"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/models.py": {
-    "mtime": 1779024954.6703079,
-    "ast_hash": "660e3f72a665f731e630cefd29ad4c6c",
-    "semantic_hash": "660e3f72a665f731e630cefd29ad4c6c"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/services/__init__.py": {
+    "mtime": 1779017570.4266534,
+    "ast_hash": "4f2cec223026cf4ed7d7c4ee6194a8e7",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/recommend.py": {
-    "mtime": 1779024954.6703079,
-    "ast_hash": "1e995e43e661f0702646e18024db64d1",
-    "semantic_hash": "1e995e43e661f0702646e18024db64d1"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/services/assessment_service.py": {
+    "mtime": 1779284886.7170706,
+    "ast_hash": "b573048bff14f2d10ca82b83732fedf1",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/__init__.py": {
-    "mtime": 1779024954.6698864,
-    "ast_hash": "31a4b5c6a0b814bf50b27eb760e18bf7",
-    "semantic_hash": "31a4b5c6a0b814bf50b27eb760e18bf7"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/visualization/graph.py": {
+    "mtime": 1779284886.7170706,
+    "ast_hash": "43da000c0df93ca05024fc036363645e",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/audit.py": {
-    "mtime": 1779024954.6700876,
-    "ast_hash": "880a060e2d9e65ff4e62c7258a6d78df",
-    "semantic_hash": "880a060e2d9e65ff4e62c7258a6d78df"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/visualization/renderer.py": {
+    "mtime": 1779281851.454815,
+    "ast_hash": "6676dee4e417e978b84641d22d6c22a9",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/solver.py": {
-    "mtime": 1779024954.6710489,
-    "ast_hash": "c4cbfd2ec53c38e5dbc3bf97b0b20c91",
-    "semantic_hash": "c4cbfd2ec53c38e5dbc3bf97b0b20c91"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/visualization/schemas.py": {
+    "mtime": 1779281851.454815,
+    "ast_hash": "f1e819710fadf0d03696f22acd480f52",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/graph.py": {
-    "mtime": 1779024954.6700876,
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/visualization/__init__.py": {
+    "mtime": 1779281851.4508147,
+    "ast_hash": "9e4b9619865516dcc33d16d2f555008c",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/visualization/adapter.py": {
+    "mtime": 1779284886.7170706,
+    "ast_hash": "d69d5b7df1fed00ed56ae8040b65c042",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/graph.py": {
+    "mtime": 1779017570.4226532,
     "ast_hash": "c9df03f3a1b1ec9026812fe8f44aa5ae",
-    "semantic_hash": "c9df03f3a1b1ec9026812fe8f44aa5ae"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/compliance.py": {
-    "mtime": 1779024954.6700876,
-    "ast_hash": "e64e34c6bb3f6adaac55ffe80c9e7057",
-    "semantic_hash": "e64e34c6bb3f6adaac55ffe80c9e7057"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/graph_age.py": {
+    "mtime": 1779281851.4468143,
+    "ast_hash": "080db022ef905db20c382b4a2d4594c2",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/questionnaire.py": {
-    "mtime": 1779024954.6703079,
-    "ast_hash": "641be8b001596ffbd32609d936d69747",
-    "semantic_hash": "641be8b001596ffbd32609d936d69747"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/questionnaire.py": {
+    "mtime": 1779109642.6276712,
+    "ast_hash": "db056b77c5e5a6bacd363cb57dc1bfbb",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/imports.py": {
-    "mtime": 1779024954.6703079,
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/recommend.py": {
+    "mtime": 1779281851.4468143,
+    "ast_hash": "4cc22c2d10f3de297dc94e7361ee9aef",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/imports.py": {
+    "mtime": 1779017570.4226532,
     "ast_hash": "0e051bf90696d483fb0df3bc0eae9f35",
-    "semantic_hash": "0e051bf90696d483fb0df3bc0eae9f35"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/graph_age.py": {
-    "mtime": 1779027806.6630664,
-    "ast_hash": "123be71a0b769e220fb8c89c3fa8557c",
-    "semantic_hash": "123be71a0b769e220fb8c89c3fa8557c"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/compliance.py": {
+    "mtime": 1779017570.4226532,
+    "ast_hash": "e64e34c6bb3f6adaac55ffe80c9e7057",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/rules/parser.py": {
-    "mtime": 1779024954.6710489,
-    "ast_hash": "d053ef5e227f31a7a7209db516ebbef8",
-    "semantic_hash": "d053ef5e227f31a7a7209db516ebbef8"
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/audit.py": {
+    "mtime": 1779017570.4226532,
+    "ast_hash": "880a060e2d9e65ff4e62c7258a6d78df",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/rules/compiler.py": {
-    "mtime": 1779024954.6710489,
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/solver.py": {
+    "mtime": 1779284886.7170706,
+    "ast_hash": "c257025972577d1ed69a5add10eaf138",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/__init__.py": {
+    "mtime": 1779017570.4226532,
+    "ast_hash": "31a4b5c6a0b814bf50b27eb760e18bf7",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/models.py": {
+    "mtime": 1779281851.4468143,
+    "ast_hash": "a53ee1d5d524fabbebf83dba3a8e5737",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/rules/compiler.py": {
+    "mtime": 1779017570.4226532,
     "ast_hash": "7b1949d83b2013785db771a3bc1aa665",
-    "semantic_hash": "7b1949d83b2013785db771a3bc1aa665"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/rules/__init__.py": {
-    "mtime": 1779024954.6703079,
-    "ast_hash": "2523a9abb2897d29f00b2b78472cff75",
-    "semantic_hash": "2523a9abb2897d29f00b2b78472cff75"
-  },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/rules/schema.json": {
-    "mtime": 1779024954.6710489,
-    "ast_hash": "d56b751a29f85413e2f5c192e0ea7e50",
-    "semantic_hash": "d56b751a29f85413e2f5c192e0ea7e50"
-  },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/rules/validator.py": {
-    "mtime": 1779024954.6710489,
-    "ast_hash": "48ef4e68a55fe69b817685dcec6bec45",
-    "semantic_hash": "48ef4e68a55fe69b817685dcec6bec45"
-  },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/rules/loader.py": {
-    "mtime": 1779024954.6710489,
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/rules/loader.py": {
+    "mtime": 1779017570.4226532,
     "ast_hash": "8a5dc96a5c865ada3d56ceff2c2d2242",
-    "semantic_hash": "8a5dc96a5c865ada3d56ceff2c2d2242"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/pathfinder/core/exceptions/__init__.py": {
-    "mtime": 1779024954.6700876,
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/rules/validator.py": {
+    "mtime": 1779017570.4226532,
+    "ast_hash": "48ef4e68a55fe69b817685dcec6bec45",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/rules/__init__.py": {
+    "mtime": 1779017570.4226532,
+    "ast_hash": "2523a9abb2897d29f00b2b78472cff75",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/rules/parser.py": {
+    "mtime": 1779017570.4226532,
+    "ast_hash": "d053ef5e227f31a7a7209db516ebbef8",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/rules/schema.json": {
+    "mtime": 1779017570.4226532,
+    "ast_hash": "d56b751a29f85413e2f5c192e0ea7e50",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/core/exceptions/__init__.py": {
+    "mtime": 1779017570.4226532,
     "ast_hash": "6dcbb02b71e8c54b3026faa98c10066c",
-    "semantic_hash": "6dcbb02b71e8c54b3026faa98c10066c"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/tests/test_demo_cli.py": {
-    "mtime": 1779052764.243665,
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/adapters/upstream.py": {
+    "mtime": 1779281851.5148191,
+    "ast_hash": "331672f4bf5b4f5ad67a3999dbfe4271",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/adapters/__init__.py": {
+    "mtime": 1779017570.4186528,
+    "ast_hash": "f1a5772b772029dc3ad97906725ac60e",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/pathfinder/adapters/demo_data.py": {
+    "mtime": 1779017570.4226532,
+    "ast_hash": "f2527ddef999bcb008de25323aa221f4",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/deploy/verify_restore.sh": {
+    "mtime": 1779371741.0457366,
+    "ast_hash": "418e24aab73f1b8b9d4d4af8ec3f3fd5",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/deploy/smoke_test.py": {
+    "mtime": 1779119927.4994435,
+    "ast_hash": "def2af05ed8486dd4ddd1c5c60b80689",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/deploy/smoke-test.sh": {
+    "mtime": 1779119927.4954433,
+    "ast_hash": "56808443335a7240339aefe1d96cc0f5",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/deploy/backup.sh": {
+    "mtime": 1779371741.0457366,
+    "ast_hash": "f9be20ee3f4078d511258b634727f11f",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/deploy/setup-r2.sh": {
+    "mtime": 1779369615.0960639,
+    "ast_hash": "7921ccbdfbd5f3e6c8c88be3d45278c0",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/deploy/pg-init/02_schema.sql": {
+    "mtime": 1778875011.7481685,
+    "ast_hash": "36cd194ac68d534b02276c9ae844c502",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/deploy/pg-init/01_enable_extensions.sql": {
+    "mtime": 1778875011.5561512,
+    "ast_hash": "177b53b4cbefddc3deedeba04ec0be2c",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/api/main.py": {
+    "mtime": 1779017570.4026513,
+    "ast_hash": "ef84d92a27fccc007bf3e897b8d00e7a",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/api/__init__.py": {
+    "mtime": 1779017570.4026513,
+    "ast_hash": "7f76d07415b98dfa7a320acfa4cb687f",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/e2e_output/m3_e2e_demo_d50f5aa.json": {
+    "mtime": 1779048829.2639909,
+    "ast_hash": "6b95fe5f733d240cec82543101949b89",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/e2e_output/m3_e2e_docker_d50f5aa.json": {
+    "mtime": 1779092197.6674457,
+    "ast_hash": "77287c53a4e06670540d87268e080c1f",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/test_benchmark.py": {
+    "mtime": 1779095308.1202905,
+    "ast_hash": "0a3a69a729cf2afd5cf872ee2cc9eca8",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/test_upstream.py": {
+    "mtime": 1779281851.4668157,
+    "ast_hash": "c8345078b4f8d49d9f88c8ac6ba3a2a3",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/test_graph_age.py": {
+    "mtime": 1779109642.6276712,
+    "ast_hash": "b2044d105a38b697005bd84974159fe8",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/test_schema_normalize.py": {
+    "mtime": 1779281851.5148191,
+    "ast_hash": "e644a21f3c06005a81a272a680e1bf7d",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/test_api.py": {
+    "mtime": 1779119927.4994435,
+    "ast_hash": "05d629370a991633fecf0e2a9d365ea8",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/test_demo_cli.py": {
+    "mtime": 1779052616.1734412,
     "ast_hash": "240ec9c99dece1b2a6c6aa9da5ff3566",
-    "semantic_hash": "240ec9c99dece1b2a6c6aa9da5ff3566"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/tests/test_pathfinder_core.py": {
-    "mtime": 1779024954.6720731,
-    "ast_hash": "7fd51ea6fad13205e59324a546449eb2",
-    "semantic_hash": "7fd51ea6fad13205e59324a546449eb2"
+  "/home/jianfjin/projects/scailed_wp4/tests/test_graph_age_integration.py": {
+    "mtime": 1779281851.4668157,
+    "ast_hash": "9645234736d0c9b8c362013da9737878",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/tests/test_graph_age.py": {
-    "mtime": 1779024954.6720731,
-    "ast_hash": "2f182034d2271d0d78340f228b778c80",
-    "semantic_hash": "2f182034d2271d0d78340f228b778c80"
+  "/home/jianfjin/projects/scailed_wp4/tests/test_d4_1_acceptance.py": {
+    "mtime": 1779119927.4994435,
+    "ast_hash": "f3dbe883fc2be8f00e6780d4f11bae82",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/tests/test_api.py": {
-    "mtime": 1779024954.6717114,
-    "ast_hash": "c5cb9b66bc2e87eab8d6b8ef3df64ff7",
-    "semantic_hash": "c5cb9b66bc2e87eab8d6b8ef3df64ff7"
+  "/home/jianfjin/projects/scailed_wp4/tests/conftest.py": {
+    "mtime": 1779281851.4668157,
+    "ast_hash": "f8b079d9f8dc25e7db61e13217c6327a",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/email_to_lu_zhao_v1.md": {
-    "mtime": 1778782018.383658,
+  "/home/jianfjin/projects/scailed_wp4/tests/test_verify_tasks.py": {
+    "mtime": 1779119927.4994435,
+    "ast_hash": "02d7aac975d7e0ec57de3d568dd31681",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/test_visualization.py": {
+    "mtime": 1779284886.7170706,
+    "ast_hash": "db3f4e13a4cb121f9d5430ae6b694d6f",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/test_acceptance_baseline.py": {
+    "mtime": 1779109642.6276712,
+    "ast_hash": "b78939a9063612a5e787286321cb297b",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/test_pathfinder_core.py": {
+    "mtime": 1779119927.4994435,
+    "ast_hash": "0fe9d323bd3f0eae556589f6335a1077",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/dr/test_age_catalog.py": {
+    "mtime": 1779369615.1000643,
+    "ast_hash": "7a88515752fcc55caf1a586e7433b3c9",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/dr/test_schema_restore.py": {
+    "mtime": 1779369615.1000643,
+    "ast_hash": "89baf5c00559429339cd553abc9c2ade",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/dr/test_verification_pipeline.py": {
+    "mtime": 1779369615.1000643,
+    "ast_hash": "5cff23a0d23c4e440b1207cacda8e9c3",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/dr/conftest.py": {
+    "mtime": 1779371741.0457366,
+    "ast_hash": "9c91b01e107cc4da9c7b0198653f265c",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/dr/__init__.py": {
+    "mtime": 1779369615.1000643,
+    "ast_hash": "d0fa682eac5fb1e38d00988003db8413",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/tests/dr/test_backup_integrity.py": {
+    "mtime": 1779369615.1000643,
+    "ast_hash": "a3736c774369aca886d615b29d389a81",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/services/mock/wp2_stakeholders.py": {
+    "mtime": 1779281851.4068115,
+    "ast_hash": "b645ac59350be421f6160e7358fe44d7",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/services/mock/wp8_rules.py": {
+    "mtime": 1779281851.410812,
+    "ast_hash": "9b4fc428bb141e2cce3f14a2af3d398c",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/services/mock/wp3_roadmap.py": {
+    "mtime": 1779281851.4068115,
+    "ast_hash": "930931bf0915a53c156bbf3810263184",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/services/mock/fixtures/wp8_data.json": {
+    "mtime": 1779281851.4628155,
+    "ast_hash": "9c1be20847146daefae461ee0f750ea5",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/services/mock/fixtures/wp2_data.json": {
+    "mtime": 1779281851.454815,
+    "ast_hash": "bd4541e643d2a63e27d7660acb262a06",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/services/mock/fixtures/wp3_data.json": {
+    "mtime": 1779281851.458815,
+    "ast_hash": "bff2fb91057b882d82bded4f54f96062",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/scripts/generate_1000_mock_records.py": {
+    "mtime": 1779281851.454815,
+    "ast_hash": "92a36fd70de48f029a73c5cd48b01fc1",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/scripts/verify_tasks.py": {
+    "mtime": 1779119927.4994435,
+    "ast_hash": "39403e2a10e60c511583d05ff12299ff",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/contracts/wp3_roadmap.schema.json": {
+    "mtime": 1779017570.4186528,
+    "ast_hash": "a8414be320829f86d896ec69557b2e7a",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/contracts/wp2_stakeholder_taxonomy.schema.json": {
+    "mtime": 1779017570.4186528,
+    "ast_hash": "24baaf54356210c2e9027d01d140a78e",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/contracts/wp8_rules.schema.json": {
+    "mtime": 1779017570.4186528,
+    "ast_hash": "87aec28faf34e57ac86c5f9d9aabfa18",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/frontend/vite.config.ts": {
+    "mtime": 1779017570.4186528,
+    "ast_hash": "5b65b6f1d673ae615e1e29ff67e961ae",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/frontend/package.json": {
+    "mtime": 1779017570.4186528,
+    "ast_hash": "fc8258700bb4913b3409f87c5565fa26",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/frontend/tsconfig.json": {
+    "mtime": 1779017570.4186528,
+    "ast_hash": "6aaf156bd25d825459472479ea0b7ee8",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/frontend/src/main.tsx": {
+    "mtime": 1779284886.7170706,
+    "ast_hash": "dfc9e4dac5dc7d5a97b362ab5388112f",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/email_to_lu_zhao_v1.md": {
+    "mtime": 1778707292.3776574,
     "ast_hash": "8900c6aaf4ab41a02ba71be7b1c1ceff",
-    "semantic_hash": "8900c6aaf4ab41a02ba71be7b1c1ceff"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/email_to_lu_zhao_v3.md": {
-    "mtime": 1778880790.8400915,
-    "ast_hash": "776cc94884a4204678339236c337d2f1",
-    "semantic_hash": "776cc94884a4204678339236c337d2f1"
+  "/home/jianfjin/projects/scailed_wp4/requirements.txt": {
+    "mtime": 1779117836.9510834,
+    "ast_hash": "f74a92652aec21df182498d57a332034",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/email_to_lu_zhao_v2.md": {
-    "mtime": 1778782018.383658,
-    "ast_hash": "aad383081ae87e8bdfe13c32a50fb676",
-    "semantic_hash": "aad383081ae87e8bdfe13c32a50fb676"
-  },
-  "/home/jin/projects/scailed_wp4/IP_BOUNDARY.md": {
-    "mtime": 1779024954.6663077,
+  "/home/jianfjin/projects/scailed_wp4/IP_BOUNDARY.md": {
+    "mtime": 1779017570.4026513,
     "ast_hash": "a8945f33c98374a0ccb96c6fbd52173c",
-    "semantic_hash": "a8945f33c98374a0ccb96c6fbd52173c"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/requirements.txt": {
-    "mtime": 1779024954.6717114,
-    "ast_hash": "446eef9c2fb09f7bb459f09ca195afcb",
-    "semantic_hash": "446eef9c2fb09f7bb459f09ca195afcb"
-  },
-  "/home/jin/projects/scailed_wp4/scailed_epidata_pathfinder_architecture_diagrams.md": {
-    "mtime": 1779015519.020282,
-    "ast_hash": "65867c4f5e735e5d8f8dcdca5b180e45",
-    "semantic_hash": "65867c4f5e735e5d8f8dcdca5b180e45"
-  },
-  "/home/jin/projects/scailed_wp4/AGENTS.md": {
-    "mtime": 1779016199.1914525,
+  "/home/jianfjin/projects/scailed_wp4/AGENTS.md": {
+    "mtime": 1779035998.323146,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
-    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/.codex/skills/openspec-propose/SKILL.md": {
-    "mtime": 1779016408.2563589,
+  "/home/jianfjin/projects/scailed_wp4/email_to_lu_zhao_v2.md": {
+    "mtime": 1778749780.186776,
+    "ast_hash": "aad383081ae87e8bdfe13c32a50fb676",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/scailed_epidata_pathfinder_architecture_diagrams.md": {
+    "mtime": 1779017570.4266534,
+    "ast_hash": "65867c4f5e735e5d8f8dcdca5b180e45",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/email_to_lu_zhao_v3.md": {
+    "mtime": 1779118568.5130174,
+    "ast_hash": "1ba004b827b309a1d5cadcef75e2570f",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/.codex/skills/openspec-propose/SKILL.md": {
+    "mtime": 1779092197.6674457,
     "ast_hash": "0753f4a4ce92da2b27bef07c994bef17",
-    "semantic_hash": "0753f4a4ce92da2b27bef07c994bef17"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/.codex/skills/openspec-explore/SKILL.md": {
-    "mtime": 1779016408.249359,
-    "ast_hash": "d160105373f4fe54bfbe1790b343c51b",
-    "semantic_hash": "d160105373f4fe54bfbe1790b343c51b"
-  },
-  "/home/jin/projects/scailed_wp4/.codex/skills/openspec-archive-change/SKILL.md": {
-    "mtime": 1779016408.2533588,
-    "ast_hash": "f010cb3292d101742592bcad1abfe762",
-    "semantic_hash": "f010cb3292d101742592bcad1abfe762"
-  },
-  "/home/jin/projects/scailed_wp4/.codex/skills/openspec-apply-change/SKILL.md": {
-    "mtime": 1779016408.251359,
+  "/home/jianfjin/projects/scailed_wp4/.codex/skills/openspec-apply-change/SKILL.md": {
+    "mtime": 1779092197.6634452,
     "ast_hash": "113ad4a13c30634311141d6dadcc0464",
-    "semantic_hash": "113ad4a13c30634311141d6dadcc0464"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/frontend/index.html": {
-    "mtime": 1779024954.6680508,
-    "ast_hash": "0443f7a8efeb296bbe0653fad84b54c0",
-    "semantic_hash": "0443f7a8efeb296bbe0653fad84b54c0"
+  "/home/jianfjin/projects/scailed_wp4/.codex/skills/openspec-explore/SKILL.md": {
+    "mtime": 1779092197.6674457,
+    "ast_hash": "d160105373f4fe54bfbe1790b343c51b",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/deploy/deployment-architecture.html": {
-    "mtime": 1778880790.8350914,
-    "ast_hash": "72c1c434ed7bda5883d036b12bf96a71",
-    "semantic_hash": "72c1c434ed7bda5883d036b12bf96a71"
+  "/home/jianfjin/projects/scailed_wp4/.codex/skills/openspec-archive-change/SKILL.md": {
+    "mtime": 1779092197.6674457,
+    "ast_hash": "f010cb3292d101742592bcad1abfe762",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/deploy/docker-compose.yml": {
-    "mtime": 1779052131.0430696,
-    "ast_hash": "f198161a147042d1409931f0e9d11be3",
-    "semantic_hash": "f198161a147042d1409931f0e9d11be3"
-  },
-  "/home/jin/projects/scailed_wp4/docs/14_merged_pathfinder_plan.md": {
-    "mtime": 1779015519.0031846,
-    "ast_hash": "0550a3013ffe1c70491e056380873956",
-    "semantic_hash": "0550a3013ffe1c70491e056380873956"
-  },
-  "/home/jin/projects/scailed_wp4/docs/12_merged_pathfinder_spec.md": {
-    "mtime": 1779015519.0011847,
-    "ast_hash": "55941505e43de8e81e2958f5c6c49e36",
-    "semantic_hash": "55941505e43de8e81e2958f5c6c49e36"
-  },
-  "/home/jin/projects/scailed_wp4/docs/D4_1_demo_script.md": {
-    "mtime": 1779024954.6673079,
-    "ast_hash": "f2a242e023fe84f5deaa607778680e83",
-    "semantic_hash": "f2a242e023fe84f5deaa607778680e83"
-  },
-  "/home/jin/projects/scailed_wp4/docs/07_data_from_other_partner.md": {
-    "mtime": 1778880790.8390913,
-    "ast_hash": "dc6f2004481d3e58564777c48143968c",
-    "semantic_hash": "dc6f2004481d3e58564777c48143968c"
-  },
-  "/home/jin/projects/scailed_wp4/docs/11_repo_strategy.md": {
-    "mtime": 1778880790.8400915,
-    "ast_hash": "061d58fa9ba49fe019b0a628f2360b02",
-    "semantic_hash": "061d58fa9ba49fe019b0a628f2360b02"
-  },
-  "/home/jin/projects/scailed_wp4/docs/04_datawego_deliverables.md": {
-    "mtime": 1778880790.8382816,
-    "ast_hash": "9fec1b85513860c09eb1c82d471e66d1",
-    "semantic_hash": "9fec1b85513860c09eb1c82d471e66d1"
-  },
-  "/home/jin/projects/scailed_wp4/docs/05_pathfinder_diagrams.md": {
-    "mtime": 1778880790.8382816,
-    "ast_hash": "ebdda98667b69b3048812dc21e608817",
-    "semantic_hash": "ebdda98667b69b3048812dc21e608817"
-  },
-  "/home/jin/projects/scailed_wp4/docs/13_merged_pathfinder_design.md": {
-    "mtime": 1779024954.6673079,
-    "ast_hash": "c5ddaabc58c956e441c815f25f1a1d5b",
-    "semantic_hash": "c5ddaabc58c956e441c815f25f1a1d5b"
-  },
-  "/home/jin/projects/scailed_wp4/docs/10_EHDS_HDAB_relation.md": {
-    "mtime": 1778880790.8400915,
-    "ast_hash": "d9761b010d5c64063d439499cb095118",
-    "semantic_hash": "d9761b010d5c64063d439499cb095118"
-  },
-  "/home/jin/projects/scailed_wp4/docs/09_sample_data_availability.md": {
-    "mtime": 1778880790.8390913,
-    "ast_hash": "744121c3210f2b8aaf707091dfeabf4e",
-    "semantic_hash": "744121c3210f2b8aaf707091dfeabf4e"
-  },
-  "/home/jin/projects/scailed_wp4/docs/08_task_without_support.md": {
-    "mtime": 1778880790.8390913,
-    "ast_hash": "32c329ad83f6114236e549460e33fb4f",
-    "semantic_hash": "32c329ad83f6114236e549460e33fb4f"
-  },
-  "/home/jin/projects/scailed_wp4/docs/06_support_from_other_partner.md": {
-    "mtime": 1778880790.8382816,
-    "ast_hash": "1881ebe7bf20b5996fd7db3cf7789410",
-    "semantic_hash": "1881ebe7bf20b5996fd7db3cf7789410"
-  },
-  "/home/jin/projects/scailed_wp4/docs/D4_1_technical_appendix.md": {
-    "mtime": 1779024954.6673079,
-    "ast_hash": "3a945005eb15f67542a3e3ea20864bf5",
-    "semantic_hash": "3a945005eb15f67542a3e3ea20864bf5"
-  },
-  "/home/jin/projects/scailed_wp4/docs/02_project_dependencies.md": {
-    "mtime": 1778880790.8382816,
-    "ast_hash": "c537e93435f53c47b5e795a3af4a28ec",
-    "semantic_hash": "c537e93435f53c47b5e795a3af4a28ec"
-  },
-  "/home/jin/projects/scailed_wp4/docs/03_partners.md": {
-    "mtime": 1778880790.8382816,
-    "ast_hash": "e73ceba4d6c282730e6dab90fe464fd2",
-    "semantic_hash": "e73ceba4d6c282730e6dab90fe464fd2"
-  },
-  "/home/jin/projects/scailed_wp4/docs/01_epidata_role.md": {
-    "mtime": 1778880790.8375697,
-    "ast_hash": "7ac3238890d7577af1bc3a8345358f2c",
-    "semantic_hash": "7ac3238890d7577af1bc3a8345358f2c"
-  },
-  "/home/jin/projects/scailed_wp4/openspec/config.yaml": {
-    "mtime": 1779016210.1465008,
-    "ast_hash": "9e3e7672b387a282583011181ab35f9a",
-    "semantic_hash": "9e3e7672b387a282583011181ab35f9a"
-  },
-  "/home/jin/projects/scailed_wp4/openspec/project.md": {
-    "mtime": 1779015519.020282,
+  "/home/jianfjin/projects/scailed_wp4/openspec/project.md": {
+    "mtime": 1779017570.4186528,
     "ast_hash": "9128dd5369b472ee5e57a42d9a2010cb",
-    "semantic_hash": "9128dd5369b472ee5e57a42d9a2010cb"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/openspec/changes/add-merged-pathfinder-v1/proposal.md": {
-    "mtime": 1779015519.0201457,
-    "ast_hash": "936f4776ed4b99910d2bc0c76341fd8a",
-    "semantic_hash": "936f4776ed4b99910d2bc0c76341fd8a"
+  "/home/jianfjin/projects/scailed_wp4/openspec/config.yaml": {
+    "mtime": 1779092197.6834471,
+    "ast_hash": "9e3e7672b387a282583011181ab35f9a",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/openspec/changes/add-merged-pathfinder-v1/tasks.md": {
-    "mtime": 1779024954.6689336,
-    "ast_hash": "2b74549dd627cc8536ecced5be538671",
-    "semantic_hash": "2b74549dd627cc8536ecced5be538671"
+  "/home/jianfjin/projects/scailed_wp4/openspec/changes/add-merged-pathfinder-v1/tasks.md": {
+    "mtime": 1779118182.5382276,
+    "ast_hash": "fd2f37e8ee4ebfdebb334709d200d673",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/openspec/changes/add-merged-pathfinder-v1/design.md": {
-    "mtime": 1779024954.6689336,
+  "/home/jianfjin/projects/scailed_wp4/openspec/changes/add-merged-pathfinder-v1/design.md": {
+    "mtime": 1779017570.4186528,
     "ast_hash": "380ae8b92326f1617a5b288965fc0d68",
-    "semantic_hash": "380ae8b92326f1617a5b288965fc0d68"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/openspec/changes/add-merged-pathfinder-v1/specs/merged-pathfinder/spec.md": {
-    "mtime": 1779015519.020282,
+  "/home/jianfjin/projects/scailed_wp4/openspec/changes/add-merged-pathfinder-v1/proposal.md": {
+    "mtime": 1779017570.4186528,
+    "ast_hash": "936f4776ed4b99910d2bc0c76341fd8a",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/openspec/changes/add-merged-pathfinder-v1/specs/merged-pathfinder/spec.md": {
+    "mtime": 1779017570.4186528,
     "ast_hash": "09651a12fa903b8cba4853f4e67980d2",
-    "semantic_hash": "09651a12fa903b8cba4853f4e67980d2"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/council_profiles/guido_SOUL.md": {
-    "mtime": 1778782018.383658,
-    "ast_hash": "cbc5ffa99f1d41de0585d2b6b82da053",
-    "semantic_hash": "cbc5ffa99f1d41de0585d2b6b82da053"
+  "/home/jianfjin/projects/scailed_wp4/deploy/docker-compose.yml": {
+    "mtime": 1779281851.38681,
+    "ast_hash": "7e69132f57d350a2c0b37eabbd0ddf10",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/council_profiles/dijkstra_SOUL.md": {
-    "mtime": 1778782018.3822823,
-    "ast_hash": "860b096254d2cda20b7105b0e964697f",
-    "semantic_hash": "860b096254d2cda20b7105b0e964697f"
+  "/home/jianfjin/projects/scailed_wp4/deploy/deployment-architecture.html": {
+    "mtime": 1778875784.4978065,
+    "ast_hash": "72c1c434ed7bda5883d036b12bf96a71",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/council_profiles/musk_SOUL.md": {
-    "mtime": 1778782018.383658,
-    "ast_hash": "187b580609466c5d2fd58fd3423f6745",
-    "semantic_hash": "187b580609466c5d2fd58fd3423f6745"
-  },
-  "/home/jin/projects/scailed_wp4/council_profiles/jensen_SOUL.md": {
-    "mtime": 1778782018.383658,
-    "ast_hash": "8aeb85dc0b00a8039fabd9c6844c5132",
-    "semantic_hash": "8aeb85dc0b00a8039fabd9c6844c5132"
-  },
-  "/home/jin/projects/scailed_wp4/council_profiles/linus_SOUL.md": {
-    "mtime": 1778782018.383658,
-    "ast_hash": "d9c3b9c270cb6825d2a41df8624d9b6b",
-    "semantic_hash": "d9c3b9c270cb6825d2a41df8624d9b6b"
-  },
-  "/home/jin/projects/scailed_wp4/council_profiles/xiaolong_SOUL.md": {
-    "mtime": 1778782018.383658,
-    "ast_hash": "fcb5f73da36397f51b78e0da1da1433e",
-    "semantic_hash": "fcb5f73da36397f51b78e0da1da1433e"
-  },
-  "/home/jin/projects/scailed_wp4/council_profiles/steve_SOUL.md": {
-    "mtime": 1778782018.383658,
-    "ast_hash": "d00a4727a3b58ee4c612648563dc1b77",
-    "semantic_hash": "d00a4727a3b58ee4c612648563dc1b77"
-  },
-  "/home/jin/projects/scailed_wp4/council_profiles/xuefeng_SOUL.md": {
-    "mtime": 1778782018.383658,
-    "ast_hash": "ff171d9939006c37726d96c39d238295",
-    "semantic_hash": "ff171d9939006c37726d96c39d238295"
-  },
-  "/home/jin/projects/scailed_wp4/council_profiles/ontology-patterns_SKILL.md": {
-    "mtime": 1778880790.8320913,
-    "ast_hash": "73d3d382530fc8894522f46bb969ba52",
-    "semantic_hash": "73d3d382530fc8894522f46bb969ba52"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/16_dijkstra_cso_audit.md": {
-    "mtime": 1778782018.3802824,
-    "ast_hash": "a300eace7c5cbbce09e801528e0735ad",
-    "semantic_hash": "a300eace7c5cbbce09e801528e0735ad"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/11_xuefeng_csa_audit.md": {
-    "mtime": 1778782018.3801057,
-    "ast_hash": "07d64292430647edf46bb8577ec84c02",
-    "semantic_hash": "07d64292430647edf46bb8577ec84c02"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/implementation-plan.html": {
-    "mtime": 1778782018.3822823,
-    "ast_hash": "a7307d73697668bc4cd41aee128a0528",
-    "semantic_hash": "a7307d73697668bc4cd41aee128a0528"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/01_musk_cvo.txt": {
-    "mtime": 1778782018.3801057,
-    "ast_hash": "61e6fc2e72076155cad9f0cb2e5d95d7",
-    "semantic_hash": "61e6fc2e72076155cad9f0cb2e5d95d7"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/03_guido_cla.txt": {
-    "mtime": 1778782018.3801057,
-    "ast_hash": "9de88209e32c0c565e9080f95882b15a",
-    "semantic_hash": "9de88209e32c0c565e9080f95882b15a"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/09_expanded_analysis.md": {
-    "mtime": 1778880790.8300912,
-    "ast_hash": "fdeac6970d836b77d495be2984c3de28",
-    "semantic_hash": "fdeac6970d836b77d495be2984c3de28"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/10_fengge_cto_audit_synthesis.md": {
-    "mtime": 1778782018.3801057,
-    "ast_hash": "8905dacf4dcc7430a3f222212765f05a",
-    "semantic_hash": "8905dacf4dcc7430a3f222212765f05a"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/06_jobs_cpo.txt": {
-    "mtime": 1778782018.3801057,
-    "ast_hash": "f85748cdd4fa19472008e30b20573c35",
-    "semantic_hash": "f85748cdd4fa19472008e30b20573c35"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/04_dijkstra_cso.txt": {
-    "mtime": 1778782018.3801057,
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/04_dijkstra_cso.txt": {
+    "mtime": 1778706965.9642456,
     "ast_hash": "2c49dffe364cf6806d895d3b0cc31cd0",
-    "semantic_hash": "2c49dffe364cf6806d895d3b0cc31cd0"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/14_linus_arch_audit.md": {
-    "mtime": 1778782018.3802824,
-    "ast_hash": "208d2a83122b127465054da0b5b8e799",
-    "semantic_hash": "208d2a83122b127465054da0b5b8e799"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/12_musk_cvo_audit.md": {
-    "mtime": 1778782018.3801057,
-    "ast_hash": "70568ed6475b5d8ca271967fa25ad46b",
-    "semantic_hash": "70568ed6475b5d8ca271967fa25ad46b"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/13_jobs_cpo_audit.md": {
-    "mtime": 1778782018.3802824,
-    "ast_hash": "d6323ea0a3a573ee5d0b9cb064c58ed6",
-    "semantic_hash": "d6323ea0a3a573ee5d0b9cb064c58ed6"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/15_guido_cla_audit.md": {
-    "mtime": 1778782018.3802824,
-    "ast_hash": "e2dfe8bbb018088d3f073ad9b3b8c131",
-    "semantic_hash": "e2dfe8bbb018088d3f073ad9b3b8c131"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/02_xuefeng_csa.txt": {
-    "mtime": 1778782018.3801057,
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/02_xuefeng_csa.txt": {
+    "mtime": 1778706964.6001227,
     "ast_hash": "17ee7b5ed3066b547ec495c09957b7e0",
-    "semantic_hash": "17ee7b5ed3066b547ec495c09957b7e0"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/00_council_resolution.md": {
-    "mtime": 1778880790.8300912,
-    "ast_hash": "67e968a3d6a0f7b71100b0a05f5700bb",
-    "semantic_hash": "67e968a3d6a0f7b71100b0a05f5700bb"
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/03_guido_cla.txt": {
+    "mtime": 1778706965.2681828,
+    "ast_hash": "9de88209e32c0c565e9080f95882b15a",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/05_jensen_cio.txt": {
-    "mtime": 1778782018.3801057,
-    "ast_hash": "fb71b2a4726c8c02e767eaedd3b5e5b6",
-    "semantic_hash": "fb71b2a4726c8c02e767eaedd3b5e5b6"
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/architecture-spec.html": {
+    "mtime": 1779109642.6476731,
+    "ast_hash": "2444272bb5ceb9ebaa9396e8354390ed",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/07_linus_arch.txt": {
-    "mtime": 1778782018.3801057,
-    "ast_hash": "04484e994773bbf7a22fc260fe323bd7",
-    "semantic_hash": "04484e994773bbf7a22fc260fe323bd7"
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/15_guido_cla_audit.md": {
+    "mtime": 1778745400.147908,
+    "ast_hash": "e2dfe8bbb018088d3f073ad9b3b8c131",
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/council-report.html": {
-    "mtime": 1778782018.3802824,
-    "ast_hash": "b222969a40437571d81e782afcfe87d4",
-    "semantic_hash": "b222969a40437571d81e782afcfe87d4"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/architecture-spec.html": {
-    "mtime": 1779046296.256902,
-    "ast_hash": "8e1c71a2fc76c8f1e4171cbbb78e1430",
-    "semantic_hash": "8e1c71a2fc76c8f1e4171cbbb78e1430"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/08_xiaolong_eng.txt": {
-    "mtime": 1778782018.3801057,
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/08_xiaolong_eng.txt": {
+    "mtime": 1778706968.5524788,
     "ast_hash": "737eefdb98887a9c65c39a15ccde50df",
-    "semantic_hash": "737eefdb98887a9c65c39a15ccde50df"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/17_next_steps_resolution.md": {
-    "mtime": 1779046296.256902,
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/14_linus_arch_audit.md": {
+    "mtime": 1778745288.9298825,
+    "ast_hash": "208d2a83122b127465054da0b5b8e799",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/council-report.html": {
+    "mtime": 1778750307.4022963,
+    "ast_hash": "b222969a40437571d81e782afcfe87d4",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/13_jobs_cpo_audit.md": {
+    "mtime": 1778745288.2618225,
+    "ast_hash": "d6323ea0a3a573ee5d0b9cb064c58ed6",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/11_xuefeng_csa_audit.md": {
+    "mtime": 1778745141.2045653,
+    "ast_hash": "07d64292430647edf46bb8577ec84c02",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/01_musk_cvo.txt": {
+    "mtime": 1778706963.9200613,
+    "ast_hash": "61e6fc2e72076155cad9f0cb2e5d95d7",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/09_expanded_analysis.md": {
+    "mtime": 1778830281.1571157,
+    "ast_hash": "fdeac6970d836b77d495be2984c3de28",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/00_council_resolution.md": {
+    "mtime": 1778879785.522411,
+    "ast_hash": "67e968a3d6a0f7b71100b0a05f5700bb",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/10_fengge_cto_audit_synthesis.md": {
+    "mtime": 1778743618.4832728,
+    "ast_hash": "8905dacf4dcc7430a3f222212765f05a",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/07_linus_arch.txt": {
+    "mtime": 1778706967.8764179,
+    "ast_hash": "04484e994773bbf7a22fc260fe323bd7",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/05_jensen_cio.txt": {
+    "mtime": 1778706966.6723094,
+    "ast_hash": "fb71b2a4726c8c02e767eaedd3b5e5b6",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/12_musk_cvo_audit.md": {
+    "mtime": 1778745200.6579251,
+    "ast_hash": "70568ed6475b5d8ca271967fa25ad46b",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/implementation-plan.html": {
+    "mtime": 1778750258.993933,
+    "ast_hash": "a7307d73697668bc4cd41aee128a0528",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/16_dijkstra_cso_audit.md": {
+    "mtime": 1778745400.8119676,
+    "ast_hash": "a300eace7c5cbbce09e801528e0735ad",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/06_jobs_cpo.txt": {
+    "mtime": 1778706967.3723724,
+    "ast_hash": "f85748cdd4fa19472008e30b20573c35",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/18_progress_summary.md": {
+    "mtime": 1779118461.7153907,
+    "ast_hash": "5f02fa82d7272d83dbca62d7a02ce4d7",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/17_next_steps_resolution.md": {
+    "mtime": 1779045853.8277078,
     "ast_hash": "21491f5b589319db2f4d0bce3806e244",
-    "semantic_hash": "21491f5b589319db2f4d0bce3806e244"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/en/16_dijkstra_cso_audit.md": {
-    "mtime": 1778782018.3822823,
-    "ast_hash": "671a61d2cd3ab0bf6240907de59975e2",
-    "semantic_hash": "671a61d2cd3ab0bf6240907de59975e2"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/en/11_xuefeng_csa_audit.md": {
-    "mtime": 1778782018.3821743,
-    "ast_hash": "af824973e3fc2203f4214b787db2dc20",
-    "semantic_hash": "af824973e3fc2203f4214b787db2dc20"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/en/09_expanded_analysis.md": {
-    "mtime": 1778782018.3821743,
-    "ast_hash": "7f3fb282338e0f7fb5055d053c4b36da",
-    "semantic_hash": "7f3fb282338e0f7fb5055d053c4b36da"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/en/10_fengge_cto_audit_synthesis.md": {
-    "mtime": 1778782018.3821743,
-    "ast_hash": "9b8b8b10a1e40119507890e887a52290",
-    "semantic_hash": "9b8b8b10a1e40119507890e887a52290"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/en/14_linus_arch_audit.md": {
-    "mtime": 1778782018.3821743,
-    "ast_hash": "117e571b7592ff65ac94b544dbf9a7f7",
-    "semantic_hash": "117e571b7592ff65ac94b544dbf9a7f7"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/en/12_musk_cvo_audit.md": {
-    "mtime": 1778782018.3821743,
-    "ast_hash": "3e877ae7c3ea630a06768218700a16e4",
-    "semantic_hash": "3e877ae7c3ea630a06768218700a16e4"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/en/13_jobs_cpo_audit.md": {
-    "mtime": 1778782018.3821743,
-    "ast_hash": "2ee99a083f769327f7b273ef5b62666d",
-    "semantic_hash": "2ee99a083f769327f7b273ef5b62666d"
-  },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/en/15_guido_cla_audit.md": {
-    "mtime": 1778782018.3822823,
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/en/15_guido_cla_audit.md": {
+    "mtime": 1778751644.6905982,
     "ast_hash": "91d295fe71e21ed99c49d05dad414c86",
-    "semantic_hash": "91d295fe71e21ed99c49d05dad414c86"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/council_debate_20260513/en/00_council_resolution.md": {
-    "mtime": 1778880790.8310914,
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/en/14_linus_arch_audit.md": {
+    "mtime": 1778751572.536101,
+    "ast_hash": "117e571b7592ff65ac94b544dbf9a7f7",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/en/13_jobs_cpo_audit.md": {
+    "mtime": 1778751512.7027135,
+    "ast_hash": "2ee99a083f769327f7b273ef5b62666d",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/en/11_xuefeng_csa_audit.md": {
+    "mtime": 1778751409.5094225,
+    "ast_hash": "af824973e3fc2203f4214b787db2dc20",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/en/09_expanded_analysis.md": {
+    "mtime": 1778750788.7775657,
+    "ast_hash": "7f3fb282338e0f7fb5055d053c4b36da",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/en/00_council_resolution.md": {
+    "mtime": 1778879812.7888715,
     "ast_hash": "a3649c555bcff4d600cf960e31b14f2b",
-    "semantic_hash": "a3649c555bcff4d600cf960e31b14f2b"
+    "semantic_hash": ""
   },
-  "/home/jin/projects/scailed_wp4/docs/5PROPOSAL_101314097-SCAILED-EU4H-2026-SANTE-PJ-PART_B_Section_1.pdf": {
-    "mtime": 1779015519.0171847,
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/en/10_fengge_cto_audit_synthesis.md": {
+    "mtime": 1778751347.0958035,
+    "ast_hash": "9b8b8b10a1e40119507890e887a52290",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/en/12_musk_cvo_audit.md": {
+    "mtime": 1778751471.9110408,
+    "ast_hash": "3e877ae7c3ea630a06768218700a16e4",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_debate_20260513/en/16_dijkstra_cso_audit.md": {
+    "mtime": 1778751698.1514125,
+    "ast_hash": "671a61d2cd3ab0bf6240907de59975e2",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/jensen_SOUL.md": {
+    "mtime": 1778752228.291158,
+    "ast_hash": "8aeb85dc0b00a8039fabd9c6844c5132",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/steve_SOUL.md": {
+    "mtime": 1778752101.151707,
+    "ast_hash": "d00a4727a3b58ee4c612648563dc1b77",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/lisasu_SOUL.md": {
+    "mtime": 1779373025.8842025,
+    "ast_hash": "aa730433d06213943cad2a30b0314a80",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/ontology-patterns_SKILL.md": {
+    "mtime": 1778831637.0231452,
+    "ast_hash": "73d3d382530fc8894522f46bb969ba52",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/andrej_SOUL.md": {
+    "mtime": 1779373025.8882027,
+    "ast_hash": "9cb65c25651df72f64ec4ee128b255d4",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/xuefeng_SOUL.md": {
+    "mtime": 1778752228.2631555,
+    "ast_hash": "ff171d9939006c37726d96c39d238295",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/xiaolong_SOUL.md": {
+    "mtime": 1778752228.2711563,
+    "ast_hash": "fcb5f73da36397f51b78e0da1da1433e",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/musk_SOUL.md": {
+    "mtime": 1778752101.1477065,
+    "ast_hash": "187b580609466c5d2fd58fd3423f6745",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/linus_SOUL.md": {
+    "mtime": 1778752101.1557071,
+    "ast_hash": "d9c3b9c270cb6825d2a41df8624d9b6b",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/guido_SOUL.md": {
+    "mtime": 1778752101.1597075,
+    "ast_hash": "cbc5ffa99f1d41de0585d2b6b82da053",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/andrew_SOUL.md": {
+    "mtime": 1779373025.8882027,
+    "ast_hash": "3a8686f4d175cd5afd24fec4d875c414",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/demi_SOUL.md": {
+    "mtime": 1779373025.8842025,
+    "ast_hash": "1637e7ef2025c7fffed905a00a047e31",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/sam_SOUL.md": {
+    "mtime": 1779373025.892203,
+    "ast_hash": "1352e702964d36279cc5f234ee5a84ae",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/feifei_SOUL.md": {
+    "mtime": 1779373025.880202,
+    "ast_hash": "886fb29a1d9fda7cb8771cd54945a6b1",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/council_profiles/dijkstra_SOUL.md": {
+    "mtime": 1778752101.163708,
+    "ast_hash": "860b096254d2cda20b7105b0e964697f",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/08_task_without_support.md": {
+    "mtime": 1778877754.8753653,
+    "ast_hash": "32c329ad83f6114236e549460e33fb4f",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/05_pathfinder_diagrams.md": {
+    "mtime": 1778877754.8753653,
+    "ast_hash": "ebdda98667b69b3048812dc21e608817",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/07_data_from_other_partner.md": {
+    "mtime": 1778877754.8753653,
+    "ast_hash": "dc6f2004481d3e58564777c48143968c",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/D4_1_technical_appendix.md": {
+    "mtime": 1779117876.8386776,
+    "ast_hash": "c1eb70fc1754c9d1a2341f3293c50b3b",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/04_datawego_deliverables.md": {
+    "mtime": 1778877754.8753653,
+    "ast_hash": "9fec1b85513860c09eb1c82d471e66d1",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/06_support_from_other_partner.md": {
+    "mtime": 1778877754.8753653,
+    "ast_hash": "1881ebe7bf20b5996fd7db3cf7789410",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/11_repo_strategy.md": {
+    "mtime": 1778877754.8753653,
+    "ast_hash": "061d58fa9ba49fe019b0a628f2360b02",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/02_project_dependencies.md": {
+    "mtime": 1778877754.8753653,
+    "ast_hash": "c537e93435f53c47b5e795a3af4a28ec",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/14_merged_pathfinder_plan.md": {
+    "mtime": 1779017570.4026513,
+    "ast_hash": "0550a3013ffe1c70491e056380873956",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/10_EHDS_HDAB_relation.md": {
+    "mtime": 1778877754.8753653,
+    "ast_hash": "d9761b010d5c64063d439499cb095118",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/13_merged_pathfinder_design.md": {
+    "mtime": 1779109642.6516733,
+    "ast_hash": "17edf0da8c844f9261c18eccab842a6b",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/01_epidata_role.md": {
+    "mtime": 1778877754.8753653,
+    "ast_hash": "7ac3238890d7577af1bc3a8345358f2c",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/03_partners.md": {
+    "mtime": 1778877754.8753653,
+    "ast_hash": "e73ceba4d6c282730e6dab90fe464fd2",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/09_sample_data_availability.md": {
+    "mtime": 1778877754.8753653,
+    "ast_hash": "744121c3210f2b8aaf707091dfeabf4e",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/12_merged_pathfinder_spec.md": {
+    "mtime": 1779109642.6516733,
+    "ast_hash": "4870e0c462d9d72afb2a42d5a994949b",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/D4_1_demo_script.md": {
+    "mtime": 1779017570.4186528,
+    "ast_hash": "f2a242e023fe84f5deaa607778680e83",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/records/2026-05-19-council-debate-visualization-plan.md": {
+    "mtime": 1779281851.438814,
+    "ast_hash": "3cb6e69f240f7a1fb6b20ec5eb22f896",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/records/2026-05-21-council-debate-relationship-network.md": {
+    "mtime": 1779374897.7401307,
+    "ast_hash": "00053da096659b6fd44716de8a6bceef",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/records/2026-05-20-council-debate-schema-drift.md": {
+    "mtime": 1779281851.438814,
+    "ast_hash": "0b4f20e2e407ad4d0aac323e6dcbd48c",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/records/2026-05-18-council-debate-mock-rest.md": {
+    "mtime": 1779281851.398811,
+    "ast_hash": "391e6df59a61e10cf3a2a251a6bea27c",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/specs/2026-05-18-mock-upstream-rest-services.html": {
+    "mtime": 1779281851.4028113,
+    "ast_hash": "0573330a7f310a72bebf05702a2bc879",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/specs/2026-05-19-data-schema-analysis.md": {
+    "mtime": 1779281851.442814,
+    "ast_hash": "3aef93e0a30fc21b8ffd4cfd0b6ec2b6",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/specs/2026-05-19-data-schema-analysis.html": {
+    "mtime": 1779281851.442814,
+    "ast_hash": "ad7ae3fbea86fc5389bd8b7ba88fce1e",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/dr/p1-p2-backup-implementation.md": {
+    "mtime": 1779369615.1000643,
+    "ast_hash": "52d69237a1ce66393795e5914ae0d6ad",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/dr/p5-runbook.html": {
+    "mtime": 1779370831.4858696,
+    "ast_hash": "c0941a45e038a1cb6a7920f4027aa0cb",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/dr/p1-p2-backup-implementation.html": {
+    "mtime": 1779369615.0960639,
+    "ast_hash": "531357bda5e49493c16e6406afe7db92",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/dr/p3-verification.md": {
+    "mtime": 1779369615.1000643,
+    "ast_hash": "3d9099a4a5b111bf3b4cda375473d62d",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/dr/non-blocking-dispositions.md": {
+    "mtime": 1779371741.0457366,
+    "ast_hash": "04f06a57ac5c578dc5518ab09a8894cc",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/dr/p3-verification.html": {
+    "mtime": 1779369615.1000643,
+    "ast_hash": "a2e4868df6285750c740d508ee7964c7",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/dr/p5-runbook.md": {
+    "mtime": 1779371741.0457366,
+    "ast_hash": "0f42ebee80c3a8700d2f508f844df1af",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/dr/vm-council-audit-report.md": {
+    "mtime": 1779370420.4448798,
+    "ast_hash": "279b919201ca99bddc6d5739c2b99b19",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/graph-architecture/cypher-execution-in-memory-vs-age.md": {
+    "mtime": 1779281851.3908105,
+    "ast_hash": "587612112fd288aac7957b745a664b5e",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/graph-architecture/startup-verification-mock-data-flow.md": {
+    "mtime": 1779281851.3948107,
+    "ast_hash": "18b7d33a01725ec5ff077c8e868cd20e",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/graph-architecture/plan-1000-mock-records.md": {
+    "mtime": 1779281851.438814,
+    "ast_hash": "e6b3f177b2dd9ebffa28f4448ae44500",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/graph-architecture/how-the-graph-is-built.html": {
+    "mtime": 1779281851.3908105,
+    "ast_hash": "f5c043a9c0ed04535fd603fa4d6c9e73",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/graph-architecture/when-age-beats-sql-joins.md": {
+    "mtime": 1779281851.398811,
+    "ast_hash": "c45278a5e00e672a391826111df7f1fc",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/graph-architecture/how-the-graph-is-built.md": {
+    "mtime": 1779281851.3908105,
+    "ast_hash": "bdd52b58bb6282137d0b2de03413ef64",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/graph-architecture/when-age-beats-sql-joins.html": {
+    "mtime": 1779281851.398811,
+    "ast_hash": "32b9d7c891d1e5a0ff14d9a363f0e7bd",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/graph-architecture/startup-verification-mock-data-flow.html": {
+    "mtime": 1779281851.3948107,
+    "ast_hash": "fbeba657d85c23c01c74e58de80c6675",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/graph-architecture/postgres-age-graph-architecture.html": {
+    "mtime": 1779281851.3948107,
+    "ast_hash": "df203766fd020732fc31f42924e74a86",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/graph-architecture/cypher-execution-in-memory-vs-age.html": {
+    "mtime": 1779281851.3908105,
+    "ast_hash": "cccf30472028b119e83939d109ef5b24",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/graph-architecture/postgres-age-graph-architecture.md": {
+    "mtime": 1779281851.3948107,
+    "ast_hash": "60f0ab795ba3e34bed1924cd9d76a7f8",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/diagrams/2026-05-18-architecture-8-containers.html": {
+    "mtime": 1779281851.38681,
+    "ast_hash": "c6c6730b06852b22e90abfd034ee4d12",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/plans/2026-05-18-004-fix-council-reform-enforcement-plan.md": {
+    "mtime": 1779119927.4994435,
+    "ast_hash": "80e083891cc02bea6d740c51b287fdf6",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/plans/2026-05-19-pathfinder-visualization-plan.md": {
+    "mtime": 1779281851.438814,
+    "ast_hash": "1b7421d024fe852565cdbbdaccdf3a17",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/plans/2026-05-20-joint-vote-rebuttal.md": {
+    "mtime": 1779306790.5002155,
+    "ast_hash": "269cd0353488f20688003b398af3e099",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/plans/2026-05-20-disaster-recovery-plan.md": {
+    "mtime": 1779306099.3034837,
+    "ast_hash": "e411384bc8d53dc46bfbac399e27fc41",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/plans/2026-05-20-joint-dr-resolution.md": {
+    "mtime": 1779347056.698001,
+    "ast_hash": "bbbfba01c227bf68f20fc07d5b6f3b9c",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/plans/2026-05-18-003-council-reform-audit.md": {
+    "mtime": 1779109642.6516733,
+    "ast_hash": "c9f7ecee2e8d499056c12b8b1f748321",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/plans/2026-05-18-002-council-reforms-spec-enforcement.md": {
+    "mtime": 1779109642.6516733,
+    "ast_hash": "2c72991216f3b2a287bdfa46bcd226d4",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/plans/2026-05-21-openspec-gap-analysis.md": {
+    "mtime": 1779379476.978784,
+    "ast_hash": "47616374e5b4ce92779a8aec7f610421",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/plans/2026-05-18-004-mock-upstream-rest-services.md": {
+    "mtime": 1779281851.398811,
+    "ast_hash": "81b7be8bbd5a1998d148c3a7e3e8a165",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/plans/2026-05-20-disaster-recovery-comparison.md": {
+    "mtime": 1779306352.5173385,
+    "ast_hash": "ea1a12fd066d159dba5c2ef1041217e0",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/plans/2026-05-20-disaster-recovery-plan.html": {
+    "mtime": 1779306099.3034837,
+    "ast_hash": "9bd6521c2a2f172d9f186b02dac3dbb9",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/plans/2026-05-18-001-fix-pathfinder-v1-spec-drift-plan.md": {
+    "mtime": 1779109642.6276712,
+    "ast_hash": "61642371b1d30f7c36e6e52bd34d797e",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/frontend/index.html": {
+    "mtime": 1779017570.4186528,
+    "ast_hash": "0443f7a8efeb296bbe0653fad84b54c0",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/graphify-out/memory/query_20260518_055507_why_does_assessmentservice_connect_demo_data_quest.md": {
+    "mtime": 1779092197.6834471,
+    "ast_hash": "faddc7090b90edc231557769780f1c88",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/graphify-out/memory/query_20260518_055329_what_connects_audit_chain_valid__assessment_id__sc.md": {
+    "mtime": 1779092197.6834471,
+    "ast_hash": "00666b6b81d0386665ba2a8da3966910",
+    "semantic_hash": ""
+  },
+  "/home/jianfjin/projects/scailed_wp4/docs/5PROPOSAL_101314097-SCAILED-EU4H-2026-SANTE-PJ-PART_B_Section_1.pdf": {
+    "mtime": 1779017570.4146523,
     "ast_hash": "fcd69e2c0f3bd7182d4894b3367d06c3",
-    "semantic_hash": "fcd69e2c0f3bd7182d4894b3367d06c3"
+    "semantic_hash": ""
   }
 }

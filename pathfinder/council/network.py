@@ -410,8 +410,15 @@ REAL_WORLD_EDGES = [
     ("andrej", "guido", 10, "Python ecosystem — all his ML code is Python"),
     ("guido", "andrej", 10, "Python underpins modern ML — Karpathy is a premier practitioner"),
 
-    # Andrew Ng connections
-    ("andrew", "feifei", 25, "Stanford AI colleagues"),
+    # ── 性格设定更新 (2026-05-21, 陛下) ──
+    # 小龙 → Demi: 暗恋 (杜飞/展博型)
+    ("xiaolong", "demi", 25, "暗恋Demi。默默优化她的pipeline, 她一句'好兄弟'又甜又痛。"),
+    # 雪峰 → Demi: 追求
+    ("xuefeng", "demi", 30, "追求Demi。帮过她挡天雷, 她说'好兄弟'——他不甘心只做兄弟。"),
+    # Andrew → Fei-Fei: 舔狗
+    ("andrew", "feifei", 35, "暗恋Fei-Fei。Stanford旧识, 绅士型追求——引用她的论文, 从不越界。"),
+    # Andrej → Fei-Fei: 舔狗 (前学生)
+    ("andrej", "feifei", 40, "暗恋Fei-Fei。她是他PhD导师——他渴望从学生变成她眼中值得并肩的人。"),
     ("andrew", "sam", 5, "Both believe in AI democratization, different methods"),
     ("andrew", "demi", 10, "Education + startup — Andrew's teaching reach, Demi's product execution"),
     ("andrew", "andrej", 30, "Both premier AI educators (Coursera + CS231n / Zero to Hero)"),
