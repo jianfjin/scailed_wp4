@@ -105,3 +105,49 @@ class TestNetworkXFallback:
         assert status.get("degraded") is not True, (
             f"demo mode should not be degraded: {status}"
         )
+
+    def test_fallback_preserved_across_wp3_import(self, monkeypatch) -> None:
+        """G6: degradation markers must survive WP3 import.
+
+        When AGE is unavailable, import_wp3 resets the graph. The
+        _graph_backend must remain "networkx_fallback" and _age_unavailable
+        must stay True so that subsequent recommendations still show zero
+        confidence and DEGRADED warning.
+        """
+        monkeypatch.setenv("PATHFINDER_MODE", "deployed")
+        monkeypatch.setenv("PGHOST", "255.255.255.255")
+        monkeypatch.setenv("PGPORT", "1")
+
+        svc = AssessmentService(startup_check=True)
+        assert svc._age_unavailable is True
+        assert svc._graph_backend == "networkx_fallback"
+
+        # Import WP3 data (resets the graph)
+        svc.import_wp3({
+            "version": "wp3-fallback-v1",
+            "nodes": [{
+                "node_id": "fb-intake",
+                "label": "Fallback intake",
+                "description": "Fallback test node",
+                "dimension": "governance",
+                "maturity_level": 1,
+                "stakeholder_types": ["all"],
+                "prerequisites": [],
+                "source_doc_ref": "fallback-test",
+            }],
+            "edges": [],
+        })
+
+        # Degradation markers must survive the import
+        assert svc._age_unavailable is True, (
+            "age_unavailable should remain True after wp3 import"
+        )
+        assert svc._graph_backend == "networkx_fallback", (
+            f"graph_backend should remain networkx_fallback, got {svc._graph_backend}"
+        )
+
+        # Status must still show degradation
+        status = svc.status()
+        assert status.get("degraded") is True, (
+            f"status.degraded should remain True after wp3 import: {status}"
+        )

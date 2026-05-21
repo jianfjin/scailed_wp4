@@ -163,6 +163,126 @@ class PathfinderCoreTests(unittest.TestCase):
                 self.assertTrue(status.get("degraded"))
                 self.assertIn("fallback", str(status.get("degraded_reason", "")))
 
+    # ── G5: Regulatory reference verification (Guido MEDIUM #5) ──────────────
+
+    def test_regulatory_refs_propagate_into_trace(self) -> None:
+        """Triggered rules must propagate compliance_refs into trace.regulatory_refs.
+
+        When regulatory_flags include "gdpr-review-needed", the WP8-GDPR-REVIEW-001
+        rule fires with compliance_refs=["GDPR-Review", "EHDS-Secondary-Use"], and
+        DATA-CATALOG-GAP-003 fires with compliance_refs=["WP3-Roadmap"]. These must
+        appear in the trace.
+        """
+        service = AssessmentService()
+        session = service.create_session("biotech-sme", "secondary-use-readiness")
+        aid = str(session["assessment_id"])
+        service.submit_answers(aid, {
+            "governance_maturity": 2,
+            "data_maturity": 2,
+            "compliance_maturity": 2,
+            "capabilities": ["secure-processing"],
+            "missing_capabilities": ["data-catalog"],
+            "regulatory_flags": ["gdpr-review-needed"],
+        })
+        rec = service.generate_recommendation(aid)
+        trace = rec["trace"]
+        refs = trace["regulatory_refs"]
+
+        # Must contain compliance refs from triggered rules
+        self.assertIn("GDPR-Review", refs,
+                      f"GDPR-Review missing from regulatory_refs: {refs}")
+        self.assertIn("EHDS-Secondary-Use", refs,
+                      f"EHDS-Secondary-Use missing from regulatory_refs: {refs}")
+        self.assertIn("WP3-Roadmap", refs,
+                      f"WP3-Roadmap missing from regulatory_refs: {refs}")
+
+        # triggered_rule_ids must match
+        self.assertIn("WP8-GDPR-REVIEW-001", trace["triggered_rule_ids"])
+        self.assertIn("DATA-CATALOG-GAP-003", trace["triggered_rule_ids"])
+
+    def test_regulatory_refs_empty_without_flags(self) -> None:
+        """Without regulatory_flags, trace.regulatory_refs should be empty tuple."""
+        service = AssessmentService()
+        session = service.create_session("biotech-sme", "secondary-use-readiness")
+        aid = str(session["assessment_id"])
+        service.submit_answers(aid, {
+            "governance_maturity": 2,
+            "data_maturity": 2,
+            "compliance_maturity": 2,
+            "capabilities": ["secure-processing"],
+            "missing_capabilities": [],
+            "regulatory_flags": [],
+        })
+        rec = service.generate_recommendation(aid)
+        trace = rec["trace"]
+        refs = trace["regulatory_refs"]
+        self.assertEqual(refs, (), f"Expected empty regulatory_refs, got: {refs}")
+
+    # ── G7: Import error tests (Guido MEDIUM #7) ─────────────────────────────
+
+    def test_import_wp2_rejects_empty_stakeholder_types(self) -> None:
+        """Empty stakeholder_types list must raise ValueError."""
+        service = AssessmentService()
+        with self.assertRaises(ValueError) as ctx:
+            service.import_wp2({"version": "test-v1", "stakeholder_types": []})
+        self.assertIn("must not be empty", str(ctx.exception))
+
+    def test_import_wp2_rejects_duplicate_stakeholder_ids(self) -> None:
+        """Duplicate stakeholder IDs must raise ValueError."""
+        service = AssessmentService()
+        duplicate = {
+            "version": "test-v1",
+            "stakeholder_types": [
+                {"id": "biotech-sme", "label": "Biotech SME",
+                 "personas": ["researcher"], "user_journeys": ["test"],
+                 "feedback_categories": ["acceptance"]},
+                {"id": "biotech-sme", "label": "Biotech SME (dup)",
+                 "personas": ["researcher"], "user_journeys": ["test"],
+                 "feedback_categories": ["acceptance"]},
+            ],
+        }
+        with self.assertRaises(ValueError) as ctx:
+            service.import_wp2(duplicate)
+        self.assertIn("duplicate stakeholder type", str(ctx.exception))
+
+    def test_import_wp2_rejects_missing_version(self) -> None:
+        """Missing version field must raise ValueError."""
+        service = AssessmentService()
+        with self.assertRaises(ValueError) as ctx:
+            service.import_wp2({"stakeholder_types": [{
+                "id": "biotech-sme", "label": "Biotech SME",
+                "personas": ["researcher"], "user_journeys": ["test"],
+                "feedback_categories": ["acceptance"],
+            }]})
+        self.assertIn("version", str(ctx.exception).lower())
+
+    def test_import_wp2_rejects_missing_label(self) -> None:
+        """Stakeholder type entry missing label must raise ValueError."""
+        service = AssessmentService()
+        bad_payload = {
+            "version": "test-v1",
+            "stakeholder_types": [{
+                "id": "biotech-sme",
+                # missing "label"
+                "personas": ["researcher"],
+                "user_journeys": ["test"],
+                "feedback_categories": ["acceptance"],
+            }],
+        }
+        with self.assertRaises(ValueError):
+            service.import_wp2(bad_payload)
+
+    def test_import_wp2_rejects_non_dict_entries(self) -> None:
+        """Non-dict stakeholder_types entries must raise ValueError."""
+        service = AssessmentService()
+        bad_payload = {
+            "version": "test-v1",
+            "stakeholder_types": ["not-a-dict"],
+        }
+        with self.assertRaises(ValueError) as ctx:
+            service.import_wp2(bad_payload)
+        self.assertIn("must be objects", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

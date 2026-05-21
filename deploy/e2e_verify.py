@@ -205,6 +205,8 @@ def step4_pipeline() -> str:
 
     if not schema_version or schema_version == "?":
         _fail("trace.schema_version missing — untraceable")
+    elif schema_version != "v1.0-m3-baseline":
+        _fail(f"schema_version mismatch: {schema_version}, expected 'v1.0-m3-baseline'")
     if trace_confidence in ("?", 0):
         _fail(f"trace.confidence={trace_confidence} — zero confidence")
     if audit_valid is not True:

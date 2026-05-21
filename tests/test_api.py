@@ -258,6 +258,57 @@ class ApiTests(unittest.TestCase):
         health = client.get("/health")
         self.assertGreaterEqual(health.json()["audit_events"], 1)
 
+    # ── G7: WP2 import error tests (Guido MEDIUM #7) ─────────────────────────
+
+    def test_import_wp2_rejects_duplicate_ids_via_api(self) -> None:
+        """POST /admin/import/wp2 with duplicate stakeholder IDs must return 400."""
+        client = TestClient(app)
+        admin_headers = {"Authorization": "Bearer admin-token"}
+
+        response = client.post("/admin/import/wp2", headers=admin_headers, json={
+            "version": "test-v1",
+            "stakeholder_types": [
+                {"id": "dup-test", "label": "First",
+                 "personas": ["researcher"], "user_journeys": ["test"],
+                 "feedback_categories": ["acceptance"]},
+                {"id": "dup-test", "label": "Second",
+                 "personas": ["researcher"], "user_journeys": ["test"],
+                 "feedback_categories": ["acceptance"]},
+            ],
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["detail"]["error"], "VALIDATION_ERROR")
+
+    def test_import_wp2_rejects_empty_stakeholder_types_via_api(self) -> None:
+        """POST /admin/import/wp2 with empty stakeholder_types must return 400."""
+        client = TestClient(app)
+        admin_headers = {"Authorization": "Bearer admin-token"}
+
+        response = client.post("/admin/import/wp2", headers=admin_headers, json={
+            "version": "test-v1",
+            "stakeholder_types": [],
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["detail"]["error"], "VALIDATION_ERROR")
+
+    def test_import_wp2_rejects_missing_version_via_api(self) -> None:
+        """POST /admin/import/wp2 without version field must return 400."""
+        client = TestClient(app)
+        admin_headers = {"Authorization": "Bearer admin-token"}
+
+        response = client.post("/admin/import/wp2", headers=admin_headers, json={
+            "stakeholder_types": [{
+                "id": "biotech-sme", "label": "Biotech SME",
+                "personas": ["researcher"], "user_journeys": ["test"],
+                "feedback_categories": ["acceptance"],
+            }],
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["detail"]["error"], "VALIDATION_ERROR")
+
     def test_api_request_metadata_is_hashed_in_audit_events(self) -> None:
         client = TestClient(app)
         headers = {
