@@ -32,10 +32,19 @@ L4: 本地保留 pg_dump 第二副本 (本地团队附加)
 
 ### 异地存储
 
-**Wasabi 优先** (Jensen: 无 egress fee)。Backblaze B2 为备选。
+**Cloudflare R2 优先** (10GB 免费额度, 零出站费)。Wasabi / Backblaze B2 为备选。
+
+| 方案 | 存储 1.5GB/月 | 出站 | 月费 | 3年 |
+|------|:--:|:--:|:--:|:--:|
+| **R2 (主)** | 免费 (10GB内) | 免费 | **€0** | **€0** |
+| Wasabi (备) | ~€6 | 免费 | €6 | €216 |
+| B2 (备) | ~€0.01 | €0.01/GB | ~€0.02 | ~€1 |
 
 ```bash
-rclone sync /backups/pg/ wasabi:scailed-backups/pg/
+# rclone config → R2
+# type: s3, provider: Cloudflare
+# endpoint: https://<account_id>.r2.cloudflarestorage.com
+rclone sync /backups/pg/ r2:scailed-backups/pg/
 ```
 
 Lifecycle policy: 30 天保留，自动过期。
@@ -53,13 +62,13 @@ Lifecycle policy: 30 天保留，自动过期。
 
 ### 预算
 
-上限: €1,816/3年。执行目标: **€800 以内**。
+上限: €1,816/3年。执行目标: **€0 以内 (R2 免费额度)**。
 
 | 项目 | 月费 | 3年 |
 |------|------|-----|
-| Wasabi 100GB | ~€6 | €216 |
+| R2 存储 (10GB免费) | €0 | €0 |
 | 脚本开发 | — | 2 人天 |
-| 总计 | — | ~€800 |
+| 总计 | — | ~€0 运营, 2 人天实施 |
 
 ### 不需要的
 
