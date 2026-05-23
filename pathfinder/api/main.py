@@ -41,6 +41,7 @@ from pathfinder.api.schemas import (
     StakeholderTypesResponse,
 )
 from pathfinder.adapters.upstream import UpstreamClient
+from pathfinder.core.exceptions import ValidationError as PathfinderValidationError
 from pathfinder.services.assessment_service import AssessmentService
 from pathfinder.visualization.adapter import build_view_model
 from pathfinder.visualization.renderer import render_html
@@ -193,11 +194,14 @@ async def create_assessment(
 ) -> dict[str, object]:
     require_demo_token(authorization)
     body = CreateAssessmentRequest.model_validate(await request.json())
-    return _get_service().create_session(
-        stakeholder_type=body.stakeholder_type,
-        target_scenario=body.target_scenario,
-        **_audit_context(request),
-    )
+    try:
+        return _get_service().create_session(
+            stakeholder_type=body.stakeholder_type,
+            target_scenario=body.target_scenario,
+            **_audit_context(request),
+        )
+    except (PathfinderValidationError, ValueError) as exc:
+        raise _validation_error(str(exc)) from exc
 
 
 @app.get("/v1/assessments/{assessment_id}", response_model=dict[str, object])

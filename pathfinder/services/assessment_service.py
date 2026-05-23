@@ -120,9 +120,44 @@ class AssessmentService:
         The UpstreamClient has already fetched all data during FastAPI lifespan startup.
         We convert its cached dicts/lists into domain models.
         """
-        # WP2: stakeholder types → questionnaires (uses demo template for now)
-        stakeholder_types = [s["stakeholder_type"] for s in client.stakeholders]
-        self.questionnaires = demo_questionnaires()  # template; real WP2 may customize
+        # WP2: stakeholder records → questionnaires.
+        # Use the real upstream stakeholder taxonomy for the selectable types,
+        # while reusing the demo question template until WP2 supplies
+        # stakeholder-specific questionnaire definitions.
+        template = demo_questionnaires()[0]
+        stakeholder_types: list[str] = []
+        questionnaires: list[Questionnaire] = []
+        seen: set[str] = set()
+        warnings: list[str] = []
+        skipped_empty = 0
+        skipped_duplicate = 0
+        for record in client.stakeholders:
+            stakeholder_type = str(record.get("stakeholder_type", "")).strip()
+            if not stakeholder_type:
+                skipped_empty += 1
+                continue
+            if stakeholder_type in seen:
+                skipped_duplicate += 1
+                continue
+            seen.add(stakeholder_type)
+            stakeholder_types.append(stakeholder_type)
+            label = str(record.get("description") or stakeholder_type)
+            questionnaires.append(
+                Questionnaire(
+                    stakeholder_type=stakeholder_type,
+                    version=template.version,
+                    title=f"EHDS readiness assessment for {label}",
+                    target_scenarios=template.target_scenarios,
+                    questions=template.questions,
+                )
+            )
+        if skipped_empty:
+            warnings.append(f"WP2 upstream skipped {skipped_empty} stakeholder records with empty stakeholder_type")
+        if skipped_duplicate:
+            warnings.append(f"WP2 upstream skipped {skipped_duplicate} duplicate stakeholder_type records")
+        if not questionnaires:
+            warnings.append("WP2 upstream produced no usable stakeholder types; demo questionnaire fallback active")
+        self.questionnaires = questionnaires or demo_questionnaires()
 
         # WP3: roadmap nodes + edges → domain models
         nodes = client.roadmap_nodes
@@ -146,7 +181,7 @@ class AssessmentService:
                     "roadmap_edges": [edge.to_dict() for edge in edges],
                     "rules": [rule.to_dict() for rule in self.rules],
                     "rule_tests_count": len(client.rule_tests),
-                    "warnings": [],
+                    "warnings": warnings,
                 },
             )
         }
@@ -220,6 +255,13 @@ class AssessmentService:
         ip: str | None = None,
         user_agent: str | None = None,
     ) -> dict[str, object]:
+        stakeholder_type = stakeholder_type.strip()
+        target_scenario = target_scenario.strip()
+        questionnaire = self.questionnaire_engine.get(stakeholder_type)
+        if not target_scenario:
+            raise ValueError("target_scenario is required")
+        if target_scenario not in questionnaire.target_scenarios:
+            raise ValueError(f"unknown target scenario for {stakeholder_type}: {target_scenario}")
         session_id = str(uuid4())
         session = {
             "assessment_id": session_id,

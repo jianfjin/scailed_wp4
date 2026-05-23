@@ -59,6 +59,39 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(report.status_code, 200)
         self.assertTrue(report.json()["audit_chain_valid"])
 
+    def test_assessment_rejects_empty_or_unknown_stakeholder_type(self) -> None:
+        client = TestClient(app)
+        headers = {"Authorization": "Bearer demo-token"}
+
+        empty = client.post(
+            "/v1/assessments",
+            headers=headers,
+            json={"stakeholder_type": " ", "target_scenario": "secondary-use-readiness"},
+        )
+        self.assertEqual(empty.status_code, 400)
+        self.assertEqual(empty.json()["detail"]["error"], "VALIDATION_ERROR")
+
+        unknown = client.post(
+            "/v1/assessments",
+            headers=headers,
+            json={"stakeholder_type": "not-present", "target_scenario": "secondary-use-readiness"},
+        )
+        self.assertEqual(unknown.status_code, 400)
+        self.assertEqual(unknown.json()["detail"]["error"], "VALIDATION_ERROR")
+
+    def test_assessment_rejects_unknown_target_scenario(self) -> None:
+        client = TestClient(app)
+        headers = {"Authorization": "Bearer demo-token"}
+
+        response = client.post(
+            "/v1/assessments",
+            headers=headers,
+            json={"stakeholder_type": "biotech-sme", "target_scenario": "not-present"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["detail"]["error"], "VALIDATION_ERROR")
+
     def test_assessment_flow_requires_invited_token(self) -> None:
         client = TestClient(app)
 

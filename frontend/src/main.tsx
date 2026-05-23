@@ -1,5 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
+import {
+  buildStakeholderOptions,
+  filterStakeholderOptions,
+  formatStakeholderLoadedCopy,
+  type StakeholderOption,
+} from "./stakeholderCatalog";
 import "./styles.css";
 
 type Questionnaire = {
@@ -279,11 +285,80 @@ function BackendToggle({
   );
 }
 
+/* ─── stakeholder picker ─────────────────────────────────── */
+
+function StakeholderPicker({
+  options,
+  value,
+  onChange,
+}: {
+  options: StakeholderOption[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const selected = options.find((option) => option.value === value);
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => filterStakeholderOptions(options, query), [options, query]);
+  const hiddenCount = Math.max(0, options.length - filtered.length);
+  const shownGroups = useMemo(() => {
+    const groups = new Map<string, StakeholderOption[]>();
+    for (const option of filtered) {
+      groups.set(option.group, [...(groups.get(option.group) || []), option]);
+    }
+    return Array.from(groups.entries());
+  }, [filtered]);
+
+  return (
+    <div className="stakeholder-picker">
+      <label htmlFor="stakeholder-search">Stakeholder profile</label>
+      <input
+        id="stakeholder-search"
+        type="search"
+        placeholder="Search by category, profile ID, or label…"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+      />
+      <div className="selected-stakeholder">
+        <span>Selected</span>
+        <strong>{selected?.label || "Choose a stakeholder profile"}</strong>
+        {selected && <code>{selected.value}</code>}
+      </div>
+      <div className="stakeholder-results" role="listbox" aria-label="Stakeholder profiles">
+        {shownGroups.map(([group, groupOptions]) => (
+          <div className="stakeholder-group" key={group}>
+            <div className="stakeholder-group-title">{group}</div>
+            {groupOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`stakeholder-option ${option.value === value ? "active" : ""}`}
+                onClick={() => {
+                  onChange(option.value);
+                  setQuery(option.group);
+                }}
+                role="option"
+                aria-selected={option.value === value}
+              >
+                <span>{option.label}</span>
+                <code>{option.value}</code>
+              </button>
+            ))}
+          </div>
+        ))}
+        {!filtered.length && <p className="stakeholder-empty">No stakeholder profiles match this search.</p>}
+      </div>
+      {hiddenCount > 0 && (
+        <p className="stakeholder-hint">Showing first {filtered.length} matches. Search to narrow {options.length} profiles.</p>
+      )}
+    </div>
+  );
+}
+
 /* ─── main app ──────────────────────────────────────────── */
 
 function App() {
   const [types, setTypes] = useState<string[]>([]);
-  const [stakeholderType, setStakeholderType] = useState("biotech-sme");
+  const [stakeholderType, setStakeholderType] = useState("");
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [report, setReport] = useState<PathfinderReport | null>(null);
@@ -292,15 +367,26 @@ function App() {
   const [pathBackend, setPathBackend] = useState("python");
   const [bannerText, setBannerText] = useState("Loading status…");
   const [lastAssessmentId, setLastAssessmentId] = useState("");
+  const stakeholderOptions = useMemo(() => buildStakeholderOptions(types), [types]);
+  const loadedCopy = useMemo(() => formatStakeholderLoadedCopy(stakeholderOptions), [stakeholderOptions]);
 
   useEffect(() => {
     api<{ stakeholder_types: string[] }>("/v1/questionnaires")
-      .then((data) => setTypes(data.stakeholder_types))
+      .then((data) => {
+        setTypes(data.stakeholder_types);
+        setStakeholderType((current) => (
+          current && data.stakeholder_types.includes(current)
+            ? current
+            : (data.stakeholder_types[0] || "")
+        ));
+      })
       .catch((err) => setError(String(err)));
-    api<{ mode: string; import_reports?: Record<string, unknown> }>("/health")
+    api<{ mode: string; import_reports?: Record<string, { activated_records?: number }> }>("/health")
       .then((h) => {
         if (h.mode === "deployed" && h.import_reports?.upstream) {
-          setBannerText("Deployed mode. Mock upstream data loaded (3000 records).");
+          const records = h.import_reports.upstream.activated_records;
+          const recordText = typeof records === "number" ? `${records} records` : "upstream records";
+          setBannerText(`Deployed mode. Mock upstream data loaded (${recordText}).`);
         } else if (h.mode === "deployed") {
           setBannerText("Deployed mode. PostgreSQL + Apache AGE active.");
         } else {
@@ -311,7 +397,8 @@ function App() {
   }, []);
 
   useEffect(() => {
-    api<Questionnaire>(`/v1/questionnaires/${stakeholderType}`)
+    if (!stakeholderType) return;
+    api<Questionnaire>(`/v1/questionnaires/${encodeURIComponent(stakeholderType)}`)
       .then((q) => {
         setQuestionnaire(q);
         setReport(null);
@@ -397,11 +484,15 @@ function App() {
 
       <section className="layout">
         <aside className="panel">
-          <label htmlFor="stakeholder">Stakeholder type</label>
-          <select id="stakeholder" value={stakeholderType} onChange={(e) => setStakeholderType(e.target.value)}>
-            {types.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <div className="banner">{bannerText}</div>
+          <StakeholderPicker
+            options={stakeholderOptions}
+            value={stakeholderType}
+            onChange={setStakeholderType}
+          />
+          <div className="banner">
+            <strong>{loadedCopy}</strong>
+            <span>{bannerText}</span>
+          </div>
         </aside>
 
         <section className="panel">
