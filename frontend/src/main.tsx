@@ -43,6 +43,18 @@ type PathfinderReport = {
     next_steps?: Array<{ node_id?: string; label?: string; dimension?: string }>;
     blockers?: string[];
     warnings?: string[];
+    triggered_rules?: Array<{
+      rule_id: string;
+      rule_type?: string;
+      priority?: number;
+      action?: {
+        title?: string;
+        text?: string;
+        node_id?: string;
+        warning?: string;
+        block?: boolean;
+      };
+    }>;
     path_backend?: string;
     trace?: {
       answer_ids?: string[];
@@ -170,6 +182,24 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
     path?.path_backend === "n/a (blocked)" ? "n/a" :
     "Python BFS";
 
+  // Break down triggered rules by impact
+  const ruleBreakdown = useMemo(() => {
+    const rules = path?.triggered_rules || [];
+    const blockers = rules.filter((r) => r.action?.block);
+    const withWarning = rules.filter((r) => !r.action?.block && r.action?.warning);
+    const info = rules.filter((r) => !r.action?.block && !r.action?.warning);
+    return { total: rules.length, blockers, withWarning, info };
+  }, [path?.triggered_rules]);
+
+  // Compute capability coverage from answers
+  const capabilitySummary = useMemo(() => {
+    const s = snapshot || {};
+    const caps = s.capabilities || [];
+    const missing = s.missing_capabilities || [];
+    const flags = s.regulatory_flags || [];
+    return { caps, missing, flags };
+  }, [snapshot]);
+
   return (
     <div className="report-summary">
       <div className="status-row">
@@ -206,6 +236,33 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
         </div>
       </div>
 
+      {/* Capability profile — makes checkbox effects visible */}
+      {capabilitySummary.caps.length > 0 || capabilitySummary.missing.length > 0 || capabilitySummary.flags.length > 0 ? (
+        <div className="evidence-block rule-impact">
+          <h3>Capability profile</h3>
+          <dl>
+            {capabilitySummary.caps.length > 0 && (
+              <>
+                <dt>Known capabilities</dt>
+                <dd><span className="badge badge-cap">{capabilitySummary.caps.join(", ")}</span></dd>
+              </>
+            )}
+            {capabilitySummary.missing.length > 0 && (
+              <>
+                <dt>Missing capabilities</dt>
+                <dd><span className="badge badge-missing">{capabilitySummary.missing.join(", ")}</span></dd>
+              </>
+            )}
+            {capabilitySummary.flags.length > 0 && (
+              <>
+                <dt>Regulatory flags</dt>
+                <dd><span className="badge badge-flag">{capabilitySummary.flags.join(", ")}</span></dd>
+              </>
+            )}
+          </dl>
+        </div>
+      ) : null}
+
       <EvidenceList title="Blockers" items={path?.blockers} />
 
       {path?.next_steps?.length ? (
@@ -221,6 +278,71 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
           </ol>
         </div>
       ) : null}
+
+      {/* Rule impact summary — prominently shows checkbox effects */}
+      <div className="evidence-block rule-impact">
+        <h3>Rule impact</h3>
+        <div className="rule-impact-counts">
+          <div className="rule-count" data-level={ruleBreakdown.blockers.length > 0 ? "blocker" : ruleBreakdown.withWarning.length > 0 ? "warning" : "info"}>
+            <strong>{ruleBreakdown.total}</strong>
+            <span>total rules</span>
+          </div>
+          {ruleBreakdown.blockers.length > 0 && (
+            <div className="rule-count" data-level="blocker">
+              <strong>{ruleBreakdown.blockers.length}</strong>
+              <span>blockers</span>
+            </div>
+          )}
+          {ruleBreakdown.withWarning.length > 0 && (
+            <div className="rule-count" data-level="warning">
+              <strong>{ruleBreakdown.withWarning.length}</strong>
+              <span>warnings</span>
+            </div>
+          )}
+          {ruleBreakdown.info.length > 0 && (
+            <div className="rule-count" data-level="info">
+              <strong>{ruleBreakdown.info.length}</strong>
+              <span>advisory</span>
+            </div>
+          )}
+        </div>
+        {ruleBreakdown.blockers.length > 0 && (
+          <dl>
+            {ruleBreakdown.blockers.map((rule) => (
+              <div key={rule.rule_id} className="rule-item">
+                <dt className="rule-id blocker">{rule.rule_id}</dt>
+                <dd>{rule.action?.text || "no description"}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        {ruleBreakdown.withWarning.length > 0 && (
+          <details>
+            <summary className="rule-group-toggle">Warnings ({ruleBreakdown.withWarning.length})</summary>
+            <dl>
+              {ruleBreakdown.withWarning.map((rule) => (
+                <div key={rule.rule_id} className="rule-item">
+                  <dt className="rule-id warning">{rule.rule_id}</dt>
+                  <dd>{rule.action?.warning || rule.action?.text || "no description"}</dd>
+                </div>
+              ))}
+            </dl>
+          </details>
+        )}
+        {ruleBreakdown.info.length > 0 && (
+          <details>
+            <summary className="rule-group-toggle">Advisory rules ({ruleBreakdown.info.length})</summary>
+            <dl>
+              {ruleBreakdown.info.map((rule) => (
+                <div key={rule.rule_id} className="rule-item">
+                  <dt className="rule-id">{rule.rule_id}</dt>
+                  <dd>{rule.action?.text || "no description"}</dd>
+                </div>
+              ))}
+            </dl>
+          </details>
+        )}
+      </div>
 
       {assessmentId && (
         <p style={{marginTop:12, marginBottom:8}}>

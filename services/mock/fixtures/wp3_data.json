@@ -37371,6 +37371,3635 @@
       "relation_type": "prerequisite",
       "required": true,
       "source_doc_ref": "gen-1000"
+    },
+    {
+      "edge_id": "e1783",
+      "from_node_id": "n0000",
+      "to_node_id": "n0100",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1784",
+      "from_node_id": "n0100",
+      "to_node_id": "n0200",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1785",
+      "from_node_id": "n0200",
+      "to_node_id": "n0300",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1786",
+      "from_node_id": "n0300",
+      "to_node_id": "n0400",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1787",
+      "from_node_id": "n0400",
+      "to_node_id": "n0500",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1788",
+      "from_node_id": "n0500",
+      "to_node_id": "n0600",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1789",
+      "from_node_id": "n0600",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1790",
+      "from_node_id": "n0700",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1791",
+      "from_node_id": "n0800",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1792",
+      "from_node_id": "n0600",
+      "to_node_id": "n0644",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1793",
+      "from_node_id": "n0644",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1794",
+      "from_node_id": "n0600",
+      "to_node_id": "n0688",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1795",
+      "from_node_id": "n0688",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1796",
+      "from_node_id": "n0700",
+      "to_node_id": "n0713",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1797",
+      "from_node_id": "n0713",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1798",
+      "from_node_id": "n0700",
+      "to_node_id": "n0718",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1799",
+      "from_node_id": "n0718",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1800",
+      "from_node_id": "n0700",
+      "to_node_id": "n0737",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1801",
+      "from_node_id": "n0737",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1802",
+      "from_node_id": "n0700",
+      "to_node_id": "n0738",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1803",
+      "from_node_id": "n0738",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1804",
+      "from_node_id": "n0700",
+      "to_node_id": "n0745",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1805",
+      "from_node_id": "n0745",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1806",
+      "from_node_id": "n0700",
+      "to_node_id": "n0759",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1807",
+      "from_node_id": "n0759",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1808",
+      "from_node_id": "n0700",
+      "to_node_id": "n0766",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1809",
+      "from_node_id": "n0766",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1810",
+      "from_node_id": "n0700",
+      "to_node_id": "n0773",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1811",
+      "from_node_id": "n0773",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1812",
+      "from_node_id": "n0700",
+      "to_node_id": "n0782",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1813",
+      "from_node_id": "n0782",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1814",
+      "from_node_id": "n0700",
+      "to_node_id": "n0788",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1815",
+      "from_node_id": "n0788",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1816",
+      "from_node_id": "n0700",
+      "to_node_id": "n0793",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1817",
+      "from_node_id": "n0793",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1818",
+      "from_node_id": "n0800",
+      "to_node_id": "n0801",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1819",
+      "from_node_id": "n0801",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1820",
+      "from_node_id": "n0800",
+      "to_node_id": "n0804",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1821",
+      "from_node_id": "n0804",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1822",
+      "from_node_id": "n0800",
+      "to_node_id": "n0809",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1823",
+      "from_node_id": "n0809",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1824",
+      "from_node_id": "n0800",
+      "to_node_id": "n0812",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1825",
+      "from_node_id": "n0812",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1826",
+      "from_node_id": "n0800",
+      "to_node_id": "n0813",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1827",
+      "from_node_id": "n0813",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1828",
+      "from_node_id": "n0800",
+      "to_node_id": "n0814",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1829",
+      "from_node_id": "n0814",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1830",
+      "from_node_id": "n0800",
+      "to_node_id": "n0817",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1831",
+      "from_node_id": "n0817",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1832",
+      "from_node_id": "n0800",
+      "to_node_id": "n0819",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1833",
+      "from_node_id": "n0819",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1834",
+      "from_node_id": "n0800",
+      "to_node_id": "n0820",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1835",
+      "from_node_id": "n0820",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1836",
+      "from_node_id": "n0800",
+      "to_node_id": "n0827",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1837",
+      "from_node_id": "n0827",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1838",
+      "from_node_id": "n0800",
+      "to_node_id": "n0832",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1839",
+      "from_node_id": "n0832",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1840",
+      "from_node_id": "n0800",
+      "to_node_id": "n0833",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1841",
+      "from_node_id": "n0833",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1842",
+      "from_node_id": "n0800",
+      "to_node_id": "n0835",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1843",
+      "from_node_id": "n0835",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1844",
+      "from_node_id": "n0800",
+      "to_node_id": "n0836",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1845",
+      "from_node_id": "n0836",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1846",
+      "from_node_id": "n0800",
+      "to_node_id": "n0840",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1847",
+      "from_node_id": "n0840",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1848",
+      "from_node_id": "n0800",
+      "to_node_id": "n0842",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1849",
+      "from_node_id": "n0842",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1850",
+      "from_node_id": "n0800",
+      "to_node_id": "n0845",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1851",
+      "from_node_id": "n0845",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1852",
+      "from_node_id": "n0800",
+      "to_node_id": "n0847",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1853",
+      "from_node_id": "n0847",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1854",
+      "from_node_id": "n0800",
+      "to_node_id": "n0848",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1855",
+      "from_node_id": "n0848",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1856",
+      "from_node_id": "n0800",
+      "to_node_id": "n0850",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1857",
+      "from_node_id": "n0850",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1858",
+      "from_node_id": "n0800",
+      "to_node_id": "n0851",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1859",
+      "from_node_id": "n0851",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1860",
+      "from_node_id": "n0800",
+      "to_node_id": "n0852",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1861",
+      "from_node_id": "n0852",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1862",
+      "from_node_id": "n0800",
+      "to_node_id": "n0854",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1863",
+      "from_node_id": "n0854",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1864",
+      "from_node_id": "n0800",
+      "to_node_id": "n0856",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1865",
+      "from_node_id": "n0856",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1866",
+      "from_node_id": "n0800",
+      "to_node_id": "n0859",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1867",
+      "from_node_id": "n0859",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1868",
+      "from_node_id": "n0800",
+      "to_node_id": "n0864",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1869",
+      "from_node_id": "n0864",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1870",
+      "from_node_id": "n0800",
+      "to_node_id": "n0868",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1871",
+      "from_node_id": "n0868",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1872",
+      "from_node_id": "n0800",
+      "to_node_id": "n0869",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1873",
+      "from_node_id": "n0869",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1874",
+      "from_node_id": "n0800",
+      "to_node_id": "n0870",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1875",
+      "from_node_id": "n0870",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1876",
+      "from_node_id": "n0800",
+      "to_node_id": "n0873",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1877",
+      "from_node_id": "n0873",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1878",
+      "from_node_id": "n0800",
+      "to_node_id": "n0877",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1879",
+      "from_node_id": "n0877",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1880",
+      "from_node_id": "n0800",
+      "to_node_id": "n0882",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1881",
+      "from_node_id": "n0882",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1882",
+      "from_node_id": "n0800",
+      "to_node_id": "n0891",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1883",
+      "from_node_id": "n0891",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1884",
+      "from_node_id": "n0800",
+      "to_node_id": "n0897",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1885",
+      "from_node_id": "n0897",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1886",
+      "from_node_id": "n0900",
+      "to_node_id": "n0901",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1887",
+      "from_node_id": "n0900",
+      "to_node_id": "n0902",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1888",
+      "from_node_id": "n0900",
+      "to_node_id": "n0903",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1889",
+      "from_node_id": "n0900",
+      "to_node_id": "n0904",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1890",
+      "from_node_id": "n0900",
+      "to_node_id": "n0905",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1891",
+      "from_node_id": "n0900",
+      "to_node_id": "n0906",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1892",
+      "from_node_id": "n0900",
+      "to_node_id": "n0908",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1893",
+      "from_node_id": "n0900",
+      "to_node_id": "n0910",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1894",
+      "from_node_id": "n0900",
+      "to_node_id": "n0911",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1895",
+      "from_node_id": "n0900",
+      "to_node_id": "n0912",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1896",
+      "from_node_id": "n0900",
+      "to_node_id": "n0913",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1897",
+      "from_node_id": "n0900",
+      "to_node_id": "n0915",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1898",
+      "from_node_id": "n0900",
+      "to_node_id": "n0916",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1899",
+      "from_node_id": "n0900",
+      "to_node_id": "n0917",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1900",
+      "from_node_id": "n0900",
+      "to_node_id": "n0918",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1901",
+      "from_node_id": "n0900",
+      "to_node_id": "n0919",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1902",
+      "from_node_id": "n0900",
+      "to_node_id": "n0920",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1903",
+      "from_node_id": "n0900",
+      "to_node_id": "n0921",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1904",
+      "from_node_id": "n0900",
+      "to_node_id": "n0923",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1905",
+      "from_node_id": "n0900",
+      "to_node_id": "n0924",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1906",
+      "from_node_id": "n0900",
+      "to_node_id": "n0926",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1907",
+      "from_node_id": "n0900",
+      "to_node_id": "n0927",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1908",
+      "from_node_id": "n0900",
+      "to_node_id": "n0928",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1909",
+      "from_node_id": "n0900",
+      "to_node_id": "n0929",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1910",
+      "from_node_id": "n0900",
+      "to_node_id": "n0930",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1911",
+      "from_node_id": "n0900",
+      "to_node_id": "n0931",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1912",
+      "from_node_id": "n0900",
+      "to_node_id": "n0934",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1913",
+      "from_node_id": "n0900",
+      "to_node_id": "n0935",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1914",
+      "from_node_id": "n0900",
+      "to_node_id": "n0936",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1915",
+      "from_node_id": "n0900",
+      "to_node_id": "n0937",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1916",
+      "from_node_id": "n0900",
+      "to_node_id": "n0938",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1917",
+      "from_node_id": "n0900",
+      "to_node_id": "n0939",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1918",
+      "from_node_id": "n0900",
+      "to_node_id": "n0940",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1919",
+      "from_node_id": "n0900",
+      "to_node_id": "n0942",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1920",
+      "from_node_id": "n0900",
+      "to_node_id": "n0943",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1921",
+      "from_node_id": "n0900",
+      "to_node_id": "n0944",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1922",
+      "from_node_id": "n0900",
+      "to_node_id": "n0947",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1923",
+      "from_node_id": "n0900",
+      "to_node_id": "n0951",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1924",
+      "from_node_id": "n0900",
+      "to_node_id": "n0952",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1925",
+      "from_node_id": "n0900",
+      "to_node_id": "n0954",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1926",
+      "from_node_id": "n0900",
+      "to_node_id": "n0956",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1927",
+      "from_node_id": "n0900",
+      "to_node_id": "n0957",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1928",
+      "from_node_id": "n0900",
+      "to_node_id": "n0958",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1929",
+      "from_node_id": "n0900",
+      "to_node_id": "n0959",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1930",
+      "from_node_id": "n0900",
+      "to_node_id": "n0960",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1931",
+      "from_node_id": "n0900",
+      "to_node_id": "n0961",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1932",
+      "from_node_id": "n0900",
+      "to_node_id": "n0962",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1933",
+      "from_node_id": "n0900",
+      "to_node_id": "n0964",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1934",
+      "from_node_id": "n0900",
+      "to_node_id": "n0966",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1935",
+      "from_node_id": "n0900",
+      "to_node_id": "n0968",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1936",
+      "from_node_id": "n0900",
+      "to_node_id": "n0969",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1937",
+      "from_node_id": "n0900",
+      "to_node_id": "n0972",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1938",
+      "from_node_id": "n0900",
+      "to_node_id": "n0974",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1939",
+      "from_node_id": "n0900",
+      "to_node_id": "n0975",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1940",
+      "from_node_id": "n0900",
+      "to_node_id": "n0976",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1941",
+      "from_node_id": "n0900",
+      "to_node_id": "n0977",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1942",
+      "from_node_id": "n0900",
+      "to_node_id": "n0978",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1943",
+      "from_node_id": "n0900",
+      "to_node_id": "n0980",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1944",
+      "from_node_id": "n0900",
+      "to_node_id": "n0981",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1945",
+      "from_node_id": "n0900",
+      "to_node_id": "n0985",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1946",
+      "from_node_id": "n0900",
+      "to_node_id": "n0986",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1947",
+      "from_node_id": "n0900",
+      "to_node_id": "n0987",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1948",
+      "from_node_id": "n0900",
+      "to_node_id": "n0990",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1949",
+      "from_node_id": "n0900",
+      "to_node_id": "n0991",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1950",
+      "from_node_id": "n0900",
+      "to_node_id": "n0992",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1951",
+      "from_node_id": "n0900",
+      "to_node_id": "n0997",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1952",
+      "from_node_id": "n0900",
+      "to_node_id": "n0998",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1953",
+      "from_node_id": "n0900",
+      "to_node_id": "n0914",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1954",
+      "from_node_id": "n0900",
+      "to_node_id": "n0922",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1955",
+      "from_node_id": "n0900",
+      "to_node_id": "n0925",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1956",
+      "from_node_id": "n0900",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1957",
+      "from_node_id": "n0900",
+      "to_node_id": "n0907",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1958",
+      "from_node_id": "n0900",
+      "to_node_id": "n0909",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1959",
+      "from_node_id": "n0400",
+      "to_node_id": "n0437",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1960",
+      "from_node_id": "n0437",
+      "to_node_id": "n0500",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1961",
+      "from_node_id": "n0500",
+      "to_node_id": "n0515",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1962",
+      "from_node_id": "n0515",
+      "to_node_id": "n0600",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1963",
+      "from_node_id": "n0500",
+      "to_node_id": "n0517",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1964",
+      "from_node_id": "n0517",
+      "to_node_id": "n0600",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1965",
+      "from_node_id": "n0500",
+      "to_node_id": "n0552",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1966",
+      "from_node_id": "n0552",
+      "to_node_id": "n0600",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1967",
+      "from_node_id": "n0500",
+      "to_node_id": "n0578",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1968",
+      "from_node_id": "n0578",
+      "to_node_id": "n0600",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1969",
+      "from_node_id": "n0500",
+      "to_node_id": "n0594",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1970",
+      "from_node_id": "n0594",
+      "to_node_id": "n0600",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1971",
+      "from_node_id": "n0600",
+      "to_node_id": "n0616",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1972",
+      "from_node_id": "n0616",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1973",
+      "from_node_id": "n0600",
+      "to_node_id": "n0625",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1974",
+      "from_node_id": "n0625",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1975",
+      "from_node_id": "n0600",
+      "to_node_id": "n0633",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1976",
+      "from_node_id": "n0633",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1977",
+      "from_node_id": "n0600",
+      "to_node_id": "n0638",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1978",
+      "from_node_id": "n0638",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1979",
+      "from_node_id": "n0600",
+      "to_node_id": "n0639",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1980",
+      "from_node_id": "n0639",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1981",
+      "from_node_id": "n0600",
+      "to_node_id": "n0645",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1982",
+      "from_node_id": "n0645",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1983",
+      "from_node_id": "n0600",
+      "to_node_id": "n0652",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1984",
+      "from_node_id": "n0652",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1985",
+      "from_node_id": "n0600",
+      "to_node_id": "n0654",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1986",
+      "from_node_id": "n0654",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1987",
+      "from_node_id": "n0600",
+      "to_node_id": "n0660",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1988",
+      "from_node_id": "n0660",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1989",
+      "from_node_id": "n0600",
+      "to_node_id": "n0662",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1990",
+      "from_node_id": "n0662",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1991",
+      "from_node_id": "n0600",
+      "to_node_id": "n0665",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1992",
+      "from_node_id": "n0665",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1993",
+      "from_node_id": "n0600",
+      "to_node_id": "n0668",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1994",
+      "from_node_id": "n0668",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1995",
+      "from_node_id": "n0600",
+      "to_node_id": "n0677",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1996",
+      "from_node_id": "n0677",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1997",
+      "from_node_id": "n0600",
+      "to_node_id": "n0679",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1998",
+      "from_node_id": "n0679",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e1999",
+      "from_node_id": "n0600",
+      "to_node_id": "n0681",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2000",
+      "from_node_id": "n0681",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2001",
+      "from_node_id": "n0600",
+      "to_node_id": "n0684",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2002",
+      "from_node_id": "n0684",
+      "to_node_id": "n0700",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2003",
+      "from_node_id": "n0700",
+      "to_node_id": "n0701",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2004",
+      "from_node_id": "n0701",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2005",
+      "from_node_id": "n0700",
+      "to_node_id": "n0702",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2006",
+      "from_node_id": "n0702",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2007",
+      "from_node_id": "n0700",
+      "to_node_id": "n0707",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2008",
+      "from_node_id": "n0707",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2009",
+      "from_node_id": "n0700",
+      "to_node_id": "n0708",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2010",
+      "from_node_id": "n0708",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2011",
+      "from_node_id": "n0700",
+      "to_node_id": "n0709",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2012",
+      "from_node_id": "n0709",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2013",
+      "from_node_id": "n0700",
+      "to_node_id": "n0715",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2014",
+      "from_node_id": "n0715",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2015",
+      "from_node_id": "n0700",
+      "to_node_id": "n0719",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2016",
+      "from_node_id": "n0719",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2017",
+      "from_node_id": "n0700",
+      "to_node_id": "n0720",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2018",
+      "from_node_id": "n0720",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2019",
+      "from_node_id": "n0700",
+      "to_node_id": "n0721",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2020",
+      "from_node_id": "n0721",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2021",
+      "from_node_id": "n0700",
+      "to_node_id": "n0722",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2022",
+      "from_node_id": "n0722",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2023",
+      "from_node_id": "n0700",
+      "to_node_id": "n0728",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2024",
+      "from_node_id": "n0728",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2025",
+      "from_node_id": "n0700",
+      "to_node_id": "n0732",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2026",
+      "from_node_id": "n0732",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2027",
+      "from_node_id": "n0700",
+      "to_node_id": "n0734",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2028",
+      "from_node_id": "n0734",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2029",
+      "from_node_id": "n0700",
+      "to_node_id": "n0735",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2030",
+      "from_node_id": "n0735",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2031",
+      "from_node_id": "n0700",
+      "to_node_id": "n0736",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2032",
+      "from_node_id": "n0736",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2033",
+      "from_node_id": "n0700",
+      "to_node_id": "n0746",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2034",
+      "from_node_id": "n0746",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2035",
+      "from_node_id": "n0700",
+      "to_node_id": "n0748",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2036",
+      "from_node_id": "n0748",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2037",
+      "from_node_id": "n0700",
+      "to_node_id": "n0751",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2038",
+      "from_node_id": "n0751",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2039",
+      "from_node_id": "n0700",
+      "to_node_id": "n0753",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2040",
+      "from_node_id": "n0753",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2041",
+      "from_node_id": "n0700",
+      "to_node_id": "n0754",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2042",
+      "from_node_id": "n0754",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2043",
+      "from_node_id": "n0700",
+      "to_node_id": "n0756",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2044",
+      "from_node_id": "n0756",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2045",
+      "from_node_id": "n0700",
+      "to_node_id": "n0758",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2046",
+      "from_node_id": "n0758",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2047",
+      "from_node_id": "n0700",
+      "to_node_id": "n0763",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2048",
+      "from_node_id": "n0763",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2049",
+      "from_node_id": "n0700",
+      "to_node_id": "n0768",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2050",
+      "from_node_id": "n0768",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2051",
+      "from_node_id": "n0700",
+      "to_node_id": "n0769",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2052",
+      "from_node_id": "n0769",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2053",
+      "from_node_id": "n0700",
+      "to_node_id": "n0774",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2054",
+      "from_node_id": "n0774",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2055",
+      "from_node_id": "n0700",
+      "to_node_id": "n0775",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2056",
+      "from_node_id": "n0775",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2057",
+      "from_node_id": "n0700",
+      "to_node_id": "n0777",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2058",
+      "from_node_id": "n0777",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2059",
+      "from_node_id": "n0700",
+      "to_node_id": "n0778",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2060",
+      "from_node_id": "n0778",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2061",
+      "from_node_id": "n0700",
+      "to_node_id": "n0779",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2062",
+      "from_node_id": "n0779",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2063",
+      "from_node_id": "n0700",
+      "to_node_id": "n0780",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2064",
+      "from_node_id": "n0780",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2065",
+      "from_node_id": "n0700",
+      "to_node_id": "n0783",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2066",
+      "from_node_id": "n0783",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2067",
+      "from_node_id": "n0700",
+      "to_node_id": "n0786",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2068",
+      "from_node_id": "n0786",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2069",
+      "from_node_id": "n0700",
+      "to_node_id": "n0790",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2070",
+      "from_node_id": "n0790",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2071",
+      "from_node_id": "n0700",
+      "to_node_id": "n0791",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2072",
+      "from_node_id": "n0791",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2073",
+      "from_node_id": "n0700",
+      "to_node_id": "n0792",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2074",
+      "from_node_id": "n0792",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2075",
+      "from_node_id": "n0700",
+      "to_node_id": "n0794",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2076",
+      "from_node_id": "n0794",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2077",
+      "from_node_id": "n0700",
+      "to_node_id": "n0795",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2078",
+      "from_node_id": "n0795",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2079",
+      "from_node_id": "n0700",
+      "to_node_id": "n0796",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2080",
+      "from_node_id": "n0796",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2081",
+      "from_node_id": "n0700",
+      "to_node_id": "n0797",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2082",
+      "from_node_id": "n0797",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2083",
+      "from_node_id": "n0700",
+      "to_node_id": "n0799",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2084",
+      "from_node_id": "n0799",
+      "to_node_id": "n0800",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2085",
+      "from_node_id": "n0800",
+      "to_node_id": "n0802",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2086",
+      "from_node_id": "n0802",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2087",
+      "from_node_id": "n0800",
+      "to_node_id": "n0803",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2088",
+      "from_node_id": "n0803",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2089",
+      "from_node_id": "n0800",
+      "to_node_id": "n0805",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2090",
+      "from_node_id": "n0805",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2091",
+      "from_node_id": "n0800",
+      "to_node_id": "n0806",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2092",
+      "from_node_id": "n0806",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2093",
+      "from_node_id": "n0800",
+      "to_node_id": "n0808",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2094",
+      "from_node_id": "n0808",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2095",
+      "from_node_id": "n0800",
+      "to_node_id": "n0810",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2096",
+      "from_node_id": "n0810",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2097",
+      "from_node_id": "n0800",
+      "to_node_id": "n0811",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2098",
+      "from_node_id": "n0811",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2099",
+      "from_node_id": "n0800",
+      "to_node_id": "n0815",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2100",
+      "from_node_id": "n0815",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2101",
+      "from_node_id": "n0800",
+      "to_node_id": "n0816",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2102",
+      "from_node_id": "n0816",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2103",
+      "from_node_id": "n0800",
+      "to_node_id": "n0818",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2104",
+      "from_node_id": "n0818",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2105",
+      "from_node_id": "n0800",
+      "to_node_id": "n0821",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2106",
+      "from_node_id": "n0821",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2107",
+      "from_node_id": "n0800",
+      "to_node_id": "n0822",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2108",
+      "from_node_id": "n0822",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2109",
+      "from_node_id": "n0800",
+      "to_node_id": "n0823",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2110",
+      "from_node_id": "n0823",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2111",
+      "from_node_id": "n0800",
+      "to_node_id": "n0824",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2112",
+      "from_node_id": "n0824",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2113",
+      "from_node_id": "n0800",
+      "to_node_id": "n0825",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2114",
+      "from_node_id": "n0825",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2115",
+      "from_node_id": "n0800",
+      "to_node_id": "n0826",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2116",
+      "from_node_id": "n0826",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2117",
+      "from_node_id": "n0800",
+      "to_node_id": "n0828",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2118",
+      "from_node_id": "n0828",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2119",
+      "from_node_id": "n0800",
+      "to_node_id": "n0829",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2120",
+      "from_node_id": "n0829",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2121",
+      "from_node_id": "n0800",
+      "to_node_id": "n0830",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2122",
+      "from_node_id": "n0830",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2123",
+      "from_node_id": "n0800",
+      "to_node_id": "n0831",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2124",
+      "from_node_id": "n0831",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2125",
+      "from_node_id": "n0800",
+      "to_node_id": "n0834",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2126",
+      "from_node_id": "n0834",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2127",
+      "from_node_id": "n0800",
+      "to_node_id": "n0837",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2128",
+      "from_node_id": "n0837",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2129",
+      "from_node_id": "n0800",
+      "to_node_id": "n0838",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2130",
+      "from_node_id": "n0838",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2131",
+      "from_node_id": "n0800",
+      "to_node_id": "n0839",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2132",
+      "from_node_id": "n0839",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2133",
+      "from_node_id": "n0800",
+      "to_node_id": "n0841",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2134",
+      "from_node_id": "n0841",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2135",
+      "from_node_id": "n0800",
+      "to_node_id": "n0844",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2136",
+      "from_node_id": "n0844",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2137",
+      "from_node_id": "n0800",
+      "to_node_id": "n0846",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2138",
+      "from_node_id": "n0846",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2139",
+      "from_node_id": "n0800",
+      "to_node_id": "n0849",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2140",
+      "from_node_id": "n0849",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2141",
+      "from_node_id": "n0800",
+      "to_node_id": "n0853",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2142",
+      "from_node_id": "n0853",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2143",
+      "from_node_id": "n0800",
+      "to_node_id": "n0855",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2144",
+      "from_node_id": "n0855",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2145",
+      "from_node_id": "n0800",
+      "to_node_id": "n0857",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2146",
+      "from_node_id": "n0857",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2147",
+      "from_node_id": "n0800",
+      "to_node_id": "n0858",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2148",
+      "from_node_id": "n0858",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2149",
+      "from_node_id": "n0800",
+      "to_node_id": "n0860",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2150",
+      "from_node_id": "n0860",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2151",
+      "from_node_id": "n0800",
+      "to_node_id": "n0861",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2152",
+      "from_node_id": "n0861",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2153",
+      "from_node_id": "n0800",
+      "to_node_id": "n0862",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2154",
+      "from_node_id": "n0862",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2155",
+      "from_node_id": "n0800",
+      "to_node_id": "n0863",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2156",
+      "from_node_id": "n0863",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2157",
+      "from_node_id": "n0800",
+      "to_node_id": "n0865",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2158",
+      "from_node_id": "n0865",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2159",
+      "from_node_id": "n0800",
+      "to_node_id": "n0866",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2160",
+      "from_node_id": "n0866",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2161",
+      "from_node_id": "n0800",
+      "to_node_id": "n0871",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2162",
+      "from_node_id": "n0871",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2163",
+      "from_node_id": "n0800",
+      "to_node_id": "n0872",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2164",
+      "from_node_id": "n0872",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2165",
+      "from_node_id": "n0800",
+      "to_node_id": "n0874",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2166",
+      "from_node_id": "n0874",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2167",
+      "from_node_id": "n0800",
+      "to_node_id": "n0875",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2168",
+      "from_node_id": "n0875",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2169",
+      "from_node_id": "n0800",
+      "to_node_id": "n0876",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2170",
+      "from_node_id": "n0876",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2171",
+      "from_node_id": "n0800",
+      "to_node_id": "n0878",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2172",
+      "from_node_id": "n0878",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2173",
+      "from_node_id": "n0800",
+      "to_node_id": "n0879",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2174",
+      "from_node_id": "n0879",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2175",
+      "from_node_id": "n0800",
+      "to_node_id": "n0880",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2176",
+      "from_node_id": "n0880",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2177",
+      "from_node_id": "n0800",
+      "to_node_id": "n0881",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2178",
+      "from_node_id": "n0881",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2179",
+      "from_node_id": "n0800",
+      "to_node_id": "n0883",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2180",
+      "from_node_id": "n0883",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2181",
+      "from_node_id": "n0800",
+      "to_node_id": "n0884",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2182",
+      "from_node_id": "n0884",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2183",
+      "from_node_id": "n0800",
+      "to_node_id": "n0885",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2184",
+      "from_node_id": "n0885",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2185",
+      "from_node_id": "n0800",
+      "to_node_id": "n0886",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2186",
+      "from_node_id": "n0886",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2187",
+      "from_node_id": "n0800",
+      "to_node_id": "n0887",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2188",
+      "from_node_id": "n0887",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2189",
+      "from_node_id": "n0800",
+      "to_node_id": "n0888",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2190",
+      "from_node_id": "n0888",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2191",
+      "from_node_id": "n0800",
+      "to_node_id": "n0889",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2192",
+      "from_node_id": "n0889",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2193",
+      "from_node_id": "n0800",
+      "to_node_id": "n0890",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2194",
+      "from_node_id": "n0890",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2195",
+      "from_node_id": "n0800",
+      "to_node_id": "n0892",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2196",
+      "from_node_id": "n0892",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2197",
+      "from_node_id": "n0800",
+      "to_node_id": "n0893",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2198",
+      "from_node_id": "n0893",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2199",
+      "from_node_id": "n0800",
+      "to_node_id": "n0894",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2200",
+      "from_node_id": "n0894",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2201",
+      "from_node_id": "n0800",
+      "to_node_id": "n0895",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2202",
+      "from_node_id": "n0895",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2203",
+      "from_node_id": "n0800",
+      "to_node_id": "n0896",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2204",
+      "from_node_id": "n0896",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2205",
+      "from_node_id": "n0800",
+      "to_node_id": "n0898",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2206",
+      "from_node_id": "n0898",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2207",
+      "from_node_id": "n0800",
+      "to_node_id": "n0899",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2208",
+      "from_node_id": "n0899",
+      "to_node_id": "n0900",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2209",
+      "from_node_id": "n0900",
+      "to_node_id": "n0932",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2210",
+      "from_node_id": "n0900",
+      "to_node_id": "n0933",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2211",
+      "from_node_id": "n0900",
+      "to_node_id": "n0941",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2212",
+      "from_node_id": "n0900",
+      "to_node_id": "n0945",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2213",
+      "from_node_id": "n0900",
+      "to_node_id": "n0946",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2214",
+      "from_node_id": "n0900",
+      "to_node_id": "n0948",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2215",
+      "from_node_id": "n0900",
+      "to_node_id": "n0949",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2216",
+      "from_node_id": "n0900",
+      "to_node_id": "n0950",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2217",
+      "from_node_id": "n0900",
+      "to_node_id": "n0953",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2218",
+      "from_node_id": "n0900",
+      "to_node_id": "n0955",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2219",
+      "from_node_id": "n0900",
+      "to_node_id": "n0963",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2220",
+      "from_node_id": "n0900",
+      "to_node_id": "n0965",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2221",
+      "from_node_id": "n0900",
+      "to_node_id": "n0967",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2222",
+      "from_node_id": "n0900",
+      "to_node_id": "n0970",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2223",
+      "from_node_id": "n0900",
+      "to_node_id": "n0971",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2224",
+      "from_node_id": "n0900",
+      "to_node_id": "n0973",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2225",
+      "from_node_id": "n0900",
+      "to_node_id": "n0979",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2226",
+      "from_node_id": "n0900",
+      "to_node_id": "n0982",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2227",
+      "from_node_id": "n0900",
+      "to_node_id": "n0983",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2228",
+      "from_node_id": "n0900",
+      "to_node_id": "n0984",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2229",
+      "from_node_id": "n0900",
+      "to_node_id": "n0988",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2230",
+      "from_node_id": "n0900",
+      "to_node_id": "n0989",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2231",
+      "from_node_id": "n0900",
+      "to_node_id": "n0993",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2232",
+      "from_node_id": "n0900",
+      "to_node_id": "n0994",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2233",
+      "from_node_id": "n0900",
+      "to_node_id": "n0995",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2234",
+      "from_node_id": "n0900",
+      "to_node_id": "n0996",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
+    },
+    {
+      "edge_id": "e2235",
+      "from_node_id": "n0900",
+      "to_node_id": "n0999",
+      "relation_type": "prerequisite",
+      "required": true,
+      "source_doc_ref": "gen-1000-patched"
     }
-  ]
+  ],
+  "patch_info": {
+    "script": "patch_roadmap_connectivity.py",
+    "edges_added": 283,
+    "connectivity_l0_4": "500/500"
+  }
 }

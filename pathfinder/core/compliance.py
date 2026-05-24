@@ -17,6 +17,27 @@ class ComplianceEvaluator:
         ]
         return tuple(sorted(triggered, key=lambda rule: rule.priority, reverse=True))
 
+    def triggered_rules_for_node(
+        self,
+        state: StakeholderState,
+        rules: list[Rule],
+        node_id: str,
+    ) -> tuple[Rule, ...]:
+        """Return rules triggered *at* a specific roadmap node.
+
+        Only includes rules whose action.node_id matches the given node_id.
+        This is used by locate_current() to check whether a candidate starting
+        node would immediately block the stakeholder.
+        """
+        triggered = [
+            rule
+            for rule in rules
+            if rule.action.node_id == node_id
+            and rule.applies_to_stakeholder(state.stakeholder_type)
+            and self.evaluate(rule.condition, state)
+        ]
+        return tuple(sorted(triggered, key=lambda rule: rule.priority, reverse=True))
+
     def evaluate(self, condition: dict[str, Any], state: StakeholderState) -> bool:
         if not condition:
             return True

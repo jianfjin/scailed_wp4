@@ -21,7 +21,7 @@ class PathfinderSolver:
         state: StakeholderState,
         rules: list[Rule],
     ) -> PathResult:
-        current = self.graph.locate_current(state)
+        current = self.graph.locate_current(state, rules, self.evaluator)
         target = self.graph.locate_target(state)
         triggered = self.evaluator.triggered_rules(state, rules)
         blockers = tuple(
@@ -39,12 +39,9 @@ class PathfinderSolver:
         )
 
         if blockers:
-            # Compute full chain anyway so graph shows all nodes;
-            # current (first step) is the blocked node.
             try:
                 steps = self.graph.shortest_path(current.node_id, target.node_id)
             except NoFeasiblePathError:
-                # Path impossible — show at least current + target for context
                 steps = (current, target)
         else:
             try:
@@ -83,11 +80,7 @@ class PathfinderSolver:
         rules: list[Rule],
         use_cypher: bool = False,
     ) -> PathResult:
-        """Async variant — required when use_cypher=True because AGE
-        Cypher queries are async (asyncpg).  When use_cypher=False this
-        delegates to the synchronous solve().
-        """
-        current = self.graph.locate_current(state)
+        current = self.graph.locate_current(state, rules, self.evaluator)
         target = self.graph.locate_target(state)
         triggered = self.evaluator.triggered_rules(state, rules)
         blockers = tuple(
@@ -106,13 +99,10 @@ class PathfinderSolver:
 
         path_backend_used = "python"
         if blockers:
-            # Compute full chain anyway so graph shows all nodes;
-            # current (first step) is the blocked node.
             path_backend_used = "n/a (blocked)"
             try:
                 steps = self.graph.shortest_path(current.node_id, target.node_id)
             except NoFeasiblePathError:
-                # Path impossible — show at least current + target for context
                 steps = (current, target)
         elif use_cypher and isinstance(self.graph, AgeRoadmapGraph):
             try:
@@ -122,7 +112,6 @@ class PathfinderSolver:
                 path_backend_used = "cypher"
             except NoFeasiblePathError as exc:
                 blockers = (str(exc),)
-                # Path impossible — show at least current + target for context
                 steps = (current, target)
                 path_backend_used = "cypher (failed)"
         else:
@@ -130,7 +119,6 @@ class PathfinderSolver:
                 steps = self.graph.shortest_path(current.node_id, target.node_id)
             except NoFeasiblePathError as exc:
                 blockers = (str(exc),)
-                # Path impossible — show at least current + target for context
                 steps = (current, target)
 
         trace = TraceRecord(
