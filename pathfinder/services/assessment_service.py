@@ -22,6 +22,7 @@ Legacy: USE_AGE=1 or use_age=True also enables AGE (deprecated).
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -30,7 +31,6 @@ from uuid import uuid4
 
 from pathfinder.adapters.demo_data import (
     demo_questionnaires,
-    demo_roadmap,
 )
 from pathfinder.adapters.upstream import UpstreamClient
 from pathfinder.core.audit import AuditLog
@@ -93,18 +93,102 @@ class AssessmentService:
             self.startup_check()
 
     def _load_demo_data(self) -> None:
-        """Load demo fixtures (development / test fallback)."""
-        self.questionnaires = demo_questionnaires()
-        nodes, edges = demo_roadmap()
-        self._active_roadmap = (nodes, edges)
-        self.questionnaire_engine = QuestionnaireEngine(self.questionnaires)
-        self.rule_loader = RuleLoader(self.questionnaires)
-        # Load rules from WP8 fixture (same source as upstream mode, no HTTP dependency)
-        _fixture_path = (
-            Path(__file__).parent.parent.parent
-            / "services" / "mock" / "fixtures" / "wp8_data.json"
+        """Load WP2/WP3/WP8 fixture data (zero-config, no HTTP dependency).
+
+        Loads from services/mock/fixtures/*.json — same files the mock
+        REST services serve in deployed mode.  This keeps the demo path
+        consistent with the upstream path and eliminates hardcoded demo data.
+        """
+        _fixtures = Path(__file__).parent.parent.parent / "services" / "mock" / "fixtures"
+
+        # ── WP8: rules ──────────────────────────────────────────────
+        self.rule_loader = RuleLoader([])  # will be rebuilt after WP2
+        self.rules = self.rule_loader.load_file(str(_fixtures / "wp8_data.json"))
+
+        # ── WP2: stakeholders → questionnaires ──────────────────────
+        with open(_fixtures / "wp2_data.json") as _f:
+            _wp2_stakeholders: list[dict] = json.load(_f)
+        # Merge in the 5 stakeholder types that WP3 nodes and WP8 rules
+        # reference (WP2 uses a different naming scheme like pharma-sme-001
+        # that doesn't match the rest of the pipeline).
+        _DEMO_TYPES = (
+            "biotech-sme",
+            "ai-factory-operator",
+            "health-data-access-body",
+            "health-data-infrastructure",
+            "research-infrastructure",
         )
-        self.rules = self.rule_loader.load_file(str(_fixture_path))
+        _template = demo_questionnaires()[0]
+        _seen: set[str] = set()
+        _questionnaires: list[Questionnaire] = []
+
+        for _record in _wp2_stakeholders:
+            _st = str(_record.get("stakeholder_type", "")).strip()
+            if not _st or _st in _seen:
+                continue
+            _seen.add(_st)
+            _label = str(_record.get("description") or _st)
+            _questionnaires.append(
+                Questionnaire(
+                    stakeholder_type=_st,
+                    version=_template.version,
+                    title=f"EHDS readiness assessment for {_label}",
+                    target_scenarios=_template.target_scenarios,
+                    questions=_template.questions,
+                )
+            )
+        # Add the 5 demo-compatible types so WP3/WP8 matching works
+        for _st in _DEMO_TYPES:
+            if _st not in _seen:
+                _seen.add(_st)
+                _questionnaires.append(
+                    Questionnaire(
+                        stakeholder_type=_st,
+                        version=_template.version,
+                        title=f"EHDS readiness assessment for {_st}",
+                        target_scenarios=_template.target_scenarios,
+                        questions=_template.questions,
+                    )
+                )
+        self.questionnaires = _questionnaires
+        self.questionnaire_engine = QuestionnaireEngine(self.questionnaires)
+
+        # Rebuild rule loader with correct questionnaires (tests need them)
+        self.rule_loader = RuleLoader(self.questionnaires)
+        self.rules = self.rule_loader.load_file(str(_fixtures / "wp8_data.json"))
+
+        # ── WP3: roadmap nodes + edges ──────────────────────────────
+        with open(_fixtures / "wp3_data.json") as _f:
+            _wp3_raw: dict = json.load(_f)
+        _nodes = [
+            RoadmapNode(
+                node_id=n["node_id"],
+                label=n.get("label", n["node_id"]),
+                description=n.get("description", ""),
+                dimension=n.get("dimension", "governance"),
+                maturity_level=n.get("maturity_level", 1),
+                stakeholder_types=tuple(n.get("stakeholder_types", ["all"])),
+                prerequisites=tuple(n.get("prerequisites", [])),
+                source_wp=n.get("source_wp", "WP3"),
+                source_doc_ref=n.get("source_doc_ref", "fixture"),
+                confidence=n.get("confidence", 1.0),
+                metadata=n.get("metadata", {}),
+            )
+            for n in _wp3_raw.get("nodes", [])
+        ]
+        _edges = [
+            RoadmapEdge(
+                edge_id=e["edge_id"],
+                from_node_id=e["from_node_id"],
+                to_node_id=e["to_node_id"],
+                relation_type=e.get("relation_type", "prerequisite"),
+                required=e.get("required", True),
+                source_doc_ref=e.get("source_doc_ref", "fixture"),
+            )
+            for e in _wp3_raw.get("edges", [])
+        ]
+        self._active_roadmap = (_nodes, _edges)
+
         self.audit_log = AuditLog()
         self.sessions: dict[str, dict[str, object]] = {}
         self.import_reports = {
@@ -112,9 +196,10 @@ class AssessmentService:
                 "demo",
                 {
                     "stakeholder_types": self.questionnaire_engine.stakeholder_types(),
-                    "roadmap_nodes": [node.to_dict() for node in nodes],
-                    "rules": [rule.to_dict() for rule in self.rules],
-                    "warnings": ["demo mode: partner WP2/WP3/WP8 inputs not loaded"],
+                    "roadmap_nodes": [n.to_dict() for n in _nodes],
+                    "roadmap_edges": [e.to_dict() for e in _edges],
+                    "rules": [r.to_dict() for r in self.rules],
+                    "warnings": ["demo mode: loaded from WP2/WP3/WP8 fixture files"],
                 },
             )
         }
