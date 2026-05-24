@@ -24,13 +24,12 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
 from pathfinder.adapters.demo_data import (
     demo_questionnaires,
-    demo_roadmap,
-    demo_rule_bundle,
 )
 from pathfinder.adapters.upstream import UpstreamClient
 from pathfinder.core.audit import AuditLog
@@ -93,26 +92,50 @@ class AssessmentService:
             self.startup_check()
 
     def _load_demo_data(self) -> None:
-        """Load demo fixtures (development / test fallback)."""
-        self.questionnaires = demo_questionnaires()
-        nodes, edges = demo_roadmap()
-        self._active_roadmap = (nodes, edges)
-        self.questionnaire_engine = QuestionnaireEngine(self.questionnaires)
-        self.rule_loader = RuleLoader(self.questionnaires)
-        self.rules = self.rule_loader.load_bundle(demo_rule_bundle())
-        self.audit_log = AuditLog()
-        self.sessions: dict[str, dict[str, object]] = {}
-        self.import_reports = {
-            "demo": import_structured_payload(
-                "demo",
-                {
-                    "stakeholder_types": self.questionnaire_engine.stakeholder_types(),
-                    "roadmap_nodes": [node.to_dict() for node in nodes],
-                    "rules": [rule.to_dict() for rule in self.rules],
-                    "warnings": ["demo mode: partner WP2/WP3/WP8 inputs not loaded"],
-                },
-            )
-        }
+        """Load WP2/WP3/WP8 data from local mock REST services (zero Docker dep).
+
+        Starts an an ``UpstreamClient`` pointed at the local mock services
+        (started by the VM agent) and reuses ``_load_upstream_data`` so both
+        paths converge on exactly the same conversion logic.
+        """
+        import asyncio
+
+        client = UpstreamClient(
+            wp2_url="http://localhost:8102/api/v1",
+            wp3_url="http://localhost:8103/api/v1",
+            wp8_url="http://localhost:8108/api/v1",
+            max_retries=2,
+            retry_delay=0.5,
+        )
+        asyncio.run(client.startup())
+
+        # Inject the 5 demo-compatible stakeholder types so WP3 nodes and WP8
+        # rules (which reference biotech-sme etc.) find matching questionnaires.
+        _DEMO_TYPES = (
+            "biotech-sme",
+            "ai-factory-operator",
+            "health-data-access-body",
+            "health-data-infrastructure",
+            "research-infrastructure",
+        )
+        _existing = {r.get("stakeholder_type", "") for r in client.stakeholders}
+        for _st in _DEMO_TYPES:
+            if _st not in _existing:
+                client.stakeholders.append({
+                    "stakeholder_type": _st,
+                    "description": _st.replace("-", " ").title(),
+                    "capabilities": [],
+                    "pain_points": [],
+                })
+
+        # Delegate to the same conversion logic as the upstream path.
+        self._load_upstream_data(client)
+
+        # Re-key import report from "upstream" → "demo".
+        self.import_reports["demo"] = self.import_reports.pop("upstream")
+
+        # Clean up the aiohttp session.
+        asyncio.run(client.close())
 
     def _load_upstream_data(self, client: UpstreamClient) -> None:
         """Load data from UpstreamClient cache (mock REST or real WP services).
@@ -169,6 +192,8 @@ class AssessmentService:
 
         # WP8: rules (already domain models from UpstreamClient) + tests
         self.rules = client.rules
+        if self.rules and self.rule_loader.active_version is None:
+            self.rule_loader.active_version = self.rules[0].rule_version
 
         self.audit_log = AuditLog()
         self.sessions: dict[str, dict[str, object]] = {}
