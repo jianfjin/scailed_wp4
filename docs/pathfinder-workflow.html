@@ -342,44 +342,44 @@ footer a{color:#475569;text-decoration:none}
     <div class="flow-arrow">→</div>
     <div class="flow-node exec"><div class="label">graph</div><div class="name">locateCurrent()</div></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-node exec"><div class="label">graph</div><div class="name">locateTarget()</div></div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-node rule"><div class="label">WP8</div><div class="name">Evaluate Rules</div></div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-node exec"><div class="label">BFS</div><div class="name">shortestPath()</div></div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-node start"><div class="label">out</div><div class="name">PathResult</div></div>
+  <div class="card">
+    <div class="card-header"><div class="card-dot orange"></div><h3>Infrastructure</h3></div>
+    <ul>
+      <li><span class="tag">Graph</span> InMemoryRoadmapGraph (only backend)</li>
+      <li><span class="tag">DB</span> PostgreSQL · relational persistence</li>
+      <li><span class="tag">Dashboard</span> /admin · 10s auto-refresh</li>
+    </ul>
   </div>
 </div>
 
 <!-- ═══ INTEGRATION ═══ -->
 <div class="section">
-  <h2><span class="idx">03</span>Integration Points</h2>
+  <h2><span class="idx">03</span>Persistence + Monitoring</h2>
   <div class="card-row" style="margin-bottom:0">
     <div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:20px">
-      <h4 style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">Mock Services (systemd)</h4>
+      <h4 style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">PostgreSQL Tables</h4>
       <table style="width:100%;font-size:11px;border-collapse:collapse">
-        <tr style="border-bottom:1px solid #1e293b"><td style="padding:6px 0;color:#22d3ee">WP2</td><td style="padding:6px 0;color:#94a3b8">:8102</td><td style="padding:6px 0;color:#64748b">Stakeholder taxonomy</td></tr>
-        <tr style="border-bottom:1px solid #1e293b"><td style="padding:6px 0;color:#34d399">WP3</td><td style="padding:6px 0;color:#94a3b8">:8103</td><td style="padding:6px 0;color:#64748b">Roadmap graph</td></tr>
-        <tr><td style="padding:6px 0;color:#a78bfa">WP8</td><td style="padding:6px 0;color:#94a3b8">:8108</td><td style="padding:6px 0;color:#64748b">Rules engine</td></tr>
+        <tr style="border-bottom:1px solid #1e293b"><td style="padding:6px 0;color:#22d3ee">assess.sessions</td><td style="padding:6px 0;color:#94a3b8">Session data</td><td style="padding:6px 0;color:#64748b">Upsert on each step</td></tr>
+        <tr style="border-bottom:1px solid #1e293b"><td style="padding:6px 0;color:#34d399">assess.audit_log</td><td style="padding:6px 0;color:#94a3b8">Audit chain</td><td style="padding:6px 0;color:#64748b">Append-only · hash verified</td></tr>
+        <tr><td style="padding:6px 0;color:#a78bfa">assess.request_log</td><td style="padding:6px 0;color:#94a3b8">Request monitoring</td><td style="padding:6px 0;color:#64748b">Dashboard data source</td></tr>
       </table>
     </div>
     <div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:20px">
-      <h4 style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">Docker Compose</h4>
+      <h4 style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">Kanban Dashboard (/admin)</h4>
       <table style="width:100%;font-size:11px;border-collapse:collapse">
-        <tr style="border-bottom:1px solid #1e293b"><td style="padding:6px 0;color:#22d3ee">traefik</td><td style="padding:6px 0;color:#64748b">:8647</td><td style="padding:6px 0;color:#64748b">Reverse proxy</td></tr>
-        <tr style="border-bottom:1px solid #1e293b"><td style="padding:6px 0;color:#22d3ee">frontend</td><td style="padding:6px 0;color:#64748b">—</td><td style="padding:6px 0;color:#64748b">React SPA</td></tr>
-        <tr style="border-bottom:1px solid #1e293b"><td style="padding:6px 0;color:#34d399">backend</td><td style="padding:6px 0;color:#64748b">—</td><td style="padding:6px 0;color:#64748b">FastAPI + Pathfinder</td></tr>
-        <tr><td style="padding:6px 0;color:#a78bfa">postgres</td><td style="padding:6px 0;color:#64748b">:5432</td><td style="padding:6px 0;color:#64748b">PG 16 + AGE</td></tr>
+        <tr style="border-bottom:1px solid #1e293b"><td style="padding:6px 0;color:#22d3ee">/admin/</td><td style="padding:6px 0;color:#64748b">Static HTML (10s refresh)</td></tr>
+        <tr style="border-bottom:1px solid #1e293b"><td style="padding:6px 0;color:#34d399">/admin/api/recent</td><td style="padding:6px 0;color:#64748b">Last 100 requests JSON</td></tr>
+        <tr style="border-bottom:1px solid #1e293b"><td style="padding:6px 0;color:#a78bfa">/admin/api/stats</td><td style="padding:6px 0;color:#64748b">Error rate · unique IPs</td></tr>
+        <tr><td style="padding:6px 0;color:#fb923c">/admin/api/abusive</td><td style="padding:6px 0;color:#64748b">Rate threshold · injection probes</td></tr>
       </table>
     </div>
     <div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:20px">
-      <h4 style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">Schema Validation</h4>
+      <h4 style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px">Repository Layer</h4>
       <ul style="list-style:none;padding:0;font-size:11px">
-        <li style="padding:6px 0;border-bottom:1px solid #1e293b;color:#94a3b8">📍 <span style="color:#f1f5f9">schema.json</span> — JSON Schema + $defs</li>
-        <li style="padding:6px 0;border-bottom:1px solid #1e293b;color:#94a3b8">📍 <span style="color:#f1f5f9">validator.py</span> — jsonschema.validate()</li>
-        <li style="padding:6px 0;border-bottom:1px solid #1e293b;color:#94a3b8">📍 <span style="color:#f1f5f9">compiler.py</span> → Rule domain model</li>
-        <li style="padding:6px 0;color:#94a3b8">📍 <span style="color:#f1f5f9">loader.py</span> → load_bundle + run tests</li>
+        <li style="padding:6px 0;border-bottom:1px solid #1e293b;color:#94a3b8">📍 <span style="color:#f1f5f9">connection.py</span> — asyncpg pool (min=2, max=10)</li>
+        <li style="padding:6px 0;border-bottom:1px solid #1e293b;color:#94a3b8">📍 <span style="color:#f1f5f9">session_repo.py</span> — save/update/get sessions</li>
+        <li style="padding:6px 0;border-bottom:1px solid #1e293b;color:#94a3b8">📍 <span style="color:#f1f5f9">audit_repo.py</span> — append-only + hash chain</li>
+        <li style="padding:6px 0;color:#94a3b8">📍 <span style="color:#f1f5f9">request_log_repo.py</span> — dashboard queries</li>
       </ul>
     </div>
   </div>

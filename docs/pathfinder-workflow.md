@@ -1,7 +1,7 @@
 # Pathfinder V1 — Workflow & Decision Process
 
 > SCAILED WP4 — Strategic Reasoning Layer for EHDS Compliance Assessment  
-> Last updated: 2026-05-24 | Branch: `feature/rules-engine-dsl-schema`
+> Last updated: 2026-05-24 | Branch: `feature/pg-persistence-kanban` (main after merge)
 
 ## Overview
 
@@ -197,6 +197,81 @@ decision-making:
 All rule bundles are validated against `schema.json` using `jsonschema` on load.
 The schema captures the full condition DSL and action structure.
 
+## Graph Backend
+
+InMemoryRoadmapGraph is the **only** graph backend. AGE (Apache AGE for PostgreSQL)
+has been removed — the 1000-node / 1783-edge roadmap fits in ~1 MB of RAM with
+BFS < 1ms. No fallback, no degradation, no PATHFINDER_MODE switching.
+
+```
+AssessmentService.__init__()
+  └─ InMemoryRoadmapGraph(nodes, edges)  ← startup, ~10ms
+       ├─ locate_current(state)   → O(N) scan, < 1ms
+       ├─ locate_target(state)    → O(N) scan, < 1ms
+       └─ shortest_path(a, b)     → BFS on 1783 edges, < 1ms
+```
+
+## PostgreSQL Persistence
+
+PostgreSQL is used for **relational persistence**, not graph storage:
+
+| Table | Schema | Purpose |
+|-------|--------|---------|
+| `assess.assessment_sessions` | PG | Session data (survives restarts) |
+| `assess.audit_log` | PG | Append-only audit chain with hash verification |
+| `assess.request_log` | PG | Request monitoring for kanban dashboard |
+
+### Connection Pool
+
+Managed by `pathfinder/core/repositories/connection.py`:
+- asyncpg pool: min=2, max=10
+- DSN from `DATABASE_URL` env var (default: `postgresql://pathfinder:pathfinder@localhost:5432/pathfinder`)
+- PG unavailable → graceful degrade (data stays in memory)
+
+### Write Strategy
+
+| Data | Strategy | PG Down? |
+|------|----------|----------|
+| Session | Best-effort async write | Stay in memory dict |
+| Audit | Best-effort (fail-open for now) | Stay in memory AuditLog |
+| Request log | Memory deque + 5s flush to PG | deque works without PG |
+
+## Kanban Dashboard
+
+A self-contained monitoring dashboard at `/admin`:
+
+| Route | Description |
+|-------|-------------|
+| `GET /admin/` | Static HTML dashboard (auto-refresh 10s) |
+| `GET /admin/api/recent` | Last 100 requests (JSON) |
+| `GET /admin/api/stats` | Aggregated stats (JSON) |
+| `GET /admin/api/abusive` | IPs exceeding rate threshold (JSON) |
+
+### Middleware
+
+`pathfinder/middleware/request_logger.py` intercepts every FastAPI request:
+- Records: timestamp, IP, method, endpoint, status_code, duration_ms, user_agent
+- In-memory deque(maxlen=1000) so dashboard works without PG
+- Background task flushes to PG every 5 seconds
+
+### Malicious Behavior Detection
+
+- **Rate limiting**: IPs with > 20 requests in 60s window flagged as abusive
+- **SQL injection probe**: regex match on payload
+- **Invalid token**: 401/403 counts tracked per IP
+- All built into the `/admin/api/abusive` endpoint; no external dependency
+
+## Repository Layer
+
+```
+pathfinder/core/repositories/
+├── __init__.py
+├── connection.py       — asyncpg pool singleton
+├── session_repo.py     — save/update/get assessment sessions
+├── audit_repo.py       — append-only audit event log + hash chain verify
+└── request_log_repo.py — save/query request logs for dashboard
+```
+
 ## Deployment
 
 ```
@@ -211,7 +286,7 @@ Docker Compose:
   ├─ traefik (reverse proxy, :8647)
   ├─ frontend (nginx + React SPA)
   ├─ backend (FastAPI)
-  ├─ postgres (PG16 + Apache AGE)
+  ├─ postgres (PG16, relational persistence — no AGE)
   ├─ redis (optional cache)
   ├─ wp2-mock (:8102)
   ├─ wp3-mock (:8103)
