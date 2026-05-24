@@ -4,7 +4,7 @@ SCAILED Pathfinder — T1 E2E Verification (OpenSpec 1.5)
 
 Verifies the full pipeline end-to-end:
   1. Docker containers healthy
-  2. Health check (graph_backend=age)
+  2. Health check (graph_backend=inmemory)
   3. Import demo data
   4. Full pipeline: assessment → answers → recommendation → report → traceability
   5. Multi-stakeholder (all available types)
@@ -104,8 +104,8 @@ def step2_health() -> None:
     _ok()
     gb = _g(data, "graph_backend")
     print(f"    status={_g(data, 'status')}, graph_backend={gb}")
-    if gb != "age":
-        _fail(f"graph_backend={gb}, expected 'age'")
+    if gb != "inmemory":
+        _fail(f"graph_backend={gb}, expected 'inmemory'")
     print()
 
 
@@ -289,8 +289,8 @@ def step6_audit() -> None:
         _fail(f"audit_events={audit_events}, expected >=3")
     if chain_valid is not True:
         _fail(f"audit_chain_valid={chain_valid}")
-    if gb != "age":
-        _fail(f"graph_backend={gb}, expected 'age'")
+    if gb != "inmemory":
+        _fail(f"graph_backend={gb}, expected 'inmemory'")
 
     print("    ✓ audit chain integrity verified\n")
 

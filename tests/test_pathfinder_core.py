@@ -6,7 +6,7 @@ from pathfinder.adapters.demo_data import STAKEHOLDER_TYPES, demo_questionnaires
 from pathfinder.core.exceptions import RuleValidationError, ValidationError
 from pathfinder.core.questionnaire import QuestionnaireEngine
 from pathfinder.core.rules.loader import RuleLoader
-from pathfinder.services.assessment_service import AssessmentService, StartupCheckError
+from pathfinder.services.assessment_service import AssessmentService
 
 
 class PathfinderCoreTests(unittest.TestCase):
@@ -101,43 +101,6 @@ class PathfinderCoreTests(unittest.TestCase):
             ],
         )
 
-    def test_age_mode_wp3_import_updates_active_projection_without_backend_downgrade(self) -> None:
-        with patch.dict(os.environ, {"PATHFINDER_MODE": "deployed"}, clear=False):
-            service = AssessmentService(startup_check=False)
-        payload = {
-            "version": "wp3-age-projection-v1",
-            "nodes": [
-                {
-                    "node_id": "age-import-a",
-                    "label": "AGE import A",
-                    "dimension": "governance",
-                    "maturity_level": 1,
-                    "stakeholder_types": ["all"],
-                },
-                {
-                    "node_id": "age-import-b",
-                    "label": "AGE import B",
-                    "dimension": "governance",
-                    "maturity_level": 2,
-                    "stakeholder_types": ["all"],
-                },
-            ],
-            "edges": [
-                {
-                    "edge_id": "age-import-e1",
-                    "from_node_id": "age-import-a",
-                    "to_node_id": "age-import-b",
-                }
-            ],
-        }
-
-        report = service.import_wp3(payload)
-
-        self.assertTrue(report.accepted)
-        self.assertEqual(service.status()["graph_backend"], "age")
-        self.assertEqual(set(service.graph.nodes), {"age-import-a", "age-import-b"})
-        self.assertEqual(service.graph.shortest_path("age-import-a", "age-import-b")[1].node_id, "age-import-b")
-
     def test_failed_import_is_audited_and_keeps_chain_valid(self) -> None:
         service = AssessmentService()
 
@@ -148,20 +111,6 @@ class PathfinderCoreTests(unittest.TestCase):
         self.assertEqual(events[-1].event_type, "data_import_failed")
         self.assertEqual(events[-1].event_data["source"], "wp3")
         self.assertTrue(service.audit_log.verify_chain())
-
-    def test_deployed_mode_startup_check_raises_when_age_connect_fails(self) -> None:
-        # OpenSpec 2.2: startup_check now degrades gracefully instead of raising
-        with patch.dict(os.environ, {"PATHFINDER_MODE": "deployed"}, clear=False):
-            with patch(
-                "pathfinder.core.graph_age.AgeRoadmapGraph.connect",
-                side_effect=RuntimeError("database unavailable"),
-            ):
-                svc = AssessmentService()  # no longer raises
-                self.assertTrue(svc._age_unavailable)
-                self.assertEqual(svc._graph_backend, "networkx_fallback")
-                status = svc.status()
-                self.assertTrue(status.get("degraded"))
-                self.assertIn("fallback", str(status.get("degraded_reason", "")))
 
     # ── G5: Regulatory reference verification (Guido MEDIUM #5) ──────────────
 

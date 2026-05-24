@@ -1,14 +1,11 @@
 """CLI demo for the Pathfinder V1 deterministic kernel.
 
-Supports AGE backend via USE_AGE=1 environment variable.
-When USE_AGE=1, connects to AGE and loads demo data before running the assessment.
+Uses InMemoryRoadmapGraph (no external database required).
 """
 
 from __future__ import annotations
 
-import asyncio
 import json
-import os
 
 from pathfinder.services.assessment_service import AssessmentService
 
@@ -30,24 +27,10 @@ def run_demo(service: AssessmentService) -> dict[str, object]:
     return service.report(str(session["assessment_id"]))
 
 
-async def async_main() -> None:
-    use_age = os.environ.get("USE_AGE", "").lower() in ("1", "true", "yes")
-    service = AssessmentService(use_age=use_age)
-
-    if use_age:
-        print("Connecting to AGE backend...")
-        await service.connect_age()
-        print("AGE connection established, demo data loaded.")
-
+def main() -> None:
+    service = AssessmentService()
     result = run_demo(service)
     print(json.dumps(result, indent=2, sort_keys=True))
-
-    if use_age:
-        await service.disconnect_age()
-
-
-def main() -> None:
-    asyncio.run(async_main())
 
 
 if __name__ == "__main__":

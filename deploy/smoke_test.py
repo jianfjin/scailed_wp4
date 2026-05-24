@@ -6,7 +6,7 @@ Runs against deployed containers and verifies end-to-end functionality:
   2. Import WP2 demo data via admin API (Bearer admin-token)
   3. Create assessment via public API (Bearer demo-token)
   4. Submit answers + get recommendations
-  5. Verify graph_backend is "age" (not "inmemory")
+  5. Verify graph_backend is "inmemory"
   6. Verify audit_events > 0
   7. Exit 0 on success
 
@@ -244,10 +244,10 @@ def step4_answers_and_recommend(assessment_id: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Step 5: Verify graph_backend is "age" (not "inmemory")
+# Step 5: Verify graph_backend is "inmemory"
 # ---------------------------------------------------------------------------
 def step5_verify_graph_backend() -> None:
-    print("=== Step 5: Verify graph_backend is age (not inmemory) ===")
+    print("=== Step 5: Verify graph_backend is inmemory ===")
     _step("GET /health")
     status, data = _api_request("GET", "/health")
     if status != 200:
@@ -256,9 +256,9 @@ def step5_verify_graph_backend() -> None:
 
     backend = _get(data, "graph_backend")
     print(f"    graph_backend={backend}")
-    if backend != "age":
-        _fail(f"expected graph_backend='age', got '{backend}'")
-    print("    graph_backend is 'age' ✓\n")
+    if backend != "inmemory":
+        _fail(f"expected graph_backend='inmemory', got '{backend}'")
+    print("    graph_backend is 'inmemory' ✓\n")
 
 
 # ---------------------------------------------------------------------------

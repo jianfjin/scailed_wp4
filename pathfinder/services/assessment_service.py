@@ -1,23 +1,10 @@
-"""End-to-end demo assessment service.
+"""End-to-end assessment service.
 
-Supports two graph backends:
-  - InMemoryRoadmapGraph (demo mode, zero-config for demos/tests)
-  - AgeRoadmapGraph (deployed mode, PostgreSQL + Apache AGE for production)
+Uses InMemoryRoadmapGraph as the only graph backend.
+Data can come from upstream REST services (production) or demo fixtures (local).
 
-When the AGE backend is unavailable in deployed mode, the system degrades
-to InMemoryRoadmapGraph with explicit markers (confidence=0.0,
-_path_backend="networkx_fallback", DEGRADED warning).
-
-NOTE: The string "networkx_fallback" is retained for API backward
-compatibility. It actually refers to InMemoryRoadmapGraph -- the internal
-graph engine builds on NetworkX, but the outermost class name is
-InMemoryRoadmapGraph. See pathfinder/core/graph.py for the implementation.
-
-Modes (via PATHFINDER_MODE env var):
-  - demo     → InMemoryRoadmapGraph (default, zero-config)
-  - deployed → AgeRoadmapGraph (requires PostgreSQL + Apache AGE)
-
-Legacy: USE_AGE=1 or use_age=True also enables AGE (deprecated).
+This is a synchronous kernel — all async wrappers are retained only for
+API backward compatibility and delegate to the synchronous solver.
 """
 
 from __future__ import annotations
@@ -34,7 +21,6 @@ from pathfinder.adapters.demo_data import (
 from pathfinder.adapters.upstream import UpstreamClient
 from pathfinder.core.audit import AuditLog
 from pathfinder.core.graph import InMemoryRoadmapGraph
-from pathfinder.core.graph_age import AgeRoadmapGraph
 from pathfinder.core.imports import import_structured_payload
 from pathfinder.core.models import ImportReport, Questionnaire, RoadmapEdge, RoadmapNode
 from pathfinder.core.questionnaire import QuestionnaireEngine
@@ -43,58 +29,26 @@ from pathfinder.core.rules.loader import RuleLoader
 from pathfinder.core.solver import PathfinderSolver
 
 
-class StartupCheckError(RuntimeError):
-    """Raised when deployed-mode dependencies are unavailable at startup."""
-
-
 class AssessmentService:
     def __init__(
         self,
-        use_age: bool | None = None,
-        startup_check: bool = True,
         upstream_client: Optional[UpstreamClient] = None,
     ) -> None:
-        # Resolve mode: PATHFINDER_MODE env var takes precedence, then legacy USE_AGE.
-        mode = os.environ.get("PATHFINDER_MODE", "").lower()
-        if mode not in ("demo", "deployed"):
-            # Fallback to legacy USE_AGE detection.
-            if use_age is None:
-                use_age = os.environ.get("USE_AGE", "").lower() in ("1", "true", "yes")
-            mode = "deployed" if use_age else "demo"
-            # Log deprecation warning if USE_AGE was used.
-            if mode == "deployed" and not os.environ.get("PATHFINDER_MODE"):
-                print(
-                    "[AssessmentService] USE_AGE is deprecated; set PATHFINDER_MODE=deployed instead.",
-                    file=sys.stderr,
-                )
-
-        self._mode = mode
-
         # ── Data source: upstream client (mock REST) or demo fixtures ──
         if upstream_client is not None:
             self._load_upstream_data(upstream_client)
         else:
             self._load_demo_data()
 
-        # ── Graph backend ──
+        # ── Graph backend (always InMemoryRoadmapGraph) ──
         nodes, edges = self._active_roadmap
-        self._graph_backend = "age" if self._mode == "deployed" else "inmemory"
-        self._age_unavailable = False
-
-        if self._mode == "deployed":
-            self.graph = AgeRoadmapGraph()
-        else:
-            self.graph = InMemoryRoadmapGraph(nodes, edges)
-
+        self.graph = InMemoryRoadmapGraph(nodes, edges)
         self.solver = PathfinderSolver(self.graph)
-
-        if startup_check:
-            self.startup_check()
 
     def _load_demo_data(self) -> None:
         """Load WP2/WP3/WP8 data from local mock REST services (zero Docker dep).
 
-        Starts an an ``UpstreamClient`` pointed at the local mock services
+        Starts an ``UpstreamClient`` pointed at the local mock services
         (started by the VM agent) and reuses ``_load_upstream_data`` so both
         paths converge on exactly the same conversion logic.
         """
@@ -211,62 +165,6 @@ class AssessmentService:
             )
         }
 
-    def startup_check(self) -> None:
-        """Validate backend connectivity at startup.
-
-        In `demo` mode this is a no-op.
-        In `deployed` mode this verifies PG connectivity; on failure,
-        degrades to InMemoryRoadmapGraph with explicit markers (OpenSpec 2.2).
-        The _graph_backend label "networkx_fallback" is a legacy API name;
-        the actual fallback backend is InMemoryRoadmapGraph.
-        """
-        if self._mode != "deployed":
-            return
-
-        import asyncio
-
-        async def _check() -> bool:
-            try:
-                await self.graph.connect()
-                await self.graph.disconnect()
-                return True
-            except Exception as exc:
-                print(
-                    f"[startup_check] AGE connection failed ({exc}), "
-                    f"degrading to InMemoryRoadmapGraph fallback.",
-                    file=sys.stderr,
-                )
-                return False
-
-        try:
-            loop = asyncio.get_running_loop()
-            ok = loop.run_until_complete(_check()) if False else None  # unreachable
-        except RuntimeError:
-            ok = asyncio.run(_check())
-
-        if not ok:
-            nodes, edges = self._active_roadmap
-            self.graph = InMemoryRoadmapGraph(nodes, edges)
-            self._graph_backend = "networkx_fallback"
-            self._age_unavailable = True
-            self.solver = PathfinderSolver(self.graph)
-            print(
-                "[startup_check] Switched to InMemoryRoadmapGraph fallback. "
-                "Confidence will be 0.0 until AGE is restored.",
-                file=sys.stderr,
-            )
-
-    async def connect_age(self) -> None:
-        """Connect to AGE backend and load demo data (async, called once at startup)."""
-        if isinstance(self.graph, AgeRoadmapGraph):
-            nodes, edges = self._active_roadmap
-            await self.graph.connect()
-            await self.graph.load_demo_data(nodes, edges)
-
-    async def disconnect_age(self) -> None:
-        if isinstance(self.graph, AgeRoadmapGraph):
-            await self.graph.disconnect()
-
     def stakeholder_types(self) -> list[str]:
         return self.questionnaire_engine.stakeholder_types()
 
@@ -344,18 +242,6 @@ class AssessmentService:
         path = self.solver.solve(state, self.rules)
         recommendation = build_recommendation(path)
 
-        # OpenSpec 2.2 / Linus plan: degradation marker when AGE unavailable
-        if self._age_unavailable:
-            recommendation["confidence"] = 0.0
-            recommendation["path_backend"] = self._graph_backend
-            recommendation.setdefault("warnings", [])
-            if not recommendation["warnings"]:
-                recommendation["warnings"] = []
-            recommendation["warnings"].append(
-                "DEGRADED: AGE backend unavailable, using InMemoryRoadmapGraph fallback. "
-                "Confidence set to 0.0. Restore AGE for accurate recommendations."
-            )
-
         session["recommendation"] = recommendation
         session["status"] = "complete"
         self.audit_log.append(
@@ -384,22 +270,8 @@ class AssessmentService:
             str(session["target_scenario"]),
             answers,
         )
-        use_cypher = path_backend == "cypher"
-        path = await self.solver.solve_async(state, self.rules, use_cypher=use_cypher)
+        path = self.solver.solve(state, self.rules)
         recommendation = build_recommendation(path)
-
-        # OpenSpec 2.2 / Linus plan: degradation marker when AGE unavailable
-        # Must mirror generate_recommendation() exactly so the API path is covered.
-        if self._age_unavailable:
-            recommendation["confidence"] = 0.0
-            recommendation["path_backend"] = self._graph_backend
-            recommendation.setdefault("warnings", [])
-            if not recommendation["warnings"]:
-                recommendation["warnings"] = []
-            recommendation["warnings"].append(
-                "DEGRADED: AGE backend unavailable, using InMemoryRoadmapGraph fallback. "
-                "Confidence set to 0.0. Restore AGE for accurate recommendations."
-            )
 
         session["recommendation"] = recommendation
         session["status"] = "complete"
@@ -477,15 +349,7 @@ class AssessmentService:
             raise
 
         self._active_roadmap = (nodes, edges)
-        if isinstance(self.graph, AgeRoadmapGraph):
-            self.graph.load_projection(nodes, edges)
-        else:
-            self.graph = InMemoryRoadmapGraph(nodes, edges)
-            # Preserve "networkx_fallback" marker when AGE is unavailable.
-            # Without this guard, import_wp3 would silently overwrite the
-            # fallback status to "inmemory", making degradation invisible.
-            if not self._age_unavailable:
-                self._graph_backend = "inmemory"
+        self.graph = InMemoryRoadmapGraph(nodes, edges)
         self.solver = PathfinderSolver(self.graph)
         self.import_reports["wp3"] = report
         self.audit_log.append(
@@ -522,20 +386,16 @@ class AssessmentService:
         return report
 
     def status(self) -> dict[str, object]:
-        result: dict[str, object] = {
+        return {
             "service": "pathfinder",
-            "mode": self._mode,
-            "graph_backend": self._graph_backend,
+            "mode": "demo",
+            "graph_backend": "inmemory",
             "stakeholder_types": self.stakeholder_types(),
             "rule_version": self.rule_loader.active_version,
             "audit_events": len(self.audit_log.events()),
             "audit_chain_valid": self.audit_log.verify_chain(),
             "import_reports": {key: report.to_dict() for key, report in self.import_reports.items()},
         }
-        if self._age_unavailable:
-            result["degraded"] = True
-            result["degraded_reason"] = "AGE backend unavailable, using InMemoryRoadmapGraph fallback"
-        return result
 
     def _questionnaires_from_wp2(self, payload: dict[str, object]) -> list[Questionnaire]:
         version = self._required_string(payload, "version")

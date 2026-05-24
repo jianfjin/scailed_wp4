@@ -1,6 +1,5 @@
 """FastAPI wrapper for the Pathfinder V1 deterministic kernel.
 
-Supports AGE backend via PATHFINDER_MODE=deployed environment variable.
 All response types are locked via Pydantic schemas in api/schemas.py.
 Error model: 5 standardized codes (AUTH_REQUIRED, FORBIDDEN, NOT_FOUND,
 VALIDATION_ERROR, SERVER_ERROR).
@@ -59,7 +58,7 @@ def _get_service() -> AssessmentService:
     if _service is None:
         # Service created during lifespan with upstream client.
         # This fallback only runs if lifespan wasn't called (tests, CLI).
-        _service = AssessmentService(use_age=None, startup_check=False)
+        _service = AssessmentService()
     return _service
 
 
@@ -73,20 +72,12 @@ async def lifespan(app: FastAPI):
 
     # ── Create service with upstream data ──
     _service = AssessmentService(
-        use_age=None,
-        startup_check=False,
         upstream_client=_upstream_client,
     )
-
-    # ── Connect AGE backend if deployed ──
-    if _service._mode == "deployed":
-        await _service.connect_age()
 
     yield
 
     # ── Shutdown ──
-    if _service._mode == "deployed":
-        await _service.disconnect_age()
     await _upstream_client.close()
 
 

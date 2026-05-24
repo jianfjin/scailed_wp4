@@ -1,13 +1,12 @@
 # ═══════════════════════════════════════════════════════════════════════
 # SCAILED WP4 Pathfinder System — Docker Compose
 # 议会决议 (2026-05-13, 九龙全票): 多容器，单机部署，No K8s
-# 审计修订 (2026-05-14, 六席复审): PostgreSQL独立volume, AGE图引擎
 # ═══════════════════════════════════════════════════════════════════════
 #
 # 容器拓扑 (8 containers):
 #   traefik (反向代理/TLS) ──→ frontend (nginx + React SPA)
 #                           ──→ backend  (FastAPI, 可水平扩展)
-#   backend ──→ postgres (PG16 + Apache AGE)
+#   backend ──→ postgres (PG16, relational schema only)
 #           ──→ redis   (可选缓存)
 #           ──→ wp2-mock (stakeholder taxonomy)
 #           ──→ wp3-mock (roadmap graph)
@@ -116,7 +115,6 @@ services:
       - "traefik.http.services.api.loadbalancer.server.port=8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-pathfinder}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-pathfinder}
-      - PATHFINDER_MODE=deployed
       - REDIS_URL=redis://redis:6379/0
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - SECRET_KEY=${SECRET_KEY:-dev-secret-change-in-production}
@@ -140,13 +138,10 @@ services:
   # ┌──────────────────────────────────────────────────────────────────┐
   # │ PostgreSQL — 有状态数据库 (独立容器 + named volume)                 │
   # │ 端口: 5432 (内部, 仅 backend 网络可访问)                           │
-  # │ 扩展: Apache AGE 图引擎 (Cypher/FTS inside SQL)                    │
+  # │ 用于关系型 schema 持久化 (02_schema.sql)                           │
   # └──────────────────────────────────────────────────────────────────┘
   postgres:
-    build:
-      context: .
-      dockerfile: Dockerfile.postgres
-    image: scailed/postgres:latest
+    image: postgres:16
     container_name: scailed-postgres
     restart: unless-stopped
     networks:
@@ -157,7 +152,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-pathfinder}
     volumes:
       - pgdata:/var/lib/postgresql/data                  # 持久化数据
-      - ./pg-init/:/docker-entrypoint-initdb.d/:ro       # AGE 安装 + Schema 初始化
+      - ./pg-init/02_schema.sql:/docker-entrypoint-initdb.d/02_schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pathfinder} -d ${POSTGRES_DB:-pathfinder}"]
       interval: 10s
@@ -166,7 +161,6 @@ services:
       start_period: 30s
     command: >
       postgres
-      -c shared_preload_libraries='age'
       -c max_connections=100
       -c shared_buffers=256MB
       -c effective_cache_size=768MB
