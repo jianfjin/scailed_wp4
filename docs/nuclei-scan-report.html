@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Nuclei Security Scan Report — SCAILED Pathfinder</title>
+<style>
+  :root{--bg:#0f172a;--surface:#1e293b;--border:#334155;--text:#e2e8f0;--muted:#94a3b8;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--info:#3b82f6;--low:#22c55e;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'JetBrains Mono','Fira Code','Cascadia Code',monospace;background:var(--bg);color:var(--text);line-height:1.6;padding:0}
+  .container{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
+  h1{font-size:1.6rem;font-weight:700;margin-bottom:.3rem;color:#f1f5f9}
+  .subtitle{color:var(--muted);font-size:.85rem;margin-bottom:2rem}
+  .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center}
+  .stat-card .num{font-size:2rem;font-weight:700}
+  .stat-card .label{font-size:.75rem;color:var(--muted);margin-top:.25rem}
+  .stat-card.critical .num{color:var(--red)}
+  .stat-card.high .num{color:#f97316}
+  .stat-card.medium .num{color:var(--yellow)}
+  .stat-card.low .num{color:var(--green)}
+  .stat-card.info .num{color:var(--info)}
+  h2{font-size:1.1rem;margin:2rem 0 1rem;color:#f1f5f9;border-bottom:1px solid var(--border);padding-bottom:.5rem}
+  .finding{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:.75rem}
+  .finding-header{display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem}
+  .badge{display:inline-block;font-size:.7rem;padding:.15rem .5rem;border-radius:4px;font-weight:600;text-transform:uppercase}
+  .badge.critical{background:rgba(239,68,68,.2);color:var(--red)}
+  .badge.high{background:rgba(249,115,22,.2);color:#f97316}
+  .badge.medium{background:rgba(234,179,8,.2);color:var(--yellow)}
+  .badge.low{background:rgba(34,197,94,.2);color:var(--green)}
+  .badge.info{background:rgba(59,130,246,.2);color:var(--info)}
+  .finding-title{font-weight:600;font-size:.9rem}
+  .finding-meta{font-size:.78rem;color:var(--muted);margin-top:.25rem}
+  .finding-detail{font-size:.82rem;color:var(--muted);margin-top:.5rem;padding:.5rem;background:rgba(0,0,0,.2);border-radius:4px}
+  .footer{text-align:center;color:var(--muted);font-size:.75rem;margin-top:3rem;padding-top:1rem;border-top:1px solid var(--border)}
+  .timing{color:var(--muted);font-size:.78rem;margin-bottom:1.5rem}
+  .tech-tags{display:flex;flex-wrap:wrap;gap:.5rem;margin:.5rem 0}
+  .tech-tag{background:rgba(59,130,246,.15);color:var(--info);font-size:.75rem;padding:.2rem .5rem;border-radius:4px}
+  @media(max-width:640px){.summary-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🔐 Nuclei Security Scan Report</h1>
+<p class="subtitle">SCAILED Pathfinder — http://localhost:8647</p>
+
+<div class="summary-grid">
+  <div class="stat-card critical"><div class="num">0</div><div class="label">Critical</div></div>
+  <div class="stat-card high"><div class="num">0</div><div class="label">High</div></div>
+  <div class="stat-card medium"><div class="num">0</div><div class="label">Medium</div></div>
+  <div class="stat-card low"><div class="num">23</div><div class="label">Low / Info</div></div>
+</div>
+
+<p class="timing">Engine: Nuclei v3.8.0 • Templates: v10.4.3 (6,162 templates) • Scan time: ~2m</p>
+
+<h2>✅ No Vulnerabilities Found (Critical/High/Medium)</h2>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem;text-align:center;color:var(--green);font-size:1.1rem">
+  All 6,162 security templates executed — zero vulnerabilities detected.
+</div>
+
+<h2>ℹ️ Low / Info Findings (23)</h2>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="badge info">INFO</span>
+    <span class="finding-title">WAF Detection: nginx</span>
+  </div>
+  <div class="finding-meta">http://localhost:8647 · template: waf-detect:nginxgeneric</div>
+  <div class="finding-detail">Nginx/1.27.5 detected as the web server. Standard for dev deployment.</div>
+</div>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="badge info">INFO</span>
+    <span class="finding-title">Technology Stack Detection</span>
+  </div>
+  <div class="finding-meta">http://localhost:8647 · template: tech-detect:nginx</div>
+  <div class="finding-detail">
+    <div class="tech-tags">
+      <span class="tech-tag">nginx 1.27.5</span>
+      <span class="tech-tag">Traefik</span>
+      <span class="tech-tag">Python/FastAPI</span>
+      <span class="tech-tag">PostgreSQL</span>
+    </div>
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="badge low">LOW</span>
+    <span class="finding-title">Missing HTTP Security Headers (11)</span>
+  </div>
+  <div class="finding-meta">http://localhost:8647</div>
+  <div class="finding-detail">
+    <strong>Missing headers:</strong><br>
+    • Content-Security-Policy<br>
+    • Strict-Transport-Security<br>
+    • X-Frame-Options<br>
+    • X-Content-Type-Options<br>
+    • Referrer-Policy<br>
+    • Permissions-Policy<br>
+    • Cross-Origin-Embedder-Policy<br>
+    • Cross-Origin-Opener-Policy<br>
+    • Cross-Origin-Resource-Policy<br>
+    • Clear-Site-Data<br>
+    • X-Permitted-Cross-Domain-Policies<br><br>
+    <strong>Impact:</strong> Low for dev/internal. Production deployment should configure these in Traefik middleware.
+  </div>
+</div>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="badge info">INFO</span>
+    <span class="finding-title">TLS Version: TLS 1.2 &amp; 1.3</span>
+  </div>
+  <div class="finding-meta">localhost:8647 · template: tls-version</div>
+  <div class="finding-detail">Both TLS 1.2 and 1.3 enabled. TLS 1.3 is modern; TLS 1.2 for compatibility. Acceptable for dev.</div>
+</div>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="badge low">LOW</span>
+    <span class="finding-title">Self-Signed SSL Certificate</span>
+  </div>
+  <div class="finding-meta">localhost:8647 · CN: TRAEFIK DEFAULT CERT</div>
+  <div class="finding-detail">Traefik default self-signed certificate. Expected in development. Use Let's Encrypt in production.</div>
+</div>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="badge info">INFO</span>
+    <span class="finding-title">nginx Version Disclosure</span>
+  </div>
+  <div class="finding-meta">http://localhost:8647 · nginx/1.27.5</div>
+  <div class="finding-detail">nginx version exposed in Server header. Production should set <code>server_tokens off;</code> in Traefik.</div>
+</div>
+
+<div class="finding">
+  <div class="finding-header">
+    <span class="badge info">INFO</span>
+    <span class="finding-title">Miscellaneous Detections</span>
+  </div>
+  <div class="finding-meta">SNMP, SSL DNS Names, CAA Fingerprint</div>
+  <div class="finding-detail">
+    • SNMP service detection scan (localhost)<br>
+    • SSL DNS names: traefik internal domain<br>
+    • CAA fingerprint: no DNS CAA record (expected for local dev)
+  </div>
+</div>
+
+<h2>🔧 Recommendations</h2>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1rem">
+  <ol style="padding-left:1.2rem;color:var(--text);font-size:.88rem">
+    <li style="margin-bottom:.5rem"><strong>Production readiness:</strong> Add security headers via Traefik middleware (CSP, HSTS, X-Frame-Options, etc.)</li>
+    <li style="margin-bottom:.5rem"><strong>SSL:</strong> Replace self-signed cert with Let's Encrypt in production</li>
+    <li style="margin-bottom:.5rem"><strong>Version hiding:</strong> Set <code>server_tokens off</code> in Traefik config</li>
+    <li style="margin-bottom:.5rem"><strong>Rate limiting:</strong> Already configured in FastAPI middleware (100 req/min) — consider Traefik-level too</li>
+    <li style="margin-bottom:.5rem"><strong>Auth:</strong> API auth (Bearer token) is in place — good. Ensure demo token rotation policy.</li>
+  </ol>
+</div>
+
+<div class="footer">
+  Generated with Nuclei v3.8.0 · projectdiscovery.io · Target: SCAILED Pathfinder (scailed_wp4)
+</div>
+
+</div>
+</body>
+</html>
