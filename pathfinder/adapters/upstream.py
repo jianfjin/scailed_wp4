@@ -119,6 +119,8 @@ _WP8_RULE_NORMALIZERS: dict[str, dict[str, str]] = {
         "source_doc_ref":  "source_doc_ref",
         "rule_version":    "rule_version",
         "parent_rule_id":  "parent_rule_id",
+        "effective_from":  "effective_from",
+        "effective_until": "effective_until",
     },
 }
 

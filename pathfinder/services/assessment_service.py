@@ -22,7 +22,6 @@ Legacy: USE_AGE=1 or use_age=True also enables AGE (deprecated).
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 from pathlib import Path
@@ -93,24 +92,25 @@ class AssessmentService:
             self.startup_check()
 
     def _load_demo_data(self) -> None:
-        """Load WP2/WP3/WP8 fixture data (zero-config, no HTTP dependency).
+        """Load WP2/WP3/WP8 data from local mock REST services (zero Docker dep).
 
-        Loads from services/mock/fixtures/*.json — same files the mock
-        REST services serve in deployed mode.  This keeps the demo path
-        consistent with the upstream path and eliminates hardcoded demo data.
+        Starts an an ``UpstreamClient`` pointed at the local mock services
+        (started by the VM agent) and reuses ``_load_upstream_data`` so both
+        paths converge on exactly the same conversion logic.
         """
-        _fixtures = Path(__file__).parent.parent.parent / "services" / "mock" / "fixtures"
+        import asyncio
 
-        # ── WP8: rules ──────────────────────────────────────────────
-        self.rule_loader = RuleLoader([])  # will be rebuilt after WP2
-        self.rules = self.rule_loader.load_file(str(_fixtures / "wp8_data.json"))
+        client = UpstreamClient(
+            wp2_url="http://localhost:8102/api/v1",
+            wp3_url="http://localhost:8103/api/v1",
+            wp8_url="http://localhost:8108/api/v1",
+            max_retries=2,
+            retry_delay=0.5,
+        )
+        asyncio.run(client.startup())
 
-        # ── WP2: stakeholders → questionnaires ──────────────────────
-        with open(_fixtures / "wp2_data.json") as _f:
-            _wp2_stakeholders: list[dict] = json.load(_f)
-        # Merge in the 5 stakeholder types that WP3 nodes and WP8 rules
-        # reference (WP2 uses a different naming scheme like pharma-sme-001
-        # that doesn't match the rest of the pipeline).
+        # Inject the 5 demo-compatible stakeholder types so WP3 nodes and WP8
+        # rules (which reference biotech-sme etc.) find matching questionnaires.
         _DEMO_TYPES = (
             "biotech-sme",
             "ai-factory-operator",
@@ -118,91 +118,24 @@ class AssessmentService:
             "health-data-infrastructure",
             "research-infrastructure",
         )
-        _template = demo_questionnaires()[0]
-        _seen: set[str] = set()
-        _questionnaires: list[Questionnaire] = []
-
-        for _record in _wp2_stakeholders:
-            _st = str(_record.get("stakeholder_type", "")).strip()
-            if not _st or _st in _seen:
-                continue
-            _seen.add(_st)
-            _label = str(_record.get("description") or _st)
-            _questionnaires.append(
-                Questionnaire(
-                    stakeholder_type=_st,
-                    version=_template.version,
-                    title=f"EHDS readiness assessment for {_label}",
-                    target_scenarios=_template.target_scenarios,
-                    questions=_template.questions,
-                )
-            )
-        # Add the 5 demo-compatible types so WP3/WP8 matching works
+        _existing = {r.get("stakeholder_type", "") for r in client.stakeholders}
         for _st in _DEMO_TYPES:
-            if _st not in _seen:
-                _seen.add(_st)
-                _questionnaires.append(
-                    Questionnaire(
-                        stakeholder_type=_st,
-                        version=_template.version,
-                        title=f"EHDS readiness assessment for {_st}",
-                        target_scenarios=_template.target_scenarios,
-                        questions=_template.questions,
-                    )
-                )
-        self.questionnaires = _questionnaires
-        self.questionnaire_engine = QuestionnaireEngine(self.questionnaires)
+            if _st not in _existing:
+                client.stakeholders.append({
+                    "stakeholder_type": _st,
+                    "description": _st.replace("-", " ").title(),
+                    "capabilities": [],
+                    "pain_points": [],
+                })
 
-        # Rebuild rule loader with correct questionnaires (tests need them)
-        self.rule_loader = RuleLoader(self.questionnaires)
-        self.rules = self.rule_loader.load_file(str(_fixtures / "wp8_data.json"))
+        # Delegate to the same conversion logic as the upstream path.
+        self._load_upstream_data(client)
 
-        # ── WP3: roadmap nodes + edges ──────────────────────────────
-        with open(_fixtures / "wp3_data.json") as _f:
-            _wp3_raw: dict = json.load(_f)
-        _nodes = [
-            RoadmapNode(
-                node_id=n["node_id"],
-                label=n.get("label", n["node_id"]),
-                description=n.get("description", ""),
-                dimension=n.get("dimension", "governance"),
-                maturity_level=n.get("maturity_level", 1),
-                stakeholder_types=tuple(n.get("stakeholder_types", ["all"])),
-                prerequisites=tuple(n.get("prerequisites", [])),
-                source_wp=n.get("source_wp", "WP3"),
-                source_doc_ref=n.get("source_doc_ref", "fixture"),
-                confidence=n.get("confidence", 1.0),
-                metadata=n.get("metadata", {}),
-            )
-            for n in _wp3_raw.get("nodes", [])
-        ]
-        _edges = [
-            RoadmapEdge(
-                edge_id=e["edge_id"],
-                from_node_id=e["from_node_id"],
-                to_node_id=e["to_node_id"],
-                relation_type=e.get("relation_type", "prerequisite"),
-                required=e.get("required", True),
-                source_doc_ref=e.get("source_doc_ref", "fixture"),
-            )
-            for e in _wp3_raw.get("edges", [])
-        ]
-        self._active_roadmap = (_nodes, _edges)
+        # Re-key import report from "upstream" → "demo".
+        self.import_reports["demo"] = self.import_reports.pop("upstream")
 
-        self.audit_log = AuditLog()
-        self.sessions: dict[str, dict[str, object]] = {}
-        self.import_reports = {
-            "demo": import_structured_payload(
-                "demo",
-                {
-                    "stakeholder_types": self.questionnaire_engine.stakeholder_types(),
-                    "roadmap_nodes": [n.to_dict() for n in _nodes],
-                    "roadmap_edges": [e.to_dict() for e in _edges],
-                    "rules": [r.to_dict() for r in self.rules],
-                    "warnings": ["demo mode: loaded from WP2/WP3/WP8 fixture files"],
-                },
-            )
-        }
+        # Clean up the aiohttp session.
+        asyncio.run(client.close())
 
     def _load_upstream_data(self, client: UpstreamClient) -> None:
         """Load data from UpstreamClient cache (mock REST or real WP services).
@@ -259,6 +192,8 @@ class AssessmentService:
 
         # WP8: rules (already domain models from UpstreamClient) + tests
         self.rules = client.rules
+        if self.rules and self.rule_loader.active_version is None:
+            self.rule_loader.active_version = self.rules[0].rule_version
 
         self.audit_log = AuditLog()
         self.sessions: dict[str, dict[str, object]] = {}
