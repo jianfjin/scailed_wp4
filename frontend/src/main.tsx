@@ -47,9 +47,9 @@ type PathfinderReport = {
       rule_id: string;
       rule_type?: string;
       priority?: number;
-      action?: {
-        title?: string;
-        text?: string;
+      action: {
+        title: string;  // backend model guarantees non-null
+        text: string;
         node_id?: string;
         warning?: string;
         block?: boolean;
@@ -160,15 +160,49 @@ function MultiChoiceInput({
 }
 
 function EvidenceList({ title, items }: { title: string; items?: string[] }) {
-  if (!items?.length) return null;
+  if (!items || items.length === 0) return null;
   return (
     <div className="evidence-block">
       <h3>{title}</h3>
       <ul>
-        {items.map((item) => <li key={item}>{item}</li>)}
+        {items.map((item, i) => <li key={i as unknown as string}>{item}</li>)}
       </ul>
     </div>
   );
+}
+
+/* ─── rule group renderer (config-driven, single source of truth) ─── */
+
+type Rule = NonNullable<NonNullable<PathfinderReport["recommended_path"]>["triggered_rules"]>[number];
+
+function renderRuleGroup(
+  rules: Rule[],
+  level: string,
+  title: string,
+  useDetails: boolean,
+) {
+  if (rules.length === 0) return null;
+  const content = (
+    <dl>
+      {rules.map((rule) => (
+        <div key={rule.rule_id} className="rule-item">
+          <dt className={"rule-id" + (level !== "info" ? " " + level : "")}>
+            {rule.rule_id}
+          </dt>
+          <dd>{rule.action.warning || rule.action.text || "no description"}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+  if (useDetails) {
+    return (
+      <details>
+        <summary className="rule-group-toggle">{title} ({rules.length})</summary>
+        {content}
+      </details>
+    );
+  }
+  return content;
 }
 
 function ReportSummary({ report, assessmentId }: { report: PathfinderReport; assessmentId?: string }) {
@@ -306,42 +340,9 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
             </div>
           )}
         </div>
-        {ruleBreakdown.blockers.length > 0 && (
-          <dl>
-            {ruleBreakdown.blockers.map((rule) => (
-              <div key={rule.rule_id} className="rule-item">
-                <dt className="rule-id blocker">{rule.rule_id}</dt>
-                <dd>{rule.action?.text || "no description"}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-        {ruleBreakdown.withWarning.length > 0 && (
-          <details>
-            <summary className="rule-group-toggle">Warnings ({ruleBreakdown.withWarning.length})</summary>
-            <dl>
-              {ruleBreakdown.withWarning.map((rule) => (
-                <div key={rule.rule_id} className="rule-item">
-                  <dt className="rule-id warning">{rule.rule_id}</dt>
-                  <dd>{rule.action?.warning || rule.action?.text || "no description"}</dd>
-                </div>
-              ))}
-            </dl>
-          </details>
-        )}
-        {ruleBreakdown.info.length > 0 && (
-          <details>
-            <summary className="rule-group-toggle">Advisory rules ({ruleBreakdown.info.length})</summary>
-            <dl>
-              {ruleBreakdown.info.map((rule) => (
-                <div key={rule.rule_id} className="rule-item">
-                  <dt className="rule-id">{rule.rule_id}</dt>
-                  <dd>{rule.action?.text || "no description"}</dd>
-                </div>
-              ))}
-            </dl>
-          </details>
-        )}
+        {renderRuleGroup(ruleBreakdown.blockers, "blocker", "Blockers", false)}
+        {renderRuleGroup(ruleBreakdown.withWarning, "warning", "Warnings", true)}
+        {renderRuleGroup(ruleBreakdown.info, "info", "Advisory rules", true)}
       </div>
 
       {assessmentId && (

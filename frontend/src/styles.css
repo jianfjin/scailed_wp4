@@ -438,6 +438,11 @@ h1 {
 
 .rule-count[data-level="warning"] strong { color: #92400e; }
 
+.rule-count[data-level="info"] {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
 .rule-count[data-level="info"] strong { color: #166534; }
 
 .rule-item {
@@ -467,7 +472,8 @@ h1 {
   margin: 8px 0 4px;
 }
 
-details.rule-impact details {
+/* Spacing between adjacent detail blocks inside rule-impact */
+.rule-impact details + details {
   margin-top: 4px;
 }
 

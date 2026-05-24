@@ -40999,7 +40999,7 @@
   ],
   "patch_info": {
     "script": "patch_roadmap_connectivity.py",
-    "edges_added": 283,
+    "edges_added": 0,
     "connectivity_l0_4": "500/500"
   }
 }
