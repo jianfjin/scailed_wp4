@@ -13,6 +13,7 @@ Switch to real consortium APIs by changing env vars — zero code change.
 
 from __future__ import annotations
 
+from datetime import date
 import logging
 import os
 from typing import Optional
@@ -123,6 +124,17 @@ _WP8_RULE_NORMALIZERS: dict[str, dict[str, str]] = {
         "effective_until": "effective_until",
     },
 }
+
+
+def _parse_date(raw: str | None) -> date | None:
+    """Parse an ISO-8601 date string, returning None for empty/null values."""
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except (ValueError, TypeError):
+        logger.warning("Invalid date value: %r (returning None)", raw)
+        return None
 
 
 def _normalize_record(
@@ -352,8 +364,8 @@ class UpstreamClient:
                     block=r["action"].get("block", False),
                 ),
                 compliance_refs=tuple(r.get("compliance_refs", [])),
-                effective_from=None,
-                effective_until=None,
+                effective_from=_parse_date(r.get("effective_from")),
+                effective_until=_parse_date(r.get("effective_until")),
                 parent_rule_id=r.get("parent_rule_id"),
                 source_doc_ref=r.get("source_doc_ref", "demo-data"),
                 rule_version=r.get("rule_version", "demo-rules-v1"),
