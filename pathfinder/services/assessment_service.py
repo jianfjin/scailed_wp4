@@ -25,6 +25,8 @@ from pathfinder.core.imports import import_structured_payload
 from pathfinder.core.models import ImportReport, Questionnaire, RoadmapEdge, RoadmapNode
 from pathfinder.core.questionnaire import QuestionnaireEngine
 from pathfinder.core.recommend import build_recommendation
+from pathfinder.core.repositories.connection import get_pool as _get_pool
+from pathfinder.core.repositories import audit_repo, session_repo
 from pathfinder.core.rules.loader import RuleLoader
 from pathfinder.core.solver import PathfinderSolver
 
@@ -44,6 +46,64 @@ class AssessmentService:
         nodes, edges = self._active_roadmap
         self.graph = InMemoryRoadmapGraph(nodes, edges)
         self.solver = PathfinderSolver(self.graph)
+
+    # ── PG persistence helpers (best-effort, non-blocking) ──────
+
+    def _pg_conn(self):
+        """Get an asyncpg connection from the global pool, or None."""
+        pool = _get_pool()
+        if pool is None:
+            return None
+        try:
+            import asyncio
+            loop = asyncio.new_event_loop()
+            conn = loop.run_until_complete(pool.acquire())
+            loop.close()
+            return conn
+        except Exception:
+            return None
+
+    def _pg_write_audit(self, event: dict) -> None:
+        """Persist an audit event synchronously (fail-closed for audit)."""
+        conn = self._pg_conn()
+        if conn is None:
+            return  # PG unavailable — audit stays in memory
+        try:
+            import asyncio
+            loop = asyncio.new_event_loop()
+            loop.run_until_complete(audit_repo.save_audit_event(conn, event))
+            loop.run_until_complete(_get_pool().release(conn))
+            loop.close()
+        except Exception:
+            # Audit write failed — data still in memory AuditLog
+            pass
+
+    def _pg_write_session(self, session: dict) -> None:
+        """Persist session data asynchronously (best-effort)."""
+        conn = self._pg_conn()
+        if conn is None:
+            return
+        try:
+            import asyncio
+            from datetime import datetime, timezone
+            loop = asyncio.new_event_loop()
+            # Map in-memory session keys → PG assess.assessment_sessions keys
+            pg = {
+                "id": session.get("assessment_id"),
+                "stakeholder_type": session.get("stakeholder_type"),
+                "status": session.get("status", "in_progress"),
+                "answers": session.get("answers"),
+                "current_node": None,
+                "recommendations": session.get("recommendation"),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "completed_at": datetime.now(timezone.utc).isoformat()
+                    if session.get("status") == "complete" else None,
+            }
+            loop.run_until_complete(session_repo.save_session(conn, pg))
+            loop.run_until_complete(_get_pool().release(conn))
+            loop.close()
+        except Exception:
+            pass
 
     def _load_demo_data(self) -> None:
         """Load WP2/WP3/WP8 data from local mock REST services (zero Docker dep).
@@ -195,6 +255,7 @@ class AssessmentService:
         }
         self.sessions[session_id] = session
         self.audit_log.append("assessment_session_created", session, ip=ip, user_agent=user_agent)
+        self._pg_write_session(session)
         return session
 
     def submit_answers(
@@ -220,6 +281,7 @@ class AssessmentService:
             ip=ip,
             user_agent=user_agent,
         )
+        self._pg_write_session(session)
         return state.to_dict()
 
     def generate_recommendation(
@@ -250,6 +312,7 @@ class AssessmentService:
             ip=ip,
             user_agent=user_agent,
         )
+        self._pg_write_session(session)
         return recommendation
 
     async def generate_recommendation_async(
