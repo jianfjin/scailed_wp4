@@ -1,63 +1,62 @@
-"""Rule bundle validation."""
+"""Rule bundle validation — schema-driven + semantic checks.
+
+Loads schema.json as the structural source of truth (condition DSL, action fields,
+rule shape), then applies semantic rules (duplicate IDs) that cannot be expressed
+in JSON Schema.
+
+Conflict resolution between overlapping conditions is handled at runtime by
+priority ordering (see ComplianceEvaluator.triggered_rules).
+"""
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
 from pathfinder.core.exceptions import RuleValidationError
 
-REQUIRED_RULE_FIELDS = {
-    "rule_id",
-    "rule_type",
-    "priority",
-    "applies_to",
-    "condition",
-    "action",
-    "compliance_refs",
-}
-VALID_RULE_TYPES = {"eligibility", "exclusion", "preference", "override"}
+_SCHEMA_PATH = Path(__file__).parent / "schema.json"
+
+
+def _load_schema() -> dict[str, Any]:
+    """Load the canonical rule bundle JSON Schema."""
+    try:
+        return json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError) as exc:
+        raise RuleValidationError(f"cannot load rule schema: {exc}") from exc
 
 
 def validate_rule_bundle(bundle: dict[str, Any]) -> None:
-    if not isinstance(bundle.get("version"), str):
-        raise RuleValidationError("rule bundle requires string version")
-    rules = bundle.get("rules")
-    if not isinstance(rules, list) or not rules:
-        raise RuleValidationError("rule bundle requires non-empty rules list")
-    tests = bundle.get("tests")
-    if not isinstance(tests, list):
-        raise RuleValidationError("rule bundle requires tests list")
+    """Validate a rule bundle using schema.json + semantic checks.
 
+    Steps:
+      1. Load schema.json (fail fast if missing/corrupt).
+      2. Run jsonschema validation against the bundle (covers structure,
+         condition DSL, action shape, required fields, types, enums).
+      3. Semantic check: no duplicate rule_id.
+
+    Raises RuleValidationError on first failure.
+    """
+    # ── Step 1: load schema (cached) ────────────────────────────────
+    import jsonschema
+
+    schema = _load_schema()
+
+    # ── Step 2: JSON Schema structural validation ───────────────────
+    try:
+        jsonschema.validate(instance=bundle, schema=schema)
+    except jsonschema.ValidationError as exc:
+        path = " → ".join(str(p) for p in exc.absolute_path) if exc.absolute_path else "(root)"
+        raise RuleValidationError(
+            f"schema validation failed at {path}: {exc.message}"
+        ) from exc
+
+    # ── Step 3: semantic check — duplicate rule_id ──────────────────
+    rules: list[dict[str, Any]] = bundle.get("rules", [])
     seen: set[str] = set()
-    conflict_keys: dict[tuple[str, str, str], str] = {}
     for raw_rule in rules:
-        missing = sorted(REQUIRED_RULE_FIELDS.difference(raw_rule))
-        if missing:
-            raise RuleValidationError(f"rule missing fields: {missing}")
-        rule_id = raw_rule["rule_id"]
+        rule_id: str = raw_rule["rule_id"]
         if rule_id in seen:
             raise RuleValidationError(f"duplicate rule_id: {rule_id}")
         seen.add(rule_id)
-        if raw_rule["rule_type"] not in VALID_RULE_TYPES:
-            raise RuleValidationError(f"invalid rule_type: {raw_rule['rule_type']}")
-        if not isinstance(raw_rule["applies_to"], list):
-            raise RuleValidationError(f"applies_to must be list: {rule_id}")
-        if not isinstance(raw_rule["action"], dict):
-            raise RuleValidationError(f"action must be object: {rule_id}")
-        key = (
-            raw_rule["rule_type"],
-            json_like(raw_rule["applies_to"]),
-            json_like(raw_rule["condition"]),
-        )
-        existing = conflict_keys.get(key)
-        if existing:
-            raise RuleValidationError(f"conflicting duplicate rule logic: {existing} and {rule_id}")
-        conflict_keys[key] = rule_id
-
-    for test in tests:
-        if "name" not in test or "state" not in test or "expected_rule_ids" not in test:
-            raise RuleValidationError("rule tests require name, state, expected_rule_ids")
-
-
-def json_like(value: object) -> str:
-    return repr(value)

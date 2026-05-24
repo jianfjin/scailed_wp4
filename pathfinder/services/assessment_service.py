@@ -24,13 +24,13 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 
 from pathfinder.adapters.demo_data import (
     demo_questionnaires,
     demo_roadmap,
-    demo_rule_bundle,
 )
 from pathfinder.adapters.upstream import UpstreamClient
 from pathfinder.core.audit import AuditLog
@@ -99,7 +99,12 @@ class AssessmentService:
         self._active_roadmap = (nodes, edges)
         self.questionnaire_engine = QuestionnaireEngine(self.questionnaires)
         self.rule_loader = RuleLoader(self.questionnaires)
-        self.rules = self.rule_loader.load_bundle(demo_rule_bundle())
+        # Load rules from WP8 fixture (same source as upstream mode, no HTTP dependency)
+        _fixture_path = (
+            Path(__file__).parent.parent.parent
+            / "services" / "mock" / "fixtures" / "wp8_data.json"
+        )
+        self.rules = self.rule_loader.load_file(str(_fixture_path))
         self.audit_log = AuditLog()
         self.sessions: dict[str, dict[str, object]] = {}
         self.import_reports = {
