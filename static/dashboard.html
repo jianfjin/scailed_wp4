@@ -176,10 +176,14 @@ function isMalicious(ip, abusiveIps){
 
 async function loadDashboard(){
   try{
+    // Extract token from current URL query string (supports ?token=xxx)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const headers = token ? {'Authorization': 'Bearer ' + token} : {};
     const [recentRes,statsRes,abusiveRes] = await Promise.all([
-      fetch('/admin/api/recent?n=100'),
-      fetch('/admin/api/stats'),
-      fetch('/admin/api/abusive')
+      fetch('/admin/api/recent?n=100', {headers}),
+      fetch('/admin/api/stats', {headers}),
+      fetch('/admin/api/abusive', {headers})
     ]);
     const recent = await recentRes.json();
     const stats = await statsRes.json();
