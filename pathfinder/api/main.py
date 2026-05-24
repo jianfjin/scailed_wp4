@@ -16,12 +16,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware import Middleware as StarletteMiddleware
 
+from pathfinder.api.dashboard import router as dashboard_router
 from pathfinder.api.middleware import (
     AuditWhitelistMiddleware,
     DefaultDenyAuthMiddleware,
     RateLimitMiddleware,
     require_admin_token,
     require_demo_token,
+)
+from pathfinder.core.repositories.connection import close_pool, init_pool
+from pathfinder.middleware.request_logger import (
+    RequestLoggingMiddleware,
+    get_logger,
 )
 from pathfinder.api.schemas import (
     AdminImportResponse,
@@ -66,18 +72,25 @@ def _get_service() -> AssessmentService:
 async def lifespan(app: FastAPI):
     global _service, _upstream_client
 
-    # ── Startup: fetch upstream data from Mock WP services ──
+    # ── Startup: PG pool + request logger ───────────────────
+    await init_pool()
+    logger_instance = get_logger()
+    await logger_instance.start_flush_task()
+
+    # ── Fetch upstream data from Mock WP services ───────────
     _upstream_client = UpstreamClient()
     await _upstream_client.startup()
 
-    # ── Create service with upstream data ──
+    # ── Create service with upstream data ───────────────────
     _service = AssessmentService(
         upstream_client=_upstream_client,
     )
 
     yield
 
-    # ── Shutdown ──
+    # ── Shutdown ────────────────────────────────────────────
+    await logger_instance.stop_flush_task()
+    await close_pool()
     await _upstream_client.close()
 
 
@@ -117,6 +130,9 @@ app.add_middleware(DefaultDenyAuthMiddleware, admin_token=ADMIN_TOKEN, demo_toke
 
 # Audit whitelist checker — warns on missing audit events.
 app.add_middleware(AuditWhitelistMiddleware, get_service=_get_service)
+
+# Request logging middleware (inner-middleware: records every request)
+app.add_middleware(RequestLoggingMiddleware)
 
 
 def _auth_error(detail: str) -> HTTPException:
@@ -282,6 +298,8 @@ def roadmap_node(node_id: str, authorization: str | None = Header(default=None))
 
 
 # ─── Admin ──────────────────────────────────────────────────────────
+
+app.include_router(dashboard_router)
 
 @app.post("/admin/import/wp2", response_model=AdminImportResponse)
 async def import_wp2(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:

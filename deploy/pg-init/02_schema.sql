@@ -145,3 +145,20 @@ VALUES
     ('all', 'v1.0-m3-freeze', 'init', 'Initial schema from council resolution 2026-05-13'),
     ('recommendation_rules', 'v1.0', 'init', 'Rule tree structure with parent_rule_id'),
     ('audit_log', 'v1.0', 'init', 'TRIGGER-based immutability with prev_hash chain');
+
+-- ─── 9. Request Log (看板数据源) ────────────────────────────────
+CREATE TABLE IF NOT EXISTS assess.request_log (
+    id              BIGSERIAL PRIMARY KEY,
+    timestamp       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    ip              TEXT NOT NULL,
+    method          TEXT NOT NULL,
+    endpoint        TEXT NOT NULL,
+    status_code     INT,
+    duration_ms     INT,
+    user_agent      TEXT,
+    error_message   TEXT,
+    assessment_id   TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_request_log_timestamp ON assess.request_log (timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_request_log_ip ON assess.request_log (ip);
+CREATE INDEX IF NOT EXISTS idx_request_log_status ON assess.request_log (status_code);

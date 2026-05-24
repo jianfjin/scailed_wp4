@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="10">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCAILED Pathfinder — Request Monitoring Dashboard</title>
+<style>
+/* ── Reset & Dark Theme ──────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{
+  font-family:'Segoe UI','Cantarell','Helvetica Neue',Arial,sans-serif;
+  background:#0d1117;color:#c9d1d9;padding:20px;min-height:100vh;
+  line-height:1.5;
+}
+h1{font-size:1.6rem;font-weight:600;margin-bottom:4px;color:#f0f6fc}
+h2{font-size:1.15rem;font-weight:600;margin-bottom:12px;color:#58a6ff;
+   border-bottom:1px solid #21262d;padding-bottom:6px}
+.subtitle{color:#8b949e;font-size:0.9rem;margin-bottom:20px}
+
+/* ── Stats Bar ──────────────────────────────────────────────── */
+.stats-bar{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:12px;margin-bottom:24px
+}
+.stat-card{
+  background:#161b22;border:1px solid #30363d;border-radius:8px;
+  padding:14px 16px;text-align:center
+}
+.stat-card .value{font-size:1.7rem;font-weight:700;color:#f0f6fc}
+.stat-card .label{font-size:0.8rem;color:#8b949e;margin-top:2px}
+.stat-card.warn .value{color:#d29922}
+.stat-card.danger .value{color:#f85149}
+.stat-card.ok .value{color:#3fb950}
+
+/* ── Table ────────────────────────────────────────────────────── */
+.section{margin-bottom:28px;background:#161b22;border:1px solid #30363d;
+         border-radius:8px;padding:16px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:0.85rem}
+th{text-align:left;padding:8px 6px;border-bottom:2px solid #30363d;
+   color:#8b949e;font-weight:600;white-space:nowrap}
+td{padding:6px;border-bottom:1px solid #21262d;white-space:nowrap;
+   vertical-align:middle}
+tr:hover td{background:#1c2128}
+tr.sqli-attempt td{background:#2d0f14}
+tr.sqli-attempt:hover td{background:#3d151c}
+
+/* ── Badges ──────────────────────────────────────────────────── */
+.badge{
+  display:inline-block;font-size:0.7rem;font-weight:600;padding:1px 7px;
+  border-radius:10px;margin-left:4px;vertical-align:middle
+}
+.badge.malicious{background:#f85149;color:#fff}
+.badge.error{background:#d29922;color:#000}
+.badge.ok{background:#3fb950;color:#000}
+
+/* ── Error aggregation ────────────────────────────────────────── */
+.error-list{list-style:none}
+.error-list li{
+  padding:6px 0;border-bottom:1px solid #21262d;
+  display:flex;justify-content:space-between;align-items:center
+}
+.error-list li:last-child{border-bottom:none}
+.error-msg{color:#f85149;font-family:'Cascadia Code','Fira Code','Consolas',monospace;
+            font-size:0.8rem}
+
+/* ── Abusive IPs ──────────────────────────────────────────────── */
+.ip-danger{color:#f85149;font-weight:700}
+
+/* ── Status indicator dots ────────────────────────────────────── */
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.dot.green{background:#3fb950}
+.dot.yellow{background:#d29922}
+.dot.red{background:#f85149}
+
+/* ── Timestamp relative ──────────────────────────────────────── */
+.ts{color:#8b949e;font-size:0.8rem}
+
+/* ── Empty state ──────────────────────────────────────────────── */
+.empty{color:#484f58;text-align:center;padding:24px;font-style:italic}
+</style>
+</head>
+<body>
+
+<h1>SCAILED Pathfinder</h1>
+<p class="subtitle">Request Monitoring Dashboard — <span id="last-updated">loading...</span></p>
+
+<!-- ── Stats Bar ──────────────────────────────────────────────── -->
+<div class="stats-bar" id="stats-bar">
+  <div class="stat-card"><div class="value" id="stat-total">—</div><div class="label">Total Requests</div></div>
+  <div class="stat-card warn"><div class="value" id="stat-errors">—</div><div class="label">Errors</div></div>
+  <div class="stat-card" id="stat-error-rate-card"><div class="value" id="stat-error-rate">—</div><div class="label">Error Rate</div></div>
+  <div class="stat-card ok"><div class="value" id="stat-ips">—</div><div class="label">Unique IPs</div></div>
+  <div class="stat-card"><div class="value" id="stat-active">—</div><div class="label">Active Now</div></div>
+</div>
+
+<!-- ── Recent Requests ────────────────────────────────────────── -->
+<div class="section">
+  <h2>Recent Requests</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Timestamp</th><th>IP</th><th>Method</th><th>Endpoint</th>
+        <th>Status</th><th>Duration</th><th>Flags</th>
+      </tr>
+    </thead>
+    <tbody id="recent-tbody">
+      <tr><td colspan="7" class="empty">Waiting for data...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Error Aggregation ──────────────────────────────────────── -->
+<div class="section">
+  <h2>Error Aggregation (last 60 min)</h2>
+  <ul class="error-list" id="error-list">
+    <li class="empty">No errors yet</li>
+  </ul>
+</div>
+
+<!-- ── Abusive IPs ────────────────────────────────────────────── -->
+<div class="section">
+  <h2>Abusive IPs (&gt;20 req/60s)</h2>
+  <table>
+    <thead>
+      <tr><th>IP</th><th>Requests</th><th>Endpoints</th></tr>
+    </thead>
+    <tbody id="abusive-tbody">
+      <tr><td colspan="3" class="empty">No abusive IPs detected</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+'use strict';
+
+function escapeHtml(str){
+  if(typeof str !== 'string') str = String(str||'');
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function tsAgo(ts){
+  if(typeof ts === 'number' && ts > 1e9) ts = ts * 1000;
+  const now = Date.now();
+  const diff = now - (typeof ts === 'number' ? ts : Date.parse(ts));
+  if(diff < 0) return 'just now';
+  const s = Math.floor(diff/1000);
+  if(s < 5) return 'just now';
+  if(s < 60) return s+'s ago';
+  const m = Math.floor(s/60);
+  if(m < 60) return m+'m ago';
+  const h = Math.floor(m/60);
+  if(h < 24) return h+'h ago';
+  return Math.floor(h/24)+'d ago';
+}
+
+function tsDisplay(ts){
+  if(typeof ts === 'number' && ts > 1e9) ts = ts * 1000;
+  const d = new Date(typeof ts === 'number' ? ts : ts);
+  return d.toLocaleTimeString();
+}
+
+function isSqlInjectionAttempt(entry){
+  const ua = (entry.user_agent||'').toLowerCase();
+  const ep = (entry.endpoint||'').toLowerCase();
+  const body = (entry.error_message||'').toLowerCase();
+  const sqli = /'(\s*or\s*|--|union|select\s+from|drop\s+table|1\s*=\s*1)/i;
+  return sqli.test(ep) || sqli.test(ua) || sqli.test(body);
+}
+
+function isMalicious(ip, abusiveIps){
+  return abusiveIps.some(a => a.ip === ip);
+}
+
+async function loadDashboard(){
+  try{
+    const [recentRes,statsRes,abusiveRes] = await Promise.all([
+      fetch('/admin/api/recent?n=100'),
+      fetch('/admin/api/stats'),
+      fetch('/admin/api/abusive')
+    ]);
+    const recent = await recentRes.json();
+    const stats = await statsRes.json();
+    const abusive = await abusiveRes.json();
+
+    document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+
+    // Stats
+    document.getElementById('stat-total').textContent = stats.total_requests;
+    document.getElementById('stat-errors').textContent = stats.error_count;
+    document.getElementById('stat-error-rate').textContent = stats.error_rate+'%';
+    document.getElementById('stat-ips').textContent = stats.unique_ips;
+    document.getElementById('stat-active').textContent = stats.active_now;
+
+    const rateCard = document.getElementById('stat-error-rate-card');
+    if(stats.error_rate > 20) rateCard.className = 'stat-card danger';
+    else if(stats.error_rate > 5) rateCard.className = 'stat-card warn';
+    else rateCard.className = 'stat-card';
+
+    // Recent requests
+    const tbody = document.getElementById('recent-tbody');
+    if(!recent || recent.length === 0){
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">Waiting for data...</td></tr>';
+    } else {
+      tbody.innerHTML = recent.slice().reverse().map(e => {
+        const status = e.status_code || '—';
+        const isErr = status >= 400;
+        const isSqli = isSqlInjectionAttempt(e);
+        const isMal = isMalicious(e.ip, abusive);
+        const rowClass = isSqli ? 'sqli-attempt' : '';
+        const badges = [];
+        if(isSqli) badges.push('<span class="badge malicious">SQLi</span>');
+        if(isMal) badges.push('<span class="badge malicious">RATELIMIT</span>');
+        if(isErr) badges.push('<span class="badge error">'+status+'</span>');
+        return '<tr class="'+rowClass+'">'+
+          '<td class="ts" title="'+escapeHtml(tsDisplay(e.timestamp))+'">'+escapeHtml(tsAgo(e.timestamp))+'</td>'+
+          '<td>'+escapeHtml(e.ip||'')+'</td>'+
+          '<td>'+escapeHtml(e.method||'')+'</td>'+
+          '<td>'+escapeHtml(e.endpoint||'')+'</td>'+
+          '<td><span class="dot '+(isErr?'red':'green')+'"></span>'+escapeHtml(String(status))+'</td>'+
+          '<td>'+(e.duration_ms != null ? e.duration_ms+'ms' : '—')+'</td>'+
+          '<td>'+badges.join(' ')+'</td>'+
+        '</tr>';
+      }).join('');
+    }
+
+    // Error aggregation
+    const errList = document.getElementById('error-list');
+    const errors = recent.filter(e => e.status_code && e.status_code >= 400);
+    if(errors.length === 0){
+      errList.innerHTML = '<li class="empty">No errors yet</li>';
+    } else {
+      const grouped = {};
+      errors.forEach(e => {
+        const key = (e.endpoint||'')+'|||'+(e.error_message||'Unknown error');
+        if(!grouped[key]) { grouped[key] = {endpoint: e.endpoint, error_message: e.error_message, count:0}; }
+        grouped[key].count++;
+      });
+      const sorted = Object.values(grouped).sort((a,b) => b.count - a.count);
+      errList.innerHTML = sorted.map(g =>
+        '<li><span><span class="error-msg">'+escapeHtml(g.error_message)+'</span> '+
+        '<span style="color:#8b949e;font-size:0.8rem">@ '+escapeHtml(g.endpoint)+'</span></span>'+
+        '<span style="font-weight:600;color:#f85149">×'+g.count+'</span></li>'
+      ).join('');
+    }
+
+    // Abusive IPs
+    const abTbody = document.getElementById('abusive-tbody');
+    if(!abusive || abusive.length === 0){
+      abTbody.innerHTML = '<tr><td colspan="3" class="empty">No abusive IPs detected</td></tr>';
+    } else {
+      abTbody.innerHTML = abusive.map(a =>
+        '<tr><td class="ip-danger">'+escapeHtml(a.ip)+'</td>'+
+        '<td>'+a.request_count+'</td>'+
+        '<td style="font-size:0.78rem">'+escapeHtml((a.endpoints||[]).join(', '))+'</td></tr>'
+      ).join('');
+    }
+  } catch(err){
+    console.error('Dashboard load error:', err);
+  }
+}
+
+// Initial load + auto-refresh
+loadDashboard();
+setInterval(loadDashboard, 10000);
+</script>
+</body>
+</html>

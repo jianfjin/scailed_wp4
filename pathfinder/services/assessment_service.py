@@ -25,8 +25,9 @@ from pathfinder.core.imports import import_structured_payload
 from pathfinder.core.models import ImportReport, Questionnaire, RoadmapEdge, RoadmapNode
 from pathfinder.core.questionnaire import QuestionnaireEngine
 from pathfinder.core.recommend import build_recommendation
-from pathfinder.core.repositories.connection import get_pool as _get_pool
 from pathfinder.core.repositories import audit_repo, session_repo
+from pathfinder.core.repositories.bg_loop import run_async
+from pathfinder.core.repositories.connection import get_pool as _get_pool
 from pathfinder.core.rules.loader import RuleLoader
 from pathfinder.core.solver import PathfinderSolver
 
@@ -47,63 +48,31 @@ class AssessmentService:
         self.graph = InMemoryRoadmapGraph(nodes, edges)
         self.solver = PathfinderSolver(self.graph)
 
-    # ── PG persistence helpers (best-effort, non-blocking) ──────
-
-    def _pg_conn(self):
-        """Get an asyncpg connection from the global pool, or None."""
-        pool = _get_pool()
-        if pool is None:
-            return None
-        try:
-            import asyncio
-            loop = asyncio.new_event_loop()
-            conn = loop.run_until_complete(pool.acquire())
-            loop.close()
-            return conn
-        except Exception:
-            return None
-
-    def _pg_write_audit(self, event: dict) -> None:
-        """Persist an audit event synchronously (fail-closed for audit)."""
-        conn = self._pg_conn()
-        if conn is None:
-            return  # PG unavailable — audit stays in memory
-        try:
-            import asyncio
-            loop = asyncio.new_event_loop()
-            loop.run_until_complete(audit_repo.save_audit_event(conn, event))
-            loop.run_until_complete(_get_pool().release(conn))
-            loop.close()
-        except Exception:
-            # Audit write failed — data still in memory AuditLog
-            pass
+    # ── PG persistence helpers (best-effort via background event loop) ──
 
     def _pg_write_session(self, session: dict) -> None:
-        """Persist session data asynchronously (best-effort)."""
-        conn = self._pg_conn()
-        if conn is None:
+        """Persist session to PG via background event loop (best-effort)."""
+        if not _get_pool():
+            return  # PG pool not initialised
+        from datetime import datetime, timezone
+        pg = {
+            "id": session.get("assessment_id"),
+            "stakeholder_type": session.get("stakeholder_type"),
+            "status": session.get("status", "in_progress"),
+            "answers": session.get("answers"),
+            "current_node": None,
+            "recommendations": session.get("recommendation"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "completed_at": datetime.now(timezone.utc).isoformat()
+                if session.get("status") == "complete" else None,
+        }
+        run_async(session_repo.save_session(_get_pool(), pg), timeout=2.0)
+
+    def _pg_write_audit(self, event: dict) -> None:
+        """Persist audit event via background event loop (best-effort)."""
+        if not _get_pool():
             return
-        try:
-            import asyncio
-            from datetime import datetime, timezone
-            loop = asyncio.new_event_loop()
-            # Map in-memory session keys → PG assess.assessment_sessions keys
-            pg = {
-                "id": session.get("assessment_id"),
-                "stakeholder_type": session.get("stakeholder_type"),
-                "status": session.get("status", "in_progress"),
-                "answers": session.get("answers"),
-                "current_node": None,
-                "recommendations": session.get("recommendation"),
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "completed_at": datetime.now(timezone.utc).isoformat()
-                    if session.get("status") == "complete" else None,
-            }
-            loop.run_until_complete(session_repo.save_session(conn, pg))
-            loop.run_until_complete(_get_pool().release(conn))
-            loop.close()
-        except Exception:
-            pass
+        run_async(audit_repo.save_audit_event(_get_pool(), event), timeout=2.0)
 
     def _load_demo_data(self) -> None:
         """Load WP2/WP3/WP8 data from local mock REST services (zero Docker dep).
