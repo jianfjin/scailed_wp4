@@ -128,6 +128,14 @@ class FhirAssessmentInputMapperTests(unittest.TestCase):
         self.assertTrue(resource["item"][0]["required"])
         items = {item["linkId"]: item for item in resource["item"]}
         self.assertTrue(items["capabilities"]["repeats"])
+        self.assertEqual(
+            items["capabilities"]["answerOption"][0]["valueCoding"],
+            {
+                "system": PATHFINDER_SYSTEM,
+                "code": "data-catalog",
+                "display": "data-catalog",
+            },
+        )
 
     def test_questionnaire_to_fhir_defaults_missing_required_to_true(self) -> None:
         from pathfinder.fhir.mappers import questionnaire_to_fhir
@@ -185,12 +193,14 @@ class FhirAssessmentInputMapperTests(unittest.TestCase):
             [
                 {
                     "valueCoding": {
+                        "system": PATHFINDER_SYSTEM,
                         "code": "secure-processing",
                         "display": "secure-processing",
                     }
                 },
                 {
                     "valueCoding": {
+                        "system": PATHFINDER_SYSTEM,
                         "code": "audit-log",
                         "display": "audit-log",
                     }
@@ -207,6 +217,15 @@ class FhirAssessmentInputMapperTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "assessment has no submitted answers"):
             questionnaire_response_from_session(session, demo_questionnaires()[0].to_dict())
 
+    def test_questionnaire_response_rejects_non_dict_answers(self) -> None:
+        from pathfinder.fhir.mappers import questionnaire_response_from_session
+
+        session = self._session()
+        session["answers"] = []
+
+        with self.assertRaisesRegex(ValueError, "assessment has no submitted answers"):
+            questionnaire_response_from_session(session, demo_questionnaires()[0].to_dict())
+
     def test_readiness_observation_from_report_maps_snapshot_components(self) -> None:
         from pathfinder.fhir.mappers import readiness_observation_from_report
 
@@ -215,9 +234,10 @@ class FhirAssessmentInputMapperTests(unittest.TestCase):
         self.assertEqual(resource["resourceType"], "Observation")
         self.assertEqual(resource["status"], "final")
         self.assertEqual(
-            resource["subject"],
-            {"reference": "Organization/organization-assessment-123"},
+            resource["focus"],
+            [{"reference": "Organization/organization-assessment-123"}],
         )
+        self.assertNotIn("subject", resource)
         component_codes = {
             component["code"]["coding"][0]["code"]
             for component in resource["component"]
@@ -245,6 +265,48 @@ class FhirAssessmentInputMapperTests(unittest.TestCase):
                     "valueString": "mock data mode: partner inputs pending",
                 }
             ],
+        )
+
+    def test_readiness_observation_uses_quantity_confidence(self) -> None:
+        from pathfinder.fhir.mappers import readiness_observation_from_report
+
+        resource = readiness_observation_from_report(self._report())
+        confidence_components = [
+            component
+            for component in resource["component"]
+            if component["code"]["coding"][0]["code"] == "confidence"
+        ]
+
+        self.assertEqual(
+            confidence_components,
+            [
+                {
+                    "code": codeable_concept("confidence", "Confidence"),
+                    "valueQuantity": {"value": 0.82, "unit": "score"},
+                }
+            ],
+        )
+
+    def test_readiness_observation_sorts_maturity_components_by_code(self) -> None:
+        from pathfinder.fhir.mappers import readiness_observation_from_report
+
+        report = self._report()
+        report["readiness_snapshot"]["maturity_scores"] = {
+            "governance": 2,
+            "data": 3,
+            "compliance": 2,
+        }
+
+        resource = readiness_observation_from_report(report)
+        maturity_codes = [
+            component["code"]["coding"][0]["code"]
+            for component in resource["component"]
+            if component["code"]["coding"][0]["code"].startswith("maturity-")
+        ]
+
+        self.assertEqual(
+            maturity_codes,
+            ["maturity-compliance", "maturity-data", "maturity-governance"],
         )
 
     def test_readiness_observation_rejects_report_without_snapshot(self) -> None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pathfinder.fhir.resources import codeable_concept, fhir_id, reference
+from pathfinder.fhir.resources import codeable_concept, coding, fhir_id, reference
 
 
 def _questionnaire_version_suffix(version: object) -> str:
@@ -43,12 +43,14 @@ def _answer_value(value: Any) -> list[dict[str, Any]]:
     return [{"valueString": str(value)}]
 
 
+def _choice_coding(value: Any) -> dict[str, str]:
+    text = str(value)
+    return coding(text, text)
+
+
 def _choice_answer_value(value: Any) -> list[dict[str, Any]]:
     values = value if isinstance(value, list) else [value]
-    return [
-        {"valueCoding": {"code": str(item), "display": str(item)}}
-        for item in values
-    ]
+    return [{"valueCoding": _choice_coding(item)} for item in values]
 
 
 def _answer_value_for_question(value: Any, question: dict[str, Any]) -> list[dict[str, Any]]:
@@ -73,7 +75,7 @@ def questionnaire_to_fhir(questionnaire: dict[str, Any]) -> dict[str, Any]:
         options = question.get("options") or []
         if options:
             item["answerOption"] = [
-                {"valueCoding": {"code": str(option), "display": str(option)}}
+                {"valueCoding": _choice_coding(option)}
                 for option in options
             ]
         items.append(item)
@@ -143,7 +145,7 @@ def readiness_observation_from_report(report: dict[str, Any]) -> dict[str, Any]:
     components: list[dict[str, Any]] = []
     maturity_scores = snapshot.get("maturity_scores", {})
     if isinstance(maturity_scores, dict):
-        for dimension, score in maturity_scores.items():
+        for dimension, score in sorted(maturity_scores.items()):
             component: dict[str, Any] = {
                 "code": codeable_concept(f"maturity-{dimension}", f"Maturity {dimension}"),
             }
@@ -179,7 +181,7 @@ def readiness_observation_from_report(report: dict[str, Any]) -> dict[str, Any]:
         components.append(
             {
                 "code": codeable_concept("confidence", "Confidence"),
-                "valueDecimal": snapshot["confidence"],
+                "valueQuantity": {"value": snapshot["confidence"], "unit": "score"},
             }
         )
     for warning in snapshot.get("confidence_warnings", []) or []:
@@ -195,6 +197,6 @@ def readiness_observation_from_report(report: dict[str, Any]) -> dict[str, Any]:
         "id": fhir_id("readiness", session.get("assessment_id", "assessment")),
         "status": "final",
         "code": codeable_concept("secondary-use-readiness", "Secondary use readiness"),
-        "subject": reference("Organization", _organization_id(session)),
+        "focus": [reference("Organization", _organization_id(session))],
         "component": components,
     }
