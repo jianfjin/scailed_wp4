@@ -24,3 +24,4 @@ dist/
 R2_scailed_backups_token
 docs/private/
 graphify-out/cache/
+.superpowers/
