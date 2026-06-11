@@ -6,6 +6,7 @@ import re
 from typing import Any
 
 PATHFINDER_SYSTEM = "https://scailed.eu/fhir/pathfinder"
+PATHFINDER_FHIR_BASE_URL = PATHFINDER_SYSTEM
 
 
 def fhir_id(*parts: object) -> str:
@@ -38,7 +39,7 @@ def codeable_concept(code: str, display: str | None = None, system: str = PATHFI
 
 def bundle_entry(resource: dict[str, Any]) -> dict[str, Any]:
     return {
-        "fullUrl": f"urn:uuid:{resource['resourceType']}/{resource['id']}",
+        "fullUrl": f"{PATHFINDER_FHIR_BASE_URL}/{resource['resourceType']}/{resource['id']}",
         "resource": resource,
     }
 

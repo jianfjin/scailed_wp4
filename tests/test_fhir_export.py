@@ -4,6 +4,7 @@ from pathfinder.fhir.resources import (
     PATHFINDER_SYSTEM,
     bundle_entry,
     coding,
+    codeable_concept,
     create_bundle,
     fhir_id,
     reference,
@@ -34,12 +35,27 @@ class FhirResourceHelperTests(unittest.TestCase):
             },
         )
 
+    def test_codeable_concept_uses_default_coding_and_text(self) -> None:
+        self.assertEqual(
+            codeable_concept("secondary-use-readiness", "Secondary use readiness"),
+            {
+                "coding": [
+                    {
+                        "system": PATHFINDER_SYSTEM,
+                        "code": "secondary-use-readiness",
+                        "display": "Secondary use readiness",
+                    }
+                ],
+                "text": "Secondary use readiness",
+            },
+        )
+
     def test_bundle_entry_uses_full_url(self) -> None:
         resource = {"resourceType": "Organization", "id": "org-biotech-sme"}
         self.assertEqual(
             bundle_entry(resource),
             {
-                "fullUrl": "urn:uuid:Organization/org-biotech-sme",
+                "fullUrl": "https://scailed.eu/fhir/pathfinder/Organization/org-biotech-sme",
                 "resource": resource,
             },
         )
