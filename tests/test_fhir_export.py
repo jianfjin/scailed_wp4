@@ -110,6 +110,7 @@ class FhirAssessmentInputMapperTests(unittest.TestCase):
                 "missing_capabilities": ["data-catalog"],
                 "regulatory_flags": ["gdpr-review-needed"],
                 "confidence": 0.82,
+                "confidence_warnings": ["mock data mode: partner inputs pending"],
             },
         }
 
@@ -158,7 +159,20 @@ class FhirAssessmentInputMapperTests(unittest.TestCase):
         )
         self.assertEqual(
             items["capabilities"]["answer"],
-            [{"valueString": "secure-processing"}, {"valueString": "audit-log"}],
+            [
+                {
+                    "valueCoding": {
+                        "code": "secure-processing",
+                        "display": "secure-processing",
+                    }
+                },
+                {
+                    "valueCoding": {
+                        "code": "audit-log",
+                        "display": "audit-log",
+                    }
+                },
+            ],
         )
 
     def test_readiness_observation_from_report_maps_snapshot_components(self) -> None:
@@ -183,7 +197,22 @@ class FhirAssessmentInputMapperTests(unittest.TestCase):
                 "missing-capability",
                 "regulatory-flag",
                 "confidence",
+                "confidence-warning",
             }.issubset(component_codes)
+        )
+        warning_components = [
+            component
+            for component in resource["component"]
+            if component["code"]["coding"][0]["code"] == "confidence-warning"
+        ]
+        self.assertEqual(
+            warning_components,
+            [
+                {
+                    "code": codeable_concept("confidence-warning", "Confidence warning"),
+                    "valueString": "mock data mode: partner inputs pending",
+                }
+            ],
         )
 
     def test_readiness_observation_rejects_report_without_snapshot(self) -> None:

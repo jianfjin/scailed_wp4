@@ -43,6 +43,21 @@ def _answer_value(value: Any) -> list[dict[str, Any]]:
     return [{"valueString": str(value)}]
 
 
+def _choice_answer_value(value: Any) -> list[dict[str, Any]]:
+    values = value if isinstance(value, list) else [value]
+    return [
+        {"valueCoding": {"code": str(item), "display": str(item)}}
+        for item in values
+    ]
+
+
+def _answer_value_for_question(value: Any, question: dict[str, Any]) -> list[dict[str, Any]]:
+    question_type = str(question.get("question_type", "text"))
+    if question_type in {"single_choice", "multi_choice"}:
+        return _choice_answer_value(value)
+    return _answer_value(value)
+
+
 def questionnaire_to_fhir(questionnaire: dict[str, Any]) -> dict[str, Any]:
     items: list[dict[str, Any]] = []
     for question in questionnaire.get("questions", []):
@@ -100,7 +115,7 @@ def questionnaire_response_from_session(
             continue
         items.append({
             "linkId": question_id,
-            "answer": _answer_value(answers[question_id]),
+            "answer": _answer_value_for_question(answers[question_id], question),
         })
 
     return {
@@ -165,6 +180,13 @@ def readiness_observation_from_report(report: dict[str, Any]) -> dict[str, Any]:
             {
                 "code": codeable_concept("confidence", "Confidence"),
                 "valueDecimal": snapshot["confidence"],
+            }
+        )
+    for warning in snapshot.get("confidence_warnings", []) or []:
+        components.append(
+            {
+                "code": codeable_concept("confidence-warning", "Confidence warning"),
+                "valueString": str(warning),
             }
         )
 
