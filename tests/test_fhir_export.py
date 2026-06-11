@@ -429,6 +429,9 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
             {"what": {"reference": f"Bundle/bundle-{assessment_id}"}},
             resource["entity"],
         )
+        for agent in resource["agent"]:
+            self.assertIn("requestor", agent)
+            self.assertIsInstance(agent["requestor"], bool)
         self.assertIn("system", resource["subtype"][0])
         self.assertIn("code", resource["subtype"][0])
         self.assertNotIn("coding", resource["subtype"][0])

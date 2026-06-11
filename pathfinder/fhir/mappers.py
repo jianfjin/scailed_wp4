@@ -374,7 +374,7 @@ def audit_event_to_fhir(event: Any, assessment_id: str) -> dict[str, Any]:
         "action": "E",
         "recorded": str(_event_attr(event, "timestamp", "1970-01-01T00:00:00+00:00")),
         "outcome": "0",
-        "agent": [{"who": {"display": "Pathfinder AssessmentService"}}],
+        "agent": [{"who": {"display": "Pathfinder AssessmentService"}, "requestor": False}],
         "source": {"observer": {"display": "Pathfinder"}},
         "entity": [{"what": reference("Bundle", fhir_id("bundle", assessment_id))}],
     }
