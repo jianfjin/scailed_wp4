@@ -11,6 +11,17 @@ from pathfinder.fhir.resources import (
     reference,
     require_r4,
 )
+from pathfinder.services.assessment_service import AssessmentService
+
+
+BASE_ANSWERS = {
+    "governance_maturity": 2,
+    "data_maturity": 2,
+    "compliance_maturity": 2,
+    "capabilities": ["secure-processing"],
+    "missing_capabilities": ["data-catalog"],
+    "regulatory_flags": ["gdpr-review-needed"],
+}
 
 
 class FhirResourceHelperTests(unittest.TestCase):
@@ -314,3 +325,147 @@ class FhirAssessmentInputMapperTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "report has no readiness_snapshot"):
             readiness_observation_from_report({"session": self._session()})
+
+class FhirRecommendationAndBundleTests(unittest.TestCase):
+    def _completed_assessment(
+        self,
+    ) -> tuple[AssessmentService, str, dict[str, object], dict[str, object]]:
+        service = AssessmentService()
+        session = service.create_session(
+            "biotech-sme",
+            "secondary-use-readiness",
+            ip="192.0.2.10",
+            user_agent="raw-test-agent",
+        )
+        assessment_id = str(session["assessment_id"])
+        service.submit_answers(
+            assessment_id,
+            BASE_ANSWERS,
+            ip="192.0.2.10",
+            user_agent="raw-test-agent",
+        )
+        service.generate_recommendation(
+            assessment_id,
+            ip="192.0.2.10",
+            user_agent="raw-test-agent",
+        )
+        report = service.report(
+            assessment_id,
+            ip="192.0.2.10",
+            user_agent="raw-test-agent",
+        )
+        questionnaire = service.get_questionnaire("biotech-sme")
+        return service, assessment_id, report, questionnaire
+
+    def test_guidance_response_from_report_maps_ready_recommendation(self) -> None:
+        from pathfinder.fhir.mappers import guidance_response_from_report
+
+        _, assessment_id, report, _ = self._completed_assessment()
+
+        resource = guidance_response_from_report(report)
+
+        self.assertEqual(resource["resourceType"], "GuidanceResponse")
+        self.assertEqual(resource["id"], f"guidance-response-{assessment_id}")
+        self.assertEqual(resource["status"], "success")
+        self.assertEqual(
+            resource["subject"],
+            {"reference": f"Organization/organization-{assessment_id}"},
+        )
+        self.assertEqual(
+            resource["result"],
+            {"reference": f"CarePlan/care-plan-{assessment_id}"},
+        )
+
+    def test_care_plan_from_report_maps_next_steps_as_activities(self) -> None:
+        from pathfinder.fhir.mappers import care_plan_from_report
+
+        _, assessment_id, report, _ = self._completed_assessment()
+
+        resource = care_plan_from_report(report)
+
+        self.assertEqual(resource["resourceType"], "CarePlan")
+        self.assertEqual(resource["id"], f"care-plan-{assessment_id}")
+        self.assertEqual(resource["status"], "active")
+        self.assertEqual(resource["intent"], "plan")
+        self.assertGreaterEqual(len(resource["activity"]), 1)
+        self.assertIn("detail", resource["activity"][0])
+
+    def test_provenance_from_report_preserves_trace_metadata(self) -> None:
+        from pathfinder.fhir.mappers import provenance_from_report
+
+        _, assessment_id, report, _ = self._completed_assessment()
+
+        resource = provenance_from_report(report)
+
+        self.assertEqual(resource["resourceType"], "Provenance")
+        self.assertEqual(resource["id"], f"provenance-{assessment_id}")
+        self.assertIn(
+            {"reference": f"CarePlan/care-plan-{assessment_id}"},
+            resource["target"],
+        )
+        provenance_text = str(resource["entity"])
+        self.assertIn("schema_version", provenance_text)
+        self.assertIn("rule_version", provenance_text)
+        self.assertIn("upstream_snapshot_version", provenance_text)
+
+    def test_audit_event_to_fhir_references_bundle_without_raw_request_metadata(self) -> None:
+        from pathfinder.fhir.mappers import audit_event_to_fhir
+
+        service, assessment_id, _, _ = self._completed_assessment()
+
+        resource = audit_event_to_fhir(service.audit_log.events()[0], assessment_id)
+
+        self.assertEqual(resource["resourceType"], "AuditEvent")
+        self.assertIn(
+            {"what": {"reference": f"Bundle/bundle-{assessment_id}"}},
+            resource["entity"],
+        )
+        resource_text = str(resource)
+        self.assertIn("ip_hash", resource_text)
+        self.assertIn("user_agent_hash", resource_text)
+        self.assertNotIn("192.0.2.10", resource_text)
+        self.assertNotIn("raw-test-agent", resource_text)
+
+    def test_build_assessment_bundle_includes_assessment_resources(self) -> None:
+        from pathfinder.fhir.export_service import build_assessment_bundle
+
+        service, assessment_id, report, questionnaire = self._completed_assessment()
+
+        bundle = build_assessment_bundle(
+            report,
+            questionnaire,
+            service.audit_log.events(),
+        )
+
+        self.assertEqual(bundle["resourceType"], "Bundle")
+        self.assertEqual(bundle["id"], f"bundle-{assessment_id}")
+        resource_types = {
+            entry["resource"]["resourceType"]
+            for entry in bundle["entry"]
+        }
+        self.assertTrue(
+            {
+                "Questionnaire",
+                "QuestionnaireResponse",
+                "Organization",
+                "Observation",
+                "GuidanceResponse",
+                "CarePlan",
+                "Provenance",
+                "AuditEvent",
+            }.issubset(resource_types)
+        )
+
+    def test_build_assessment_bundle_rejects_unsupported_fhir_version(self) -> None:
+        from pathfinder.fhir.export_service import build_assessment_bundle
+
+        service, _, report, questionnaire = self._completed_assessment()
+
+        with self.assertRaisesRegex(ValueError, "unsupported FHIR version"):
+            build_assessment_bundle(
+                report,
+                questionnaire,
+                service.audit_log.events(),
+                fhir_version="R5",
+            )
+

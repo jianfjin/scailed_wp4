@@ -200,3 +200,162 @@ def readiness_observation_from_report(report: dict[str, Any]) -> dict[str, Any]:
         "focus": [reference("Organization", _organization_id(session))],
         "component": components,
     }
+
+
+def _report_session(report: dict[str, Any]) -> dict[str, Any]:
+    session = report.get("session", {})
+    return session if isinstance(session, dict) else {}
+
+
+def _assessment_id_from_report(report: dict[str, Any]) -> str:
+    return str(_report_session(report).get("assessment_id", "assessment"))
+
+
+def _recommendation_from_report(report: dict[str, Any]) -> dict[str, Any]:
+    recommendation = report.get("recommended_path", {})
+    return recommendation if isinstance(recommendation, dict) else {}
+
+
+def _trace_from_report(report: dict[str, Any]) -> dict[str, Any]:
+    trace = _recommendation_from_report(report).get("trace", {})
+    return trace if isinstance(trace, dict) else {}
+
+
+def _metadata_extension(name: str, value: Any) -> dict[str, str]:
+    return {
+        "url": f"https://scailed.eu/fhir/pathfinder/StructureDefinition/{name}",
+        "valueString": str(value),
+    }
+
+
+def guidance_response_from_report(report: dict[str, Any]) -> dict[str, Any]:
+    assessment_id = _assessment_id_from_report(report)
+    recommendation = _recommendation_from_report(report)
+    status = "success" if recommendation.get("status") == "ready" else "data-required"
+
+    return {
+        "resourceType": "GuidanceResponse",
+        "id": fhir_id("guidance-response", assessment_id),
+        "status": status,
+        "moduleUri": "https://scailed.eu/fhir/pathfinder/PlanDefinition/secondary-use-readiness",
+        "subject": reference("Organization", fhir_id("organization", assessment_id)),
+        "result": reference("CarePlan", fhir_id("care-plan", assessment_id)),
+    }
+
+
+def care_plan_from_report(report: dict[str, Any]) -> dict[str, Any]:
+    assessment_id = _assessment_id_from_report(report)
+    recommendation = _recommendation_from_report(report)
+    next_steps = recommendation.get("next_steps", [])
+    if not isinstance(next_steps, list):
+        next_steps = []
+
+    activities: list[dict[str, Any]] = []
+    for step in next_steps:
+        if not isinstance(step, dict):
+            continue
+        node_id = str(step.get("node_id") or "next-step")
+        label = str(step.get("label") or node_id)
+        detail: dict[str, Any] = {
+            "kind": "Task",
+            "code": codeable_concept(node_id, label),
+            "status": "not-started",
+        }
+        if step.get("description"):
+            detail["description"] = str(step["description"])
+        activities.append({"detail": detail})
+
+    if not activities:
+        activities.append({
+            "detail": {
+                "kind": "Task",
+                "code": codeable_concept("review-readiness-report", "Review readiness report"),
+                "status": "not-started",
+            }
+        })
+
+    return {
+        "resourceType": "CarePlan",
+        "id": fhir_id("care-plan", assessment_id),
+        "status": "active" if recommendation.get("status") == "ready" else "draft",
+        "intent": "plan",
+        "title": "Pathfinder readiness recommendation",
+        "description": str(report.get("disclaimer", "Pathfinder assessment recommendation")),
+        "supportingInfo": [
+            reference("Organization", fhir_id("organization", assessment_id)),
+            reference("Observation", fhir_id("readiness", assessment_id)),
+        ],
+        "activity": activities,
+    }
+
+
+def provenance_from_report(report: dict[str, Any]) -> dict[str, Any]:
+    assessment_id = _assessment_id_from_report(report)
+    trace = _trace_from_report(report)
+    extensions = [
+        _metadata_extension(name, trace[name])
+        for name in ("schema_version", "rule_version", "upstream_snapshot_version")
+        if name in trace
+    ]
+
+    entity: dict[str, Any] = {
+        "role": "source",
+        "what": {"display": "Pathfinder recommendation trace"},
+    }
+    if extensions:
+        entity["extension"] = extensions
+
+    return {
+        "resourceType": "Provenance",
+        "id": fhir_id("provenance", assessment_id),
+        "target": [
+            reference("GuidanceResponse", fhir_id("guidance-response", assessment_id)),
+            reference("CarePlan", fhir_id("care-plan", assessment_id)),
+            reference("Observation", fhir_id("readiness", assessment_id)),
+        ],
+        "recorded": "1970-01-01T00:00:00+00:00",
+        "agent": [{"who": {"display": "Pathfinder AssessmentService"}}],
+        "entity": [entity],
+    }
+
+
+def _event_attr(event: Any, name: str, default: Any = None) -> Any:
+    if isinstance(event, dict):
+        return event.get(name, default)
+    return getattr(event, name, default)
+
+
+def audit_event_to_fhir(event: Any, assessment_id: str) -> dict[str, Any]:
+    event_type = str(_event_attr(event, "event_type", "audit-event"))
+    event_hash = str(_event_attr(event, "event_hash", ""))
+    event_data = _event_attr(event, "event_data", {})
+    if not isinstance(event_data, dict):
+        event_data = {}
+
+    extensions: list[dict[str, str]] = []
+    for name in ("prev_hash", "event_hash", "ip_hash", "user_agent_hash"):
+        value = _event_attr(event, name)
+        if value:
+            extensions.append(_metadata_extension(name, value))
+
+    audit_event: dict[str, Any] = {
+        "resourceType": "AuditEvent",
+        "id": fhir_id("audit-event", assessment_id, event_type, event_hash[:12]),
+        "type": coding(event_type, event_type),
+        "action": "E",
+        "recorded": str(_event_attr(event, "timestamp", "1970-01-01T00:00:00+00:00")),
+        "outcome": "0",
+        "agent": [{"who": {"display": "Pathfinder AssessmentService"}}],
+        "source": {"observer": {"display": "Pathfinder"}},
+        "entity": [{"what": reference("Bundle", fhir_id("bundle", assessment_id))}],
+    }
+    if event_data:
+        audit_event["subtype"] = [
+            coding(str(key), str(value))
+            for key, value in sorted(event_data.items())
+            if key not in {"ip", "user_agent"}
+        ]
+    if extensions:
+        audit_event["extension"] = extensions
+    return audit_event
+
