@@ -420,11 +420,50 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
             {"what": {"reference": f"Bundle/bundle-{assessment_id}"}},
             resource["entity"],
         )
+        self.assertIn("coding", resource["subtype"][0])
+        self.assertIn("code", resource["subtype"][0]["coding"][0])
         resource_text = str(resource)
         self.assertIn("ip_hash", resource_text)
         self.assertIn("user_agent_hash", resource_text)
         self.assertNotIn("192.0.2.10", resource_text)
         self.assertNotIn("raw-test-agent", resource_text)
+
+    def test_repeated_audit_event_types_have_unique_ids_and_full_urls(self) -> None:
+        from pathfinder.fhir.export_service import build_assessment_bundle
+
+        service, _, report, questionnaire = self._completed_assessment()
+        assessment_id = str(report["session"]["assessment_id"])
+        service.audit_log.append(
+            "answers_submitted",
+            {"assessment_id": assessment_id, "answer_ids": ["alpha"]},
+            ip="192.0.2.10",
+            user_agent="raw-test-agent",
+        )
+        service.audit_log.append(
+            "answers_submitted",
+            {"assessment_id": assessment_id, "answer_ids": ["beta"]},
+            ip="192.0.2.10",
+            user_agent="raw-test-agent",
+        )
+
+        bundle = build_assessment_bundle(
+            report,
+            questionnaire,
+            service.audit_log.events(),
+        )
+
+        audit_entries = [
+            entry
+            for entry in bundle["entry"]
+            if entry["resource"]["resourceType"] == "AuditEvent"
+        ]
+        audit_ids = [entry["resource"]["id"] for entry in audit_entries]
+        audit_full_urls = [entry["fullUrl"] for entry in audit_entries]
+        self.assertEqual(len(audit_ids), len(set(audit_ids)))
+        self.assertEqual(len(audit_full_urls), len(set(audit_full_urls)))
+        bundle_text = str(bundle)
+        self.assertNotIn("192.0.2.10", bundle_text)
+        self.assertNotIn("raw-test-agent", bundle_text)
 
     def test_build_assessment_bundle_includes_assessment_resources(self) -> None:
         from pathfinder.fhir.export_service import build_assessment_bundle

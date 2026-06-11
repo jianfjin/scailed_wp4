@@ -340,7 +340,7 @@ def audit_event_to_fhir(event: Any, assessment_id: str) -> dict[str, Any]:
 
     audit_event: dict[str, Any] = {
         "resourceType": "AuditEvent",
-        "id": fhir_id("audit-event", assessment_id, event_type, event_hash[:12]),
+        "id": fhir_id("audit-event", event_hash[:24] or event_type),
         "type": coding(event_type, event_type),
         "action": "E",
         "recorded": str(_event_attr(event, "timestamp", "1970-01-01T00:00:00+00:00")),
@@ -351,7 +351,7 @@ def audit_event_to_fhir(event: Any, assessment_id: str) -> dict[str, Any]:
     }
     if event_data:
         audit_event["subtype"] = [
-            coding(str(key), str(value))
+            codeable_concept(str(key), str(value))
             for key, value in sorted(event_data.items())
             if key not in {"ip", "user_agent"}
         ]
