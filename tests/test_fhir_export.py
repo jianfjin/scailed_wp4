@@ -125,6 +125,29 @@ class FhirAssessmentInputMapperTests(unittest.TestCase):
         self.assertEqual(resource["subjectType"], ["Organization"])
         self.assertEqual(resource["item"][0]["linkId"], "governance_maturity")
         self.assertEqual(resource["item"][0]["type"], "integer")
+        self.assertTrue(resource["item"][0]["required"])
+        items = {item["linkId"]: item for item in resource["item"]}
+        self.assertTrue(items["capabilities"]["repeats"])
+
+    def test_questionnaire_to_fhir_defaults_missing_required_to_true(self) -> None:
+        from pathfinder.fhir.mappers import questionnaire_to_fhir
+
+        resource = questionnaire_to_fhir(
+            {
+                "stakeholder_type": "biotech-sme",
+                "version": "demo-questionnaire-v1",
+                "title": "Minimal questionnaire",
+                "questions": [
+                    {
+                        "question_id": "free_text",
+                        "label": "Free text",
+                        "question_type": "text",
+                    }
+                ],
+            }
+        )
+
+        self.assertTrue(resource["item"][0]["required"])
 
     def test_organization_from_session_maps_stakeholder_without_patient(self) -> None:
         from pathfinder.fhir.mappers import organization_from_session
@@ -174,6 +197,15 @@ class FhirAssessmentInputMapperTests(unittest.TestCase):
                 },
             ],
         )
+
+    def test_questionnaire_response_rejects_session_without_answers(self) -> None:
+        from pathfinder.fhir.mappers import questionnaire_response_from_session
+
+        session = self._session()
+        session.pop("answers")
+
+        with self.assertRaisesRegex(ValueError, "assessment has no submitted answers"):
+            questionnaire_response_from_session(session, demo_questionnaires()[0].to_dict())
 
     def test_readiness_observation_from_report_maps_snapshot_components(self) -> None:
         from pathfinder.fhir.mappers import readiness_observation_from_report

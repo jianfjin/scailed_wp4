@@ -66,7 +66,7 @@ def questionnaire_to_fhir(questionnaire: dict[str, Any]) -> dict[str, Any]:
             "linkId": str(question.get("question_id", "")),
             "text": str(question.get("label", "")),
             "type": _question_type_to_fhir(question_type),
-            "required": bool(question.get("required", False)),
+            "required": bool(question.get("required", True)),
         }
         if question_type == "multi_choice":
             item["repeats"] = True
@@ -104,9 +104,9 @@ def questionnaire_response_from_session(
     questionnaire: dict[str, Any],
 ) -> dict[str, Any]:
     questionnaire_resource = questionnaire_to_fhir(questionnaire)
-    answers = session.get("answers", {})
+    answers = session.get("answers")
     if not isinstance(answers, dict):
-        answers = {}
+        raise ValueError("assessment has no submitted answers")
 
     items: list[dict[str, Any]] = []
     for question in questionnaire.get("questions", []):
