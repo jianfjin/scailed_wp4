@@ -369,7 +369,7 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
         self.assertEqual(resource["status"], "success")
         self.assertEqual(
             resource["subject"],
-            {"reference": f"Organization/organization-{assessment_id}"},
+            {"reference": f"Group/group-{assessment_id}"},
         )
         self.assertEqual(
             resource["result"],
@@ -387,6 +387,10 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
         self.assertEqual(resource["id"], f"care-plan-{assessment_id}")
         self.assertEqual(resource["status"], "active")
         self.assertEqual(resource["intent"], "plan")
+        self.assertEqual(
+            resource["subject"],
+            {"reference": f"Group/group-{assessment_id}"},
+        )
         self.assertGreaterEqual(len(resource["activity"]), 1)
         self.assertIn("detail", resource["activity"][0])
 
@@ -420,8 +424,9 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
             {"what": {"reference": f"Bundle/bundle-{assessment_id}"}},
             resource["entity"],
         )
-        self.assertIn("coding", resource["subtype"][0])
-        self.assertIn("code", resource["subtype"][0]["coding"][0])
+        self.assertIn("system", resource["subtype"][0])
+        self.assertIn("code", resource["subtype"][0])
+        self.assertNotIn("coding", resource["subtype"][0])
         resource_text = str(resource)
         self.assertIn("ip_hash", resource_text)
         self.assertIn("user_agent_hash", resource_text)
@@ -487,6 +492,7 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
                 "Questionnaire",
                 "QuestionnaireResponse",
                 "Organization",
+                "Group",
                 "Observation",
                 "GuidanceResponse",
                 "CarePlan",

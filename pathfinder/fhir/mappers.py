@@ -24,6 +24,10 @@ def _organization_id(session: dict[str, Any]) -> str:
     return fhir_id("organization", session.get("assessment_id", "assessment"))
 
 
+def _assessment_group_id(session: dict[str, Any]) -> str:
+    return fhir_id("group", session.get("assessment_id", "assessment"))
+
+
 def _question_type_to_fhir(question_type: str) -> str:
     return {
         "numeric": "integer",
@@ -98,6 +102,18 @@ def organization_from_session(session: dict[str, Any]) -> dict[str, Any]:
         "id": _organization_id(session),
         "name": f"Pathfinder assessment organization {assessment_id}",
         "type": [codeable_concept(stakeholder_type, stakeholder_type)],
+    }
+
+
+def assessment_group_from_session(session: dict[str, Any]) -> dict[str, Any]:
+    assessment_id = str(session.get("assessment_id", "assessment"))
+    return {
+        "resourceType": "Group",
+        "id": _assessment_group_id(session),
+        "type": "person",
+        "actual": False,
+        "name": f"Pathfinder assessment group {assessment_id}",
+        "managingEntity": reference("Organization", _organization_id(session)),
     }
 
 
@@ -238,7 +254,7 @@ def guidance_response_from_report(report: dict[str, Any]) -> dict[str, Any]:
         "id": fhir_id("guidance-response", assessment_id),
         "status": status,
         "moduleUri": "https://scailed.eu/fhir/pathfinder/PlanDefinition/secondary-use-readiness",
-        "subject": reference("Organization", fhir_id("organization", assessment_id)),
+        "subject": reference("Group", fhir_id("group", assessment_id)),
         "result": reference("CarePlan", fhir_id("care-plan", assessment_id)),
     }
 
@@ -281,6 +297,7 @@ def care_plan_from_report(report: dict[str, Any]) -> dict[str, Any]:
         "intent": "plan",
         "title": "Pathfinder readiness recommendation",
         "description": str(report.get("disclaimer", "Pathfinder assessment recommendation")),
+        "subject": reference("Group", fhir_id("group", assessment_id)),
         "supportingInfo": [
             reference("Organization", fhir_id("organization", assessment_id)),
             reference("Observation", fhir_id("readiness", assessment_id)),
@@ -351,7 +368,7 @@ def audit_event_to_fhir(event: Any, assessment_id: str) -> dict[str, Any]:
     }
     if event_data:
         audit_event["subtype"] = [
-            codeable_concept(str(key), str(value))
+            coding(str(key), str(value))
             for key, value in sorted(event_data.items())
             if key not in {"ip", "user_agent"}
         ]

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from pathfinder.fhir.mappers import (
+    assessment_group_from_session,
     audit_event_to_fhir,
     care_plan_from_report,
     guidance_response_from_report,
@@ -34,6 +35,7 @@ def build_assessment_bundle(
         questionnaire_to_fhir(questionnaire),
         questionnaire_response_from_session(session, questionnaire),
         organization_from_session(session),
+        assessment_group_from_session(session),
         readiness_observation_from_report(report),
         guidance_response_from_report(report),
         care_plan_from_report(report),
