@@ -408,9 +408,14 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
             resource["target"],
         )
         provenance_text = str(resource["entity"])
+        trace = report["recommended_path"]["trace"]
         self.assertIn("schema_version", provenance_text)
         self.assertIn("rule_version", provenance_text)
         self.assertIn("upstream_snapshot_version", provenance_text)
+        self.assertIn(f"answer_ids: {trace['answer_ids'][0]}", provenance_text)
+        self.assertIn(f"roadmap_node_ids: {trace['roadmap_node_ids'][0]}", provenance_text)
+        self.assertIn(f"triggered_rule_ids: {trace['triggered_rule_ids'][0]}", provenance_text)
+        self.assertIn(f"regulatory_refs: {trace['regulatory_refs'][0]}", provenance_text)
 
     def test_audit_event_to_fhir_references_bundle_without_raw_request_metadata(self) -> None:
         from pathfinder.fhir.mappers import audit_event_to_fhir

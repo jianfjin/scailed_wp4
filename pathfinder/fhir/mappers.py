@@ -315,12 +315,24 @@ def provenance_from_report(report: dict[str, Any]) -> dict[str, Any]:
         if name in trace
     ]
 
-    entity: dict[str, Any] = {
+    entities: list[dict[str, Any]] = []
+    metadata_entity: dict[str, Any] = {
         "role": "source",
         "what": {"display": "Pathfinder recommendation trace"},
     }
     if extensions:
-        entity["extension"] = extensions
+        metadata_entity["extension"] = extensions
+    entities.append(metadata_entity)
+
+    for name in ("answer_ids", "roadmap_node_ids", "triggered_rule_ids", "regulatory_refs"):
+        values = trace.get(name, [])
+        if not isinstance(values, (list, tuple)):
+            values = [values]
+        for value in values:
+            entities.append({
+                "role": "source",
+                "what": {"display": f"{name}: {value}"},
+            })
 
     return {
         "resourceType": "Provenance",
@@ -332,7 +344,7 @@ def provenance_from_report(report: dict[str, Any]) -> dict[str, Any]:
         ],
         "recorded": "1970-01-01T00:00:00+00:00",
         "agent": [{"who": {"display": "Pathfinder AssessmentService"}}],
-        "entity": [entity],
+        "entity": entities,
     }
 
 
