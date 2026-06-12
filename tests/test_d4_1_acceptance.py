@@ -317,6 +317,14 @@ def test_d4_1_8_fhir_export_contains_traceability_bundle() -> None:
     }
     assert required_resource_types <= resource_types
 
+    resources_by_ref = {
+        f"{resource['resourceType']}/{resource['id']}": resource
+        for resource in resources
+    }
+    resources_by_type: dict[str, list[dict[str, object]]] = {}
+    for resource in resources:
+        resources_by_type.setdefault(str(resource["resourceType"]), []).append(resource)
+
     references: set[str] = set()
 
     def collect_references(value: object) -> None:
@@ -331,6 +339,51 @@ def test_d4_1_8_fhir_export_contains_traceability_bundle() -> None:
                 collect_references(item)
 
     collect_references(bundle)
-    assert f"Organization/organization-{assessment_id}" in references
-    assert f"Group/group-{assessment_id}" in references
-    assert f"CarePlan/care-plan-{assessment_id}" in references
+    exported_resource_types = {
+        resource_ref.split("/", 1)[0]
+        for resource_ref in resources_by_ref
+    }
+    internal_references = {
+        reference_value
+        for reference_value in references
+        if reference_value.split("/", 1)[0] in exported_resource_types
+    }
+    unresolved_references = internal_references - set(resources_by_ref)
+    assert not unresolved_references
+
+    questionnaire = resources_by_type["Questionnaire"][0]
+    questionnaire_response = resources_by_type["QuestionnaireResponse"][0]
+    organization = resources_by_type["Organization"][0]
+    group = resources_by_type["Group"][0]
+    readiness_observation = next(
+        resource
+        for resource in resources_by_type["Observation"]
+        if str(resource["id"]).startswith("readiness-")
+    )
+    guidance_response = resources_by_type["GuidanceResponse"][0]
+    care_plan = resources_by_type["CarePlan"][0]
+    provenance = resources_by_type["Provenance"][0]
+
+    questionnaire_ref = f"Questionnaire/{questionnaire['id']}"
+    organization_ref = f"Organization/{organization['id']}"
+    group_ref = f"Group/{group['id']}"
+    observation_ref = f"Observation/{readiness_observation['id']}"
+    guidance_response_ref = f"GuidanceResponse/{guidance_response['id']}"
+    care_plan_ref = f"CarePlan/{care_plan['id']}"
+
+    assert questionnaire_response["subject"]["reference"] == organization_ref
+    assert questionnaire_response["questionnaire"] == questionnaire_ref
+    assert {"reference": organization_ref} in readiness_observation["focus"]
+    assert guidance_response["result"]["reference"] == care_plan_ref
+    if "subject" in guidance_response:
+        assert guidance_response["subject"]["reference"] == group_ref
+    assert care_plan["subject"]["reference"] == group_ref
+    provenance_targets = {
+        target["reference"]
+        for target in provenance["target"]
+    }
+    assert {
+        guidance_response_ref,
+        care_plan_ref,
+        observation_ref,
+    } <= provenance_targets
