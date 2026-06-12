@@ -375,8 +375,7 @@ def test_d4_1_8_fhir_export_contains_traceability_bundle() -> None:
     assert questionnaire_response["questionnaire"] == questionnaire_ref
     assert {"reference": organization_ref} in readiness_observation["focus"]
     assert guidance_response["result"]["reference"] == care_plan_ref
-    if "subject" in guidance_response:
-        assert guidance_response["subject"]["reference"] == group_ref
+    assert guidance_response["subject"] == {"reference": group_ref}
     assert care_plan["subject"]["reference"] == group_ref
     provenance_targets = {
         target["reference"]
