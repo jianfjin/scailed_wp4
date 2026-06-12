@@ -412,6 +412,7 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
         self.assertIn("schema_version", provenance_text)
         self.assertIn("rule_version", provenance_text)
         self.assertIn("upstream_snapshot_version", provenance_text)
+        self.assertIn(f"confidence: {trace['confidence']}", provenance_text)
         self.assertIn(f"answer_ids: {trace['answer_ids'][0]}", provenance_text)
         self.assertIn(f"roadmap_node_ids: {trace['roadmap_node_ids'][0]}", provenance_text)
         self.assertIn(f"triggered_rule_ids: {trace['triggered_rule_ids'][0]}", provenance_text)

@@ -324,6 +324,12 @@ def provenance_from_report(report: dict[str, Any]) -> dict[str, Any]:
         metadata_entity["extension"] = extensions
     entities.append(metadata_entity)
 
+    if "confidence" in trace:
+        entities.append({
+            "role": "source",
+            "what": {"display": f"confidence: {trace['confidence']}"},
+        })
+
     for name in ("answer_ids", "roadmap_node_ids", "triggered_rule_ids", "regulatory_refs"):
         values = trace.get(name, [])
         if not isinstance(values, (list, tuple)):
