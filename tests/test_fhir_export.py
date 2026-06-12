@@ -555,3 +555,72 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
                 fhir_version="R5",
             )
 
+
+class AssessmentServiceFhirExportTests(unittest.TestCase):
+    def _service_with_answers(self) -> tuple[AssessmentService, str]:
+        service = AssessmentService()
+        session = service.create_session(
+            "biotech-sme",
+            "secondary-use-readiness",
+            ip="192.0.2.20",
+            user_agent="service-export-test-agent",
+        )
+        assessment_id = str(session["assessment_id"])
+        service.submit_answers(
+            assessment_id,
+            BASE_ANSWERS,
+            ip="192.0.2.20",
+            user_agent="service-export-test-agent",
+        )
+        return service, assessment_id
+
+    def _completed_assessment(self) -> tuple[AssessmentService, str]:
+        service, assessment_id = self._service_with_answers()
+        service.generate_recommendation(
+            assessment_id,
+            ip="192.0.2.20",
+            user_agent="service-export-test-agent",
+        )
+        return service, assessment_id
+
+    def test_export_fhir_bundle_returns_bundle_and_audits_success(self) -> None:
+        service, assessment_id = self._completed_assessment()
+
+        bundle = service.export_fhir_bundle(
+            assessment_id,
+            ip="192.0.2.20",
+            user_agent="service-export-test-agent",
+        )
+
+        self.assertEqual(bundle["resourceType"], "Bundle")
+        self.assertEqual(bundle["id"], f"bundle-{assessment_id}")
+        event = service.audit_log.events()[-1]
+        self.assertEqual(event.event_type, "fhir_bundle_exported")
+        self.assertEqual(event.event_data["assessment_id"], assessment_id)
+        self.assertEqual(event.event_data["bundle_id"], bundle["id"])
+        self.assertEqual(event.event_data["fhir_version"], "R4")
+
+    def test_export_fhir_bundle_rejects_unsupported_fhir_version_and_audits_failure(self) -> None:
+        service, assessment_id = self._completed_assessment()
+
+        with self.assertRaisesRegex(ValueError, "unsupported FHIR version"):
+            service.export_fhir_bundle(assessment_id, fhir_version="R5")
+
+        event = service.audit_log.events()[-1]
+        self.assertEqual(event.event_type, "fhir_export_failed")
+        self.assertEqual(event.event_data["assessment_id"], assessment_id)
+        self.assertEqual(event.event_data["fhir_version"], "R5")
+        self.assertIn("unsupported FHIR version", event.event_data["error"])
+
+    def test_export_fhir_bundle_rejects_unknown_assessment_id(self) -> None:
+        service = AssessmentService()
+
+        with self.assertRaisesRegex(KeyError, "Assessment not found"):
+            service.export_fhir_bundle("missing-assessment")
+
+    def test_export_fhir_bundle_requires_generated_recommendation(self) -> None:
+        service, assessment_id = self._service_with_answers()
+
+        with self.assertRaisesRegex(ValueError, "recommendation must be generated"):
+            service.export_fhir_bundle(assessment_id)
+

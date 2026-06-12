@@ -30,6 +30,7 @@ from pathfinder.core.repositories.bg_loop import run_async
 from pathfinder.core.repositories.connection import get_pool as _get_pool
 from pathfinder.core.rules.loader import RuleLoader
 from pathfinder.core.solver import PathfinderSolver
+from pathfinder.fhir.export_service import build_assessment_bundle
 
 
 class AssessmentService:
@@ -338,6 +339,55 @@ class AssessmentService:
         }
         self.audit_log.append("report_exported", {"assessment_id": assessment_id}, ip=ip, user_agent=user_agent)
         return report
+
+    def export_fhir_bundle(
+        self,
+        assessment_id: str,
+        fhir_version: str = "R4",
+        ip: str | None = None,
+        user_agent: str | None = None,
+    ) -> dict[str, object]:
+        if assessment_id not in self.sessions:
+            raise KeyError(f"Assessment not found: {assessment_id}")
+        session = self.sessions[assessment_id]
+        if not isinstance(session.get("answers"), dict):
+            raise ValueError("answers must be submitted before FHIR export")
+        if not isinstance(session.get("recommendation"), dict):
+            raise ValueError("recommendation must be generated before FHIR export")
+
+        try:
+            report = self.report(assessment_id, ip=ip, user_agent=user_agent)
+            questionnaire = self.get_questionnaire(str(session["stakeholder_type"]))
+            bundle = build_assessment_bundle(
+                report=report,
+                questionnaire=questionnaire,
+                audit_events=self.audit_log.events(),
+                fhir_version=fhir_version,
+            )
+        except Exception as exc:
+            self.audit_log.append(
+                "fhir_export_failed",
+                {
+                    "assessment_id": assessment_id,
+                    "error": str(exc),
+                    "fhir_version": fhir_version,
+                },
+                ip=ip,
+                user_agent=user_agent,
+            )
+            raise
+
+        self.audit_log.append(
+            "fhir_bundle_exported",
+            {
+                "assessment_id": assessment_id,
+                "bundle_id": bundle["id"],
+                "fhir_version": fhir_version,
+            },
+            ip=ip,
+            user_agent=user_agent,
+        )
+        return bundle
 
     def import_wp2(
         self,
