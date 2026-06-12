@@ -479,6 +479,38 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
         self.assertNotIn("192.0.2.10", bundle_text)
         self.assertNotIn("raw-test-agent", bundle_text)
 
+    def test_persisted_dict_audit_events_without_hash_use_unique_ids(self) -> None:
+        from pathfinder.fhir.export_service import build_assessment_bundle
+
+        _, _, report, questionnaire = self._completed_assessment()
+        assessment_id = str(report["session"]["assessment_id"])
+        audit_events = [
+            {
+                "id": 101,
+                "event_type": "answers_submitted",
+                "event_data": {"assessment_id": assessment_id, "answer_ids": ["alpha"]},
+                "timestamp": "2026-06-12T10:00:00+00:00",
+            },
+            {
+                "id": 102,
+                "event_type": "answers_submitted",
+                "event_data": {"assessment_id": assessment_id, "answer_ids": ["beta"]},
+                "timestamp": "2026-06-12T10:01:00+00:00",
+            },
+        ]
+
+        bundle = build_assessment_bundle(report, questionnaire, audit_events)
+
+        audit_entries = [
+            entry
+            for entry in bundle["entry"]
+            if entry["resource"]["resourceType"] == "AuditEvent"
+        ]
+        audit_ids = [entry["resource"]["id"] for entry in audit_entries]
+        audit_full_urls = [entry["fullUrl"] for entry in audit_entries]
+        self.assertEqual(len(audit_ids), len(set(audit_ids)))
+        self.assertEqual(len(audit_full_urls), len(set(audit_full_urls)))
+
     def test_build_assessment_bundle_includes_assessment_resources(self) -> None:
         from pathfinder.fhir.export_service import build_assessment_bundle
 

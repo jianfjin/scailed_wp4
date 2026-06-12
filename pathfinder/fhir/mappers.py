@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any
 
 from pathfinder.fhir.resources import codeable_concept, coding, fhir_id, reference
@@ -360,9 +362,26 @@ def _event_attr(event: Any, name: str, default: Any = None) -> Any:
     return getattr(event, name, default)
 
 
+def _audit_event_identity(event: Any, event_type: str, event_data: dict[str, Any]) -> str:
+    event_hash = _event_attr(event, "event_hash")
+    if event_hash:
+        return str(event_hash)[:24]
+
+    persisted_id = _event_attr(event, "id")
+    if persisted_id is not None and str(persisted_id).strip():
+        return str(persisted_id)
+
+    stable_payload = {
+        "event_type": event_type,
+        "timestamp": str(_event_attr(event, "timestamp", "1970-01-01T00:00:00+00:00")),
+        "event_data": event_data,
+    }
+    serialized = json.dumps(stable_payload, sort_keys=True, default=str).encode()
+    return hashlib.sha256(serialized).hexdigest()[:24]
+
+
 def audit_event_to_fhir(event: Any, assessment_id: str) -> dict[str, Any]:
     event_type = str(_event_attr(event, "event_type", "audit-event"))
-    event_hash = str(_event_attr(event, "event_hash", ""))
     event_data = _event_attr(event, "event_data", {})
     if not isinstance(event_data, dict):
         event_data = {}
@@ -375,7 +394,7 @@ def audit_event_to_fhir(event: Any, assessment_id: str) -> dict[str, Any]:
 
     audit_event: dict[str, Any] = {
         "resourceType": "AuditEvent",
-        "id": fhir_id("audit-event", event_hash[:24] or event_type),
+        "id": fhir_id("audit-event", _audit_event_identity(event, event_type, event_data)),
         "type": coding(event_type, event_type),
         "action": "E",
         "recorded": str(_event_attr(event, "timestamp", "1970-01-01T00:00:00+00:00")),
