@@ -741,3 +741,27 @@ class FhirApiEndpointTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["detail"]["error"], "VALIDATION_ERROR")
 
+    def test_fhir_endpoint_returns_not_found_for_unknown_assessment(self) -> None:
+        client = self._client()
+        headers = {"Authorization": "Bearer demo-token"}
+
+        response = client.get("/v1/assessments/missing-assessment/fhir", headers=headers)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()["detail"]["error"], "NOT_FOUND")
+
+    def test_fhir_endpoint_hides_unexpected_exception_details(self) -> None:
+        class FailingService:
+            def export_fhir_bundle(self, *args: object, **kwargs: object) -> dict[str, object]:
+                raise RuntimeError("secret internal detail")
+
+        api_main._service = FailingService()
+        client = self._client()
+        headers = {"Authorization": "Bearer demo-token"}
+
+        response = client.get("/v1/assessments/assessment-123/fhir", headers=headers)
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.json()["detail"]["error"], "SERVER_ERROR")
+        self.assertNotIn("secret internal detail", response.text)
+

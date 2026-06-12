@@ -301,7 +301,7 @@ def fhir_assessment_bundle(
     except Exception as exc:
         return JSONResponse(
             status_code=500,
-            content={"detail": ApiError(error="SERVER_ERROR", detail=str(exc)).model_dump()},
+            content={"detail": ApiError(error="SERVER_ERROR", detail="internal server error").model_dump()},
         )
     return Response(
         content=json.dumps(bundle),
