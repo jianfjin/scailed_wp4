@@ -2,13 +2,17 @@
 
 Date: 2026-06-11
 
-Status: Proposed
+Status: Phase 1 implemented
 
 Branch: `docs/fhir-implementation-proposal`
 
 ## Summary
 
 Pathfinder should implement FHIR as a phased interoperability layer. The current Pathfinder domain model, deterministic solver, audit chain, and PostgreSQL schema remain authoritative for the first implementation phase. FHIR is added first as an export facade that emits FHIR R4 JSON Bundles from completed Pathfinder assessments, with explicit R5 compatibility notes and a documented migration path toward a future FHIR-native architecture.
+
+## Phase 1 Implementation Notes
+
+Phase 1 implements the FHIR export facade only. The implementation generates FHIR R4 Bundles on demand through `GET /v1/assessments/{assessment_id}/fhir`, records `fhir_bundle_exported` and `fhir_export_failed` audit events, and leaves Phase 2 REST facade and Phase 3 FHIR-native persistence as future work.
 
 The eventual target is approach C: FHIR resources become first-class persisted records and the Pathfinder engine operates from FHIR resources or a derived execution view. That target is documented now, but not implemented until export and REST facade behavior have been validated with partner use cases.
 

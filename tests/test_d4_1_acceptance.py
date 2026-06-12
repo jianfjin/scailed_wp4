@@ -257,3 +257,80 @@ def test_d4_1_7_docker_boot_integration() -> None:
     """
     # Would verify: docker compose up → health endpoint → full flow
     pass
+
+
+# ── D4.1.8 ──────────────────────────────────────────────────────────
+
+def test_d4_1_8_fhir_export_contains_traceability_bundle() -> None:
+    """FHIR export returns a traceable Bundle for a completed assessment.
+
+    D4.1 criterion: FHIR Bundle includes core assessment resources and
+    stable intra-Bundle references for traceability.
+    """
+    api_main._service = AssessmentService()
+    client = TestClient(app)
+    headers = {"Authorization": "Bearer demo-token"}
+
+    session = client.post(
+        "/v1/assessments",
+        headers=headers,
+        json={
+            "stakeholder_type": "biotech-sme",
+            "target_scenario": "secondary-use-readiness",
+        },
+    )
+    assert session.status_code == 200
+    assessment_id = session.json()["assessment_id"]
+
+    answers = client.post(
+        f"/v1/assessments/{assessment_id}/answers/batch",
+        headers=headers,
+        json={"answers": BASE_ANSWERS},
+    )
+    assert answers.status_code == 200
+
+    recommendation = client.post(
+        f"/v1/assessments/{assessment_id}/recommendations",
+        headers=headers,
+    )
+    assert recommendation.status_code == 200
+
+    response = client.get(f"/v1/assessments/{assessment_id}/fhir", headers=headers)
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/fhir+json"
+    bundle = response.json()
+    assert bundle["resourceType"] == "Bundle"
+
+    resources = [entry["resource"] for entry in bundle["entry"]]
+    resource_types = {resource["resourceType"] for resource in resources}
+    required_resource_types = {
+        "Questionnaire",
+        "QuestionnaireResponse",
+        "Organization",
+        "Group",
+        "Observation",
+        "GuidanceResponse",
+        "CarePlan",
+        "Provenance",
+        "AuditEvent",
+    }
+    assert required_resource_types <= resource_types
+
+    references: set[str] = set()
+
+    def collect_references(value: object) -> None:
+        if isinstance(value, dict):
+            reference_value = value.get("reference")
+            if isinstance(reference_value, str):
+                references.add(reference_value)
+            for nested_value in value.values():
+                collect_references(nested_value)
+        elif isinstance(value, list):
+            for item in value:
+                collect_references(item)
+
+    collect_references(bundle)
+    assert f"Organization/organization-{assessment_id}" in references
+    assert f"Group/group-{assessment_id}" in references
+    assert f"CarePlan/care-plan-{assessment_id}" in references
