@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from uuid import uuid4
 
 from pathfinder.adapters.demo_data import (
@@ -343,6 +343,12 @@ class AssessmentService:
         self.audit_log.append("report_exported", {"assessment_id": assessment_id}, ip=ip, user_agent=user_agent)
         return report
 
+    def _audit_events_for_assessment(self, assessment_id: str) -> tuple[Any, ...]:
+        return tuple(
+            event for event in self.audit_log.events()
+            if event.event_data.get("assessment_id") == assessment_id
+        )
+
     def export_fhir_bundle(
         self,
         assessment_id: str,
@@ -364,7 +370,7 @@ class AssessmentService:
             bundle = build_assessment_bundle(
                 report=report,
                 questionnaire=questionnaire,
-                audit_events=self.audit_log.events(),
+                audit_events=self._audit_events_for_assessment(assessment_id),
                 fhir_version=fhir_version,
             )
         except Exception as exc:
@@ -390,7 +396,12 @@ class AssessmentService:
             ip=ip,
             user_agent=user_agent,
         )
-        return bundle
+        return build_assessment_bundle(
+            report=report,
+            questionnaire=questionnaire,
+            audit_events=self._audit_events_for_assessment(assessment_id),
+            fhir_version=fhir_version,
+        )
 
     def import_wp2(
         self,

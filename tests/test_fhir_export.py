@@ -606,6 +606,55 @@ class AssessmentServiceFhirExportTests(unittest.TestCase):
         self.assertEqual(event.event_data["assessment_id"], assessment_id)
         self.assertEqual(event.event_data["bundle_id"], bundle["id"])
         self.assertEqual(event.event_data["fhir_version"], "R4")
+        audit_resources = [
+            entry["resource"]
+            for entry in bundle["entry"]
+            if entry["resource"]["resourceType"] == "AuditEvent"
+        ]
+        self.assertTrue(
+            any(resource["type"]["code"] == "fhir_bundle_exported" for resource in audit_resources)
+        )
+
+    def test_export_fhir_bundle_scopes_audit_events_to_assessment(self) -> None:
+        service, first_assessment_id = self._completed_assessment()
+        second_session = service.create_session(
+            "biotech-sme",
+            "secondary-use-readiness",
+            ip="192.0.2.21",
+            user_agent="second-service-export-test-agent",
+        )
+        second_assessment_id = str(second_session["assessment_id"])
+        service.submit_answers(
+            second_assessment_id,
+            BASE_ANSWERS,
+            ip="192.0.2.21",
+            user_agent="second-service-export-test-agent",
+        )
+        service.generate_recommendation(
+            second_assessment_id,
+            ip="192.0.2.21",
+            user_agent="second-service-export-test-agent",
+        )
+
+        bundle = service.export_fhir_bundle(
+            second_assessment_id,
+            ip="192.0.2.21",
+            user_agent="second-service-export-test-agent",
+        )
+
+        audit_resources = [
+            entry["resource"]
+            for entry in bundle["entry"]
+            if entry["resource"]["resourceType"] == "AuditEvent"
+        ]
+        self.assertGreater(len(audit_resources), 0)
+        for resource in audit_resources:
+            subtype_values = {
+                coding["display"]
+                for coding in resource.get("subtype", [])
+            }
+            self.assertIn(second_assessment_id, subtype_values)
+            self.assertNotIn(first_assessment_id, subtype_values)
 
     def test_export_fhir_bundle_rejects_unsupported_fhir_version_and_audits_failure(self) -> None:
         service, assessment_id = self._completed_assessment()
