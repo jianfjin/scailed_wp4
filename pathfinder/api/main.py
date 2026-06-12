@@ -7,13 +7,14 @@ VALIDATION_ERROR, SERVER_ERROR).
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from starlette.middleware import Middleware as StarletteMiddleware
 
 from pathfinder.api.dashboard import router as dashboard_router
@@ -277,6 +278,35 @@ def report(
             raise _validation_error(f"HTML rendering failed: {exc}") from exc
 
     return raw
+
+
+@app.get("/v1/assessments/{assessment_id}/fhir")
+def fhir_assessment_bundle(
+    assessment_id: str,
+    request: Request,
+    authorization: str | None = Header(default=None),
+    fhir_version: str = Query(default="R4"),
+):
+    require_demo_token(authorization)
+    try:
+        bundle = _get_service().export_fhir_bundle(
+            assessment_id,
+            fhir_version=fhir_version,
+            **_audit_context(request),
+        )
+    except KeyError as exc:
+        raise _not_found("assessment not found") from exc
+    except ValueError as exc:
+        raise _validation_error(str(exc)) from exc
+    except Exception as exc:
+        return JSONResponse(
+            status_code=500,
+            content={"detail": ApiError(error="SERVER_ERROR", detail=str(exc)).model_dump()},
+        )
+    return Response(
+        content=json.dumps(bundle),
+        media_type="application/fhir+json",
+    )
 
 
 # ─── Roadmap ────────────────────────────────────────────────────────

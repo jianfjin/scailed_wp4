@@ -1,6 +1,10 @@
 import unittest
 
+import pathfinder.api.main as api_main
+from fastapi.testclient import TestClient
+
 from pathfinder.adapters.demo_data import demo_questionnaires
+from pathfinder.api.main import app
 from pathfinder.fhir.resources import (
     PATHFINDER_SYSTEM,
     bundle_entry,
@@ -645,4 +649,95 @@ class AssessmentServiceFhirExportTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "answers must be submitted before FHIR export"):
             service.export_fhir_bundle(str(session["assessment_id"]))
+
+
+class FhirApiEndpointTests(unittest.TestCase):
+    def setUp(self) -> None:
+        api_main._service = AssessmentService()
+
+    def _client(self) -> TestClient:
+        return TestClient(app)
+
+    def _create_assessment_with_answers(self, client: TestClient) -> str:
+        headers = {"Authorization": "Bearer demo-token"}
+        session = client.post(
+            "/v1/assessments",
+            headers=headers,
+            json={
+                "stakeholder_type": "biotech-sme",
+                "target_scenario": "secondary-use-readiness",
+            },
+        )
+        self.assertEqual(session.status_code, 200)
+        assessment_id = session.json()["assessment_id"]
+        answers = client.post(
+            f"/v1/assessments/{assessment_id}/answers/batch",
+            headers=headers,
+            json={"answers": BASE_ANSWERS},
+        )
+        self.assertEqual(answers.status_code, 200)
+        return assessment_id
+
+    def _create_completed_assessment(self, client: TestClient) -> str:
+        headers = {"Authorization": "Bearer demo-token"}
+        assessment_id = self._create_assessment_with_answers(client)
+        recommendation = client.post(
+            f"/v1/assessments/{assessment_id}/recommendations",
+            headers=headers,
+        )
+        self.assertEqual(recommendation.status_code, 200)
+        return assessment_id
+
+    def test_fhir_endpoint_requires_demo_token(self) -> None:
+        client = self._client()
+
+        response = client.get("/v1/assessments/assessment-123/fhir")
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_fhir_endpoint_returns_completed_assessment_bundle(self) -> None:
+        client = self._client()
+        headers = {"Authorization": "Bearer demo-token"}
+        assessment_id = self._create_completed_assessment(client)
+
+        response = client.get(f"/v1/assessments/{assessment_id}/fhir", headers=headers)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["content-type"], "application/fhir+json")
+        body = response.json()
+        self.assertEqual(body["resourceType"], "Bundle")
+        resource_types = {
+            entry["resource"]["resourceType"]
+            for entry in body["entry"]
+        }
+        self.assertTrue(
+            {
+                "QuestionnaireResponse",
+                "Provenance",
+                "AuditEvent",
+            }.issubset(resource_types)
+        )
+
+    def test_fhir_endpoint_rejects_unsupported_fhir_version(self) -> None:
+        client = self._client()
+        headers = {"Authorization": "Bearer demo-token"}
+        assessment_id = self._create_completed_assessment(client)
+
+        response = client.get(
+            f"/v1/assessments/{assessment_id}/fhir?fhir_version=R5",
+            headers=headers,
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["detail"]["error"], "VALIDATION_ERROR")
+
+    def test_fhir_endpoint_requires_recommendation(self) -> None:
+        client = self._client()
+        headers = {"Authorization": "Bearer demo-token"}
+        assessment_id = self._create_assessment_with_answers(client)
+
+        response = client.get(f"/v1/assessments/{assessment_id}/fhir", headers=headers)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["detail"]["error"], "VALIDATION_ERROR")
 
