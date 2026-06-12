@@ -317,19 +317,14 @@ class AssessmentService:
         )
         return recommendation
 
-    def report(
-        self,
-        assessment_id: str,
-        ip: str | None = None,
-        user_agent: str | None = None,
-    ) -> dict[str, object]:
+    def _build_report_payload(self, assessment_id: str) -> dict[str, object]:
         if assessment_id not in self.sessions:
             raise KeyError(f"Assessment not found: {assessment_id}. It may have expired after server restart.")
         session = self.sessions[assessment_id]
         recommendation = session.get("recommendation")
         if not isinstance(recommendation, dict):
             recommendation = self.generate_recommendation(assessment_id)
-        report = {
+        return {
             "disclaimer": "Demo/non-production report. Real WP2/WP3/WP8 data may change recommendations.",
             "session": session,
             "readiness_snapshot": session.get("stakeholder_state", {}),
@@ -337,6 +332,14 @@ class AssessmentService:
             "audit_chain_valid": self.audit_log.verify_chain(),
             "missing_data_warnings": ["mock data mode: partner upstream inputs pending"],
         }
+
+    def report(
+        self,
+        assessment_id: str,
+        ip: str | None = None,
+        user_agent: str | None = None,
+    ) -> dict[str, object]:
+        report = self._build_report_payload(assessment_id)
         self.audit_log.append("report_exported", {"assessment_id": assessment_id}, ip=ip, user_agent=user_agent)
         return report
 
@@ -356,7 +359,7 @@ class AssessmentService:
             raise ValueError("recommendation must be generated before FHIR export")
 
         try:
-            report = self.report(assessment_id, ip=ip, user_agent=user_agent)
+            report = self._build_report_payload(assessment_id)
             questionnaire = self.get_questionnaire(str(session["stakeholder_type"]))
             bundle = build_assessment_bundle(
                 report=report,

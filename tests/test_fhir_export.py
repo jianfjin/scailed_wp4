@@ -585,6 +585,7 @@ class AssessmentServiceFhirExportTests(unittest.TestCase):
 
     def test_export_fhir_bundle_returns_bundle_and_audits_success(self) -> None:
         service, assessment_id = self._completed_assessment()
+        audit_count = len(service.audit_log.events())
 
         bundle = service.export_fhir_bundle(
             assessment_id,
@@ -594,7 +595,9 @@ class AssessmentServiceFhirExportTests(unittest.TestCase):
 
         self.assertEqual(bundle["resourceType"], "Bundle")
         self.assertEqual(bundle["id"], f"bundle-{assessment_id}")
-        event = service.audit_log.events()[-1]
+        events = service.audit_log.events()
+        self.assertEqual(len(events), audit_count + 1)
+        event = events[-1]
         self.assertEqual(event.event_type, "fhir_bundle_exported")
         self.assertEqual(event.event_data["assessment_id"], assessment_id)
         self.assertEqual(event.event_data["bundle_id"], bundle["id"])
@@ -602,11 +605,20 @@ class AssessmentServiceFhirExportTests(unittest.TestCase):
 
     def test_export_fhir_bundle_rejects_unsupported_fhir_version_and_audits_failure(self) -> None:
         service, assessment_id = self._completed_assessment()
+        report_exported_count = sum(
+            event.event_type == "report_exported"
+            for event in service.audit_log.events()
+        )
 
         with self.assertRaisesRegex(ValueError, "unsupported FHIR version"):
             service.export_fhir_bundle(assessment_id, fhir_version="R5")
 
-        event = service.audit_log.events()[-1]
+        events = service.audit_log.events()
+        self.assertEqual(
+            sum(event.event_type == "report_exported" for event in events),
+            report_exported_count,
+        )
+        event = events[-1]
         self.assertEqual(event.event_type, "fhir_export_failed")
         self.assertEqual(event.event_data["assessment_id"], assessment_id)
         self.assertEqual(event.event_data["fhir_version"], "R5")
@@ -623,4 +635,14 @@ class AssessmentServiceFhirExportTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "recommendation must be generated"):
             service.export_fhir_bundle(assessment_id)
+
+    def test_export_fhir_bundle_requires_submitted_answers(self) -> None:
+        service = AssessmentService()
+        session = service.create_session(
+            "biotech-sme",
+            "secondary-use-readiness",
+        )
+
+        with self.assertRaisesRegex(ValueError, "answers must be submitted before FHIR export"):
+            service.export_fhir_bundle(str(session["assessment_id"]))
 
