@@ -21,6 +21,11 @@ from pathfinder.adapters.upstream import (
 
 def test_wp2_contract_accepts_capabilities_and_pain_points() -> None:
     schema = json.loads(Path("docs/contracts/wp2_stakeholder_taxonomy.schema.json").read_text())
+    item_properties = schema["properties"]["stakeholder_types"]["items"]["properties"]
+
+    assert item_properties["capabilities"] == {"type": "array", "items": {"type": "string"}}
+    assert item_properties["pain_points"] == {"type": "array", "items": {"type": "string"}}
+
     payload = {
         "version": "wp2-test-v1",
         "stakeholder_types": [
