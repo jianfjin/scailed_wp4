@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   buildStakeholderOptions,
@@ -7,21 +7,6 @@ import {
   type StakeholderOption,
 } from "./stakeholderCatalog";
 import "./styles.css";
-
-type Questionnaire = {
-  stakeholder_type: string;
-  title: string;
-  target_scenarios: string[];
-  questions: Array<{
-    question_id: string;
-    label: string;
-    question_type: string;
-    required: boolean;
-    options: string[];
-    min_value: number | null;
-    max_value: number | null;
-  }>;
-};
 
 type PathfinderReport = {
   disclaimer?: string;
@@ -35,6 +20,11 @@ type PathfinderReport = {
     regulatory_flags?: string[];
     confidence?: number;
     confidence_warnings?: string[];
+    derivation_mode?: string;
+    pain_points?: string[];
+    source_wp2_stakeholder_id?: string;
+    source_wp2_snapshot_version?: string;
+    source_wp3_snapshot_version?: string;
   };
   recommended_path?: {
     status?: string;
@@ -76,77 +66,6 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json();
 }
 
-/* ─── question widgets ───────────────────────────────────── */
-
-function NumericInput({
-  questionId,
-  label,
-  min,
-  max,
-  value,
-  onChange,
-}: {
-  questionId: string;
-  label: string;
-  min: number;
-  max: number;
-  value: number;
-  onChange: (id: string, v: number) => void;
-}) {
-  return (
-    <div className="question">
-      <label htmlFor={questionId}>{label} (1–{max})</label>
-      <input
-        id={questionId}
-        type="range"
-        min={min}
-        max={max}
-        value={value}
-        onChange={(e) => onChange(questionId, Number(e.target.value))}
-      />
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-function MultiChoiceInput({
-  questionId,
-  label,
-  options,
-  selected,
-  onChange,
-}: {
-  questionId: string;
-  label: string;
-  options: string[];
-  selected: string[];
-  onChange: (id: string, v: string[]) => void;
-}) {
-  const toggle = (opt: string) => {
-    const next = selected.includes(opt)
-      ? selected.filter((o) => o !== opt)
-      : [...selected, opt];
-    onChange(questionId, next);
-  };
-  return (
-    <div className="question">
-      <span>{label}</span>
-      <div className="check-group">
-        {options.map((opt) => (
-          <label key={opt} className="check-label">
-            <input
-              type="checkbox"
-              checked={selected.includes(opt)}
-              onChange={() => toggle(opt)}
-            />
-            {opt}
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function EvidenceList({ title, items }: { title: string; items?: string[] }) {
   if (!items?.length) return null;
   return (
@@ -155,6 +74,22 @@ function EvidenceList({ title, items }: { title: string; items?: string[] }) {
       <ul>
         {items.map((item) => <li key={item}>{item}</li>)}
       </ul>
+    </div>
+  );
+}
+
+function KeyValueList({ title, values }: { title: string; values: Record<string, string | number | undefined> }) {
+  return (
+    <div className="evidence-block">
+      <h3>{title}</h3>
+      <dl>
+        {Object.entries(values).map(([key, value]) => (
+          <React.Fragment key={key}>
+            <dt>{key}</dt>
+            <dd>{value ?? "n/a"}</dd>
+          </React.Fragment>
+        ))}
+      </dl>
     </div>
   );
 }
@@ -205,6 +140,20 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
           </dl>
         </div>
       </div>
+
+      <KeyValueList
+        title="Derived readiness"
+        values={{
+          Mode: snapshot?.derivation_mode,
+          "WP2 stakeholder": snapshot?.source_wp2_stakeholder_id,
+          "WP2 snapshot": snapshot?.source_wp2_snapshot_version,
+          "WP3 snapshot": snapshot?.source_wp3_snapshot_version,
+        }}
+      />
+      <EvidenceList title="WP2 capabilities" items={snapshot?.capabilities} />
+      <EvidenceList title="WP2 pain points" items={snapshot?.pain_points} />
+      <EvidenceList title="Derived missing capabilities" items={snapshot?.missing_capabilities} />
+      <EvidenceList title="Derived regulatory flags" items={snapshot?.regulatory_flags} />
 
       <EvidenceList title="Blockers" items={path?.blockers} />
 
@@ -359,8 +308,6 @@ function StakeholderPicker({
 function App() {
   const [types, setTypes] = useState<string[]>([]);
   const [stakeholderType, setStakeholderType] = useState("");
-  const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
-  const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [report, setReport] = useState<PathfinderReport | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -396,65 +343,18 @@ function App() {
       .catch(() => setBannerText("Demo mode. WP2/WP3/WP8 inputs pending."));
   }, []);
 
-  useEffect(() => {
-    if (!stakeholderType) return;
-    api<Questionnaire>(`/v1/questionnaires/${encodeURIComponent(stakeholderType)}`)
-      .then((q) => {
-        setQuestionnaire(q);
-        setReport(null);
-        setError("");
-        // init defaults
-        const defaults: Record<string, unknown> = {};
-        for (const question of q.questions) {
-          if (question.question_type === "multi_choice") defaults[question.question_id] = [];
-          else if (question.question_type === "numeric") defaults[question.question_id] = question.min_value ?? 1;
-          else defaults[question.question_id] = "";
-        }
-        setAnswers(defaults);
-      })
-      .catch((err) => setError(String(err)));
-  }, [stakeholderType]);
-
-  const updateAnswer = useCallback((id: string, value: unknown) => {
-    setAnswers((prev) => ({ ...prev, [id]: value }));
-  }, []);
-
-  const allAnswered = useMemo(() => {
-    if (!questionnaire) return false;
-    return questionnaire.questions
-      .filter((q) => q.required)
-      .every((q) => {
-        const v = answers[q.question_id];
-        if (q.question_type === "multi_choice") return Array.isArray(v);
-        return v !== "" && v !== null && v !== undefined;
-      });
-  }, [questionnaire, answers]);
 
   async function runAssessment() {
-    if (!questionnaire) return;
+    if (!stakeholderType) return;
     setError("");
     setLoading(true);
     setReport(null);
     try {
-      const caps = (answers["capabilities"] as string[]) || ["secure-processing"];
-      const missing = (answers["missing_capabilities"] as string[]) || [];
-      const flags = (answers["regulatory_flags"] as string[]) || [];
-      const maturityFields: Record<string, number> = {};
-      for (const q of questionnaire.questions) {
-        if (q.question_type === "numeric") maturityFields[q.question_id] = Number(answers[q.question_id]) || 1;
-      }
-
-      const payload = { ...maturityFields, capabilities: caps, missing_capabilities: missing, regulatory_flags: flags };
-
       const session = await api<{ assessment_id: string }>("/v1/assessments", {
         method: "POST",
         body: JSON.stringify({ stakeholder_type: stakeholderType, target_scenario: "secondary-use-readiness" }),
       });
       setLastAssessmentId(session.assessment_id);
-      await api(`/v1/assessments/${session.assessment_id}/answers/batch`, {
-        method: "POST",
-        body: JSON.stringify({ answers: payload }),
-      });
       await api(`/v1/assessments/${session.assessment_id}/recommendations?path_backend=${pathBackend}`, {
         method: "POST",
       });
@@ -472,12 +372,12 @@ function App() {
       <section className="toolbar">
         <div>
           <h1>SCAILED Pathfinder</h1>
-          <p>EHDS readiness path planner. Answer questions → get your roadmap path with full trace.</p>
+          <p>EHDS readiness path planner. Select a stakeholder to derive your roadmap path with full trace.</p>
         </div>
         <div className="toolbar-actions">
           <BackendToggle value={pathBackend} onChange={setPathBackend} />
-          <button type="button" className="submit-btn" onClick={runAssessment} disabled={!allAnswered || loading}>
-            {loading ? "Running…" : "Submit assessment"}
+          <button type="button" className="submit-btn" onClick={runAssessment} disabled={!stakeholderType || loading}>
+            {loading ? "Running..." : "Run derived assessment"}
           </button>
         </div>
       </section>
@@ -496,50 +396,25 @@ function App() {
         </aside>
 
         <section className="panel">
-          <h2>{questionnaire?.title || "Questionnaire"}</h2>
-          <div className="question-list">
-            {questionnaire?.questions.map((q) => {
-              if (q.question_type === "numeric") {
-                return (
-                  <NumericInput
-                    key={q.question_id}
-                    questionId={q.question_id}
-                    label={q.label}
-                    min={q.min_value ?? 1}
-                    max={q.max_value ?? 5}
-                    value={Number(answers[q.question_id]) || 0}
-                    onChange={updateAnswer}
-                  />
-                );
-              }
-              if (q.question_type === "multi_choice") {
-                return (
-                  <MultiChoiceInput
-                    key={q.question_id}
-                    questionId={q.question_id}
-                    label={q.label}
-                    options={q.options || []}
-                    selected={(answers[q.question_id] as string[]) || []}
-                    onChange={updateAnswer}
-                  />
-                );
-              }
-              return (
-                <div className="question" key={q.question_id}>
-                  <span>{q.label}</span>
-                  <strong>{String(answers[q.question_id] ?? "—")}</strong>
-                </div>
-              );
-            })}
+          <h2>Derived readiness evidence</h2>
+          <p className="notice">
+            Readiness is derived from WP2 stakeholder capabilities and WP3 roadmap evidence.
+          </p>
+          <div className="evidence-block">
+            <h3>Selected source</h3>
+            <dl>
+              <dt>Stakeholder</dt>
+              <dd>{stakeholderType || "n/a"}</dd>
+              <dt>Scenario</dt>
+              <dd>secondary-use-readiness</dd>
+            </dl>
           </div>
-          {!allAnswered && <p style={{ color: "#8a6d14", marginTop: 12 }}>Complete all required questions to submit.</p>}
         </section>
-
         <section className="panel report">
           <h2>Traceable report</h2>
           {error && <p className="error">{error}</p>}
           {loading && <p>Running assessment…</p>}
-          {!report && !loading && <p>Complete the questionnaire and submit to see your roadmap path.</p>}
+          {!report && !loading && <p>Run a derived assessment to see your roadmap path.</p>}
           {report && <ReportSummary report={report} assessmentId={lastAssessmentId} />}
         </section>
       </section>
