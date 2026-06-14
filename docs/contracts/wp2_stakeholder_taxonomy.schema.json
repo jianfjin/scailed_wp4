@@ -15,6 +15,14 @@
           "label": {"type": "string"},
           "personas": {"type": "array", "items": {"type": "string"}},
           "user_journeys": {"type": "array", "items": {"type": "string"}},
+          "capabilities": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "pain_points": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
           "feedback_categories": {"type": "array", "items": {"type": "string"}}
         }
       }

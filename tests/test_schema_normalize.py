@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
+from jsonschema import Draft202012Validator
 
 from pathfinder.adapters.upstream import (
     UpstreamClientError,
@@ -13,6 +17,25 @@ from pathfinder.adapters.upstream import (
     _normalize_list,
     _resolve_normalizer,
 )
+
+
+def test_wp2_contract_accepts_capabilities_and_pain_points() -> None:
+    schema = json.loads(Path("docs/contracts/wp2_stakeholder_taxonomy.schema.json").read_text())
+    payload = {
+        "version": "wp2-test-v1",
+        "stakeholder_types": [
+            {
+                "id": "academic-spinout-001",
+                "label": "Academic spinout",
+                "personas": ["technical reviewer"],
+                "user_journeys": ["prepare EHDS readiness"],
+                "capabilities": ["legal-basis", "secure-processing"],
+                "pain_points": ["gdpr_ehds_alignment"],
+            }
+        ],
+    }
+
+    Draft202012Validator(schema).validate(payload)
 
 
 # ── Unit: _resolve_normalizer ─────────────────────────────────────────────────
