@@ -93,6 +93,45 @@ class ApiTests(unittest.TestCase):
             event.event_type for event in api_main._get_service().audit_log.events()
         })
 
+    def test_admin_imported_wp2_stakeholder_supports_derived_flow(self) -> None:
+        api_main._service = None
+        client = TestClient(app)
+        admin_headers = {"Authorization": "Bearer admin-token"}
+        demo_headers = {"Authorization": "Bearer demo-token"}
+
+        wp2 = {
+            "version": "wp2-derived-v1",
+            "stakeholder_types": [
+                {
+                    "id": "derived-reviewer",
+                    "label": "Derived reviewer",
+                    "personas": ["technical reviewer"],
+                    "user_journeys": ["prepare EHDS readiness"],
+                    "capabilities": ["legal-basis", "audit-log"],
+                    "pain_points": ["cross_border_data_governance"],
+                }
+            ],
+        }
+        assert client.post("/admin/import/wp2", headers=admin_headers, json=wp2).status_code == 200
+
+        session = client.post(
+            "/v1/assessments",
+            headers=demo_headers,
+            json={"stakeholder_type": "derived-reviewer", "target_scenario": "secondary-use-readiness"},
+        )
+        self.assertEqual(session.status_code, 200)
+        assessment_id = session.json()["assessment_id"]
+
+        recommendation = client.post(f"/v1/assessments/{assessment_id}/recommendations", headers=demo_headers)
+        self.assertEqual(recommendation.status_code, 200)
+
+        report = client.get(f"/v1/assessments/{assessment_id}/report", headers=demo_headers).json()
+        snapshot = report["readiness_snapshot"]
+        self.assertEqual(snapshot["source_wp2_stakeholder_id"], "derived-reviewer")
+        self.assertEqual(snapshot["source_wp2_snapshot_version"], "wp2-derived-v1")
+        self.assertIn("audit-log", snapshot["capabilities"])
+        self.assertIn("cross-border-use", snapshot["regulatory_flags"])
+
     def test_assessment_rejects_empty_or_unknown_stakeholder_type(self) -> None:
         client = TestClient(app)
         headers = {"Authorization": "Bearer demo-token"}

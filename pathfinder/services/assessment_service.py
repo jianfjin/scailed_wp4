@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Optional
 from uuid import uuid4
@@ -22,7 +23,7 @@ from pathfinder.adapters.upstream import UpstreamClient
 from pathfinder.core.audit import AuditLog
 from pathfinder.core.graph import InMemoryRoadmapGraph
 from pathfinder.core.imports import import_structured_payload
-from pathfinder.core.models import ImportReport, Questionnaire, RoadmapEdge, RoadmapNode
+from pathfinder.core.models import ImportReport, Questionnaire, RoadmapEdge, RoadmapNode, StakeholderState
 from pathfinder.core.questionnaire import QuestionnaireEngine
 from pathfinder.core.recommend import build_recommendation
 from pathfinder.core.repositories import audit_repo, session_repo
@@ -279,8 +280,12 @@ class AssessmentService:
         self._pg_write_session(session)
         return state.to_dict()
 
-    def _snapshot_version(self, key: str) -> str:
-        report = self.import_reports.get(key) or self.import_reports.get("upstream") or self.import_reports.get("demo")
+    def _snapshot_version(self, source: str) -> str:
+        report = (
+            self.import_reports.get(source)
+            or self.import_reports.get("upstream")
+            or self.import_reports.get("demo")
+        )
         return report.snapshot_version if report else "unknown-snapshot"
 
     def _derive_state_for_session(self, session: dict[str, object]) -> dict[str, object]:
@@ -291,8 +296,8 @@ class AssessmentService:
         state = derive_readiness_state(
             stakeholder=stakeholder,
             target_scenario=str(session["target_scenario"]),
-            wp2_snapshot_version=self._snapshot_version("upstream"),
-            wp3_snapshot_version=self._snapshot_version("upstream"),
+            wp2_snapshot_version=self._snapshot_version("wp2"),
+            wp3_snapshot_version=self._snapshot_version("wp3"),
         )
         payload = state.to_dict()
         payload.update({
@@ -314,7 +319,7 @@ class AssessmentService:
         )
         return payload
 
-    def _state_for_recommendation(self, session: dict[str, object]) -> object:
+    def _state_for_recommendation(self, session: dict[str, object]) -> StakeholderState:
         answers = session.get("answers")
         if isinstance(answers, dict) and answers.get("derivation_mode") != "wp2_wp3":
             return self.questionnaire_engine.build_state(
@@ -379,6 +384,7 @@ class AssessmentService:
             ip=ip,
             user_agent=user_agent,
         )
+        self._pg_write_session(session)
         return recommendation
 
     def _build_report_payload(self, assessment_id: str) -> dict[str, object]:
@@ -477,12 +483,15 @@ class AssessmentService:
     ) -> ImportReport:
         try:
             questionnaires = self._questionnaires_from_wp2(payload)
+            stakeholders = self._stakeholders_from_wp2(payload)
             report = import_structured_payload("wp2", payload)
+            report = replace(report, snapshot_version=self._required_string(payload, "version"))
         except Exception as exc:
             self.audit_log.append("data_import_failed", {"source": "wp2", "error": str(exc)}, ip=ip, user_agent=user_agent)
             raise
 
         self.questionnaires = questionnaires
+        self.wp2_stakeholders = stakeholders
         self.questionnaire_engine = QuestionnaireEngine(questionnaires)
         loader = RuleLoader(questionnaires)
         loader.active_rules = self.rules
@@ -506,6 +515,7 @@ class AssessmentService:
         try:
             nodes, edges = self._roadmap_from_wp3(payload)
             report = import_structured_payload("wp3", payload)
+            report = replace(report, snapshot_version=self._required_string(payload, "version"))
         except Exception as exc:
             self.audit_log.append("data_import_failed", {"source": "wp3", "error": str(exc)}, ip=ip, user_agent=user_agent)
             raise
@@ -589,6 +599,30 @@ class AssessmentService:
             )
         return questionnaires
 
+    def _stakeholders_from_wp2(self, payload: dict[str, object]) -> dict[str, dict[str, object]]:
+        self._required_string(payload, "version")
+        stakeholder_types = self._required_list(payload, "stakeholder_types")
+        if not stakeholder_types:
+            raise ValueError("wp2 stakeholder_types must not be empty")
+
+        stakeholders: dict[str, dict[str, object]] = {}
+        for raw in stakeholder_types:
+            if not isinstance(raw, dict):
+                raise ValueError("wp2 stakeholder_types entries must be objects")
+            stakeholder_id = self._required_string(raw, "id")
+            label = self._required_string(raw, "label")
+            self._required_list(raw, "personas")
+            self._required_list(raw, "user_journeys")
+            if stakeholder_id in stakeholders:
+                raise ValueError(f"duplicate stakeholder type: {stakeholder_id}")
+            stakeholders[stakeholder_id] = {
+                "stakeholder_type": stakeholder_id,
+                "description": label,
+                "capabilities": self._optional_string_list(raw, "capabilities"),
+                "pain_points": self._optional_string_list(raw, "pain_points"),
+            }
+        return stakeholders
+
     def _roadmap_from_wp3(self, payload: dict[str, object]) -> tuple[list[RoadmapNode], list[RoadmapEdge]]:
         self._required_string(payload, "version")
         raw_nodes = self._required_list(payload, "nodes")
@@ -645,6 +679,14 @@ class AssessmentService:
                 )
             )
         return nodes, edges
+
+    def _optional_string_list(self, payload: dict[str, object], key: str) -> list[str]:
+        value = payload.get(key, [])
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise ValueError(f"{key} must be a list")
+        return [str(item) for item in value if str(item).strip()]
 
     def _required_string(self, payload: dict[str, object], key: str) -> str:
         value = payload.get(key)

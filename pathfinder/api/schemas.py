@@ -100,7 +100,7 @@ class StakeholderStateResponse(BaseModel):
     questionnaire_version: str
     schema_version: str
     derivation_mode: str | None = None
-    pain_points: list[str] = []
+    pain_points: list[str] = Field(default_factory=list)
     source_wp2_stakeholder_id: str | None = None
     source_wp2_snapshot_version: str | None = None
     source_wp3_snapshot_version: str | None = None
