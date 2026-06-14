@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   buildStakeholderOptions,
@@ -314,14 +314,17 @@ function App() {
   const [pathBackend, setPathBackend] = useState("python");
   const [bannerText, setBannerText] = useState("Loading status…");
   const [lastAssessmentId, setLastAssessmentId] = useState("");
+  const assessmentRunRef = useRef(0);
   const stakeholderOptions = useMemo(() => buildStakeholderOptions(types), [types]);
   const loadedCopy = useMemo(() => formatStakeholderLoadedCopy(stakeholderOptions), [stakeholderOptions]);
 
   function handleStakeholderTypeChange(nextStakeholderType: string) {
+    assessmentRunRef.current += 1;
     setStakeholderType(nextStakeholderType);
     setReport(null);
     setError("");
     setLastAssessmentId("");
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -353,6 +356,8 @@ function App() {
 
   async function runAssessment() {
     if (!stakeholderType) return;
+    const runId = assessmentRunRef.current + 1;
+    assessmentRunRef.current = runId;
     setError("");
     setLoading(true);
     setReport(null);
@@ -361,16 +366,23 @@ function App() {
         method: "POST",
         body: JSON.stringify({ stakeholder_type: stakeholderType, target_scenario: "secondary-use-readiness" }),
       });
+      if (assessmentRunRef.current !== runId) return;
       setLastAssessmentId(session.assessment_id);
       await api(`/v1/assessments/${session.assessment_id}/recommendations?path_backend=${pathBackend}`, {
         method: "POST",
       });
+      if (assessmentRunRef.current !== runId) return;
       const r = await api<PathfinderReport>(`/v1/assessments/${session.assessment_id}/report`);
+      if (assessmentRunRef.current !== runId) return;
       setReport(r);
     } catch (err) {
-      setError(String(err));
+      if (assessmentRunRef.current === runId) {
+        setError(String(err));
+      }
     } finally {
-      setLoading(false);
+      if (assessmentRunRef.current === runId) {
+        setLoading(false);
+      }
     }
   }
 
