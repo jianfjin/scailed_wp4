@@ -317,6 +317,13 @@ function App() {
   const stakeholderOptions = useMemo(() => buildStakeholderOptions(types), [types]);
   const loadedCopy = useMemo(() => formatStakeholderLoadedCopy(stakeholderOptions), [stakeholderOptions]);
 
+  function handleStakeholderTypeChange(nextStakeholderType: string) {
+    setStakeholderType(nextStakeholderType);
+    setReport(null);
+    setError("");
+    setLastAssessmentId("");
+  }
+
   useEffect(() => {
     api<{ stakeholder_types: string[] }>("/v1/questionnaires")
       .then((data) => {
@@ -387,7 +394,7 @@ function App() {
           <StakeholderPicker
             options={stakeholderOptions}
             value={stakeholderType}
-            onChange={setStakeholderType}
+            onChange={handleStakeholderTypeChange}
           />
           <div className="banner">
             <strong>{loadedCopy}</strong>
