@@ -59,6 +59,40 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(report.status_code, 200)
         self.assertTrue(report.json()["audit_chain_valid"])
 
+    def test_assessment_flow_derives_readiness_without_answers_batch(self) -> None:
+        api_main._service = None
+        client = TestClient(app)
+        headers = {"Authorization": "Bearer demo-token"}
+
+        session = client.post(
+            "/v1/assessments",
+            headers=headers,
+            json={
+                "stakeholder_type": "academic-spinout-001",
+                "target_scenario": "secondary-use-readiness",
+            },
+        )
+        self.assertEqual(session.status_code, 200)
+        assessment_id = session.json()["assessment_id"]
+
+        recommendation = client.post(
+            f"/v1/assessments/{assessment_id}/recommendations",
+            headers=headers,
+        )
+        self.assertEqual(recommendation.status_code, 200)
+
+        report = client.get(f"/v1/assessments/{assessment_id}/report", headers=headers)
+        self.assertEqual(report.status_code, 200)
+        snapshot = report.json()["readiness_snapshot"]
+
+        self.assertEqual(snapshot["derivation_mode"], "wp2_wp3")
+        self.assertEqual(snapshot["source_wp2_stakeholder_id"], "academic-spinout-001")
+        self.assertIn("legal-basis", snapshot["capabilities"])
+        self.assertIn("pain_points", snapshot)
+        self.assertNotIn("answers_submitted", {
+            event.event_type for event in api_main._get_service().audit_log.events()
+        })
+
     def test_assessment_rejects_empty_or_unknown_stakeholder_type(self) -> None:
         client = TestClient(app)
         headers = {"Authorization": "Bearer demo-token"}

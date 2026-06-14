@@ -386,3 +386,41 @@ def test_d4_1_8_fhir_export_contains_traceability_bundle() -> None:
         care_plan_ref,
         observation_ref,
     } <= provenance_targets
+
+
+def test_d4_1_9_derived_assessment_uses_wp2_wp3_without_client_answers() -> None:
+    api_main._service = AssessmentService()
+    client = TestClient(app)
+    headers = {"Authorization": "Bearer demo-token"}
+
+    session = client.post(
+        "/v1/assessments",
+        headers=headers,
+        json={
+            "stakeholder_type": "academic-spinout-001",
+            "target_scenario": "secondary-use-readiness",
+        },
+    )
+    assert session.status_code == 200
+    assessment_id = session.json()["assessment_id"]
+
+    recommendation = client.post(
+        f"/v1/assessments/{assessment_id}/recommendations",
+        headers=headers,
+    )
+    assert recommendation.status_code == 200
+
+    report_response = client.get(f"/v1/assessments/{assessment_id}/report", headers=headers)
+    assert report_response.status_code == 200
+    report = report_response.json()
+    snapshot = report["readiness_snapshot"]
+
+    assert snapshot["derivation_mode"] == "wp2_wp3"
+    assert snapshot["source_wp2_stakeholder_id"] == "academic-spinout-001"
+    assert snapshot["source_wp2_snapshot_version"]
+    assert snapshot["source_wp3_snapshot_version"]
+    assert snapshot["maturity_scores"]
+    assert set(snapshot["capabilities"]) == {"federated-analytics", "legal-basis", "secure-processing"}
+    assert "data-catalog" in snapshot["missing_capabilities"]
+    assert "gdpr-review-needed" in snapshot["regulatory_flags"]
+    assert report["recommended_path"]["trace"]["roadmap_node_ids"]

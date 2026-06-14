@@ -31,6 +31,7 @@ from pathfinder.core.repositories.connection import get_pool as _get_pool
 from pathfinder.core.rules.loader import RuleLoader
 from pathfinder.core.solver import PathfinderSolver
 from pathfinder.fhir.export_service import build_assessment_bundle
+from pathfinder.services.derived_readiness import derive_readiness_state
 
 
 class AssessmentService:
@@ -83,6 +84,28 @@ class AssessmentService:
         paths converge on exactly the same conversion logic.
         """
         import asyncio
+        import threading
+
+        def run_client_coro(coro):
+            try:
+                asyncio.get_running_loop()
+            except RuntimeError:
+                return asyncio.run(coro)
+
+            result: dict[str, object] = {}
+
+            def runner() -> None:
+                try:
+                    result["value"] = asyncio.run(coro)
+                except BaseException as exc:  # pragma: no cover - re-raised in caller thread
+                    result["error"] = exc
+
+            thread = threading.Thread(target=runner)
+            thread.start()
+            thread.join()
+            if "error" in result:
+                raise result["error"]  # type: ignore[misc]
+            return result.get("value")
 
         client = UpstreamClient(
             wp2_url="http://localhost:8102/api/v1",
@@ -91,7 +114,7 @@ class AssessmentService:
             max_retries=2,
             retry_delay=0.5,
         )
-        asyncio.run(client.startup())
+        run_client_coro(client.startup())
 
         # Inject the 5 demo-compatible stakeholder types so WP3 nodes and WP8
         # rules (which reference biotech-sme etc.) find matching questionnaires.
@@ -119,7 +142,7 @@ class AssessmentService:
         self.import_reports["demo"] = self.import_reports.pop("upstream")
 
         # Clean up the aiohttp session.
-        asyncio.run(client.close())
+        run_client_coro(client.close())
 
     def _load_upstream_data(self, client: UpstreamClient) -> None:
         """Load data from UpstreamClient cache (mock REST or real WP services).
@@ -132,6 +155,7 @@ class AssessmentService:
         # while reusing the demo question template until WP2 supplies
         # stakeholder-specific questionnaire definitions.
         template = demo_questionnaires()[0]
+        self.wp2_stakeholders = {}
         stakeholder_types: list[str] = []
         questionnaires: list[Questionnaire] = []
         seen: set[str] = set()
@@ -146,6 +170,7 @@ class AssessmentService:
             if stakeholder_type in seen:
                 skipped_duplicate += 1
                 continue
+            self.wp2_stakeholders[stakeholder_type] = dict(record)
             seen.add(stakeholder_type)
             stakeholder_types.append(stakeholder_type)
             label = str(record.get("description") or stakeholder_type)
@@ -254,6 +279,59 @@ class AssessmentService:
         self._pg_write_session(session)
         return state.to_dict()
 
+    def _snapshot_version(self, key: str) -> str:
+        report = self.import_reports.get(key) or self.import_reports.get("upstream") or self.import_reports.get("demo")
+        return report.snapshot_version if report else "unknown-snapshot"
+
+    def _derive_state_for_session(self, session: dict[str, object]) -> dict[str, object]:
+        stakeholder_type = str(session["stakeholder_type"])
+        stakeholder = getattr(self, "wp2_stakeholders", {}).get(stakeholder_type)
+        if stakeholder is None:
+            raise ValueError(f"WP2 stakeholder record not found: {stakeholder_type}")
+        state = derive_readiness_state(
+            stakeholder=stakeholder,
+            target_scenario=str(session["target_scenario"]),
+            wp2_snapshot_version=self._snapshot_version("upstream"),
+            wp3_snapshot_version=self._snapshot_version("upstream"),
+        )
+        payload = state.to_dict()
+        payload.update({
+            "derivation_mode": "wp2_wp3",
+            "pain_points": list(state.answers.get("pain_points", [])),
+            "source_wp2_stakeholder_id": state.answers["source_wp2_stakeholder_id"],
+            "source_wp2_snapshot_version": state.answers["source_wp2_snapshot_version"],
+            "source_wp3_snapshot_version": state.answers["source_wp3_snapshot_version"],
+        })
+        session["stakeholder_state"] = payload
+        session["answers"] = state.answers
+        self.audit_log.append(
+            "readiness_derived",
+            {
+                "assessment_id": session["assessment_id"],
+                "stakeholder_type": stakeholder_type,
+                "derivation_mode": "wp2_wp3",
+            },
+        )
+        return payload
+
+    def _state_for_recommendation(self, session: dict[str, object]) -> object:
+        answers = session.get("answers")
+        if isinstance(answers, dict) and answers.get("derivation_mode") != "wp2_wp3":
+            return self.questionnaire_engine.build_state(
+                str(session["stakeholder_type"]),
+                str(session["target_scenario"]),
+                answers,
+            )
+        state_payload = session.get("stakeholder_state")
+        if not isinstance(state_payload, dict) or state_payload.get("derivation_mode") != "wp2_wp3":
+            state_payload = self._derive_state_for_session(session)
+        return derive_readiness_state(
+            stakeholder=getattr(self, "wp2_stakeholders", {})[str(session["stakeholder_type"])],
+            target_scenario=str(session["target_scenario"]),
+            wp2_snapshot_version=str(state_payload.get("source_wp2_snapshot_version", "unknown-snapshot")),
+            wp3_snapshot_version=str(state_payload.get("source_wp3_snapshot_version", "unknown-snapshot")),
+        )
+
     def generate_recommendation(
         self,
         assessment_id: str,
@@ -263,14 +341,7 @@ class AssessmentService:
         if assessment_id not in self.sessions:
             raise KeyError(f"Assessment not found: {assessment_id}")
         session = self.sessions[assessment_id]
-        answers = session.get("answers")
-        if not isinstance(answers, dict):
-            raise ValueError("answers must be submitted before recommendation generation")
-        state = self.questionnaire_engine.build_state(
-            str(session["stakeholder_type"]),
-            str(session["target_scenario"]),
-            answers,
-        )
+        state = self._state_for_recommendation(session)
         path = self.solver.solve(state, self.rules)
         recommendation = build_recommendation(path)
 
@@ -295,14 +366,7 @@ class AssessmentService:
         if assessment_id not in self.sessions:
             raise KeyError(f"Assessment not found: {assessment_id}")
         session = self.sessions[assessment_id]
-        answers = session.get("answers")
-        if not isinstance(answers, dict):
-            raise ValueError("answers must be submitted before recommendation generation")
-        state = self.questionnaire_engine.build_state(
-            str(session["stakeholder_type"]),
-            str(session["target_scenario"]),
-            answers,
-        )
+        state = self._state_for_recommendation(session)
         path = self.solver.solve(state, self.rules)
         recommendation = build_recommendation(path)
 
@@ -321,6 +385,8 @@ class AssessmentService:
         if assessment_id not in self.sessions:
             raise KeyError(f"Assessment not found: {assessment_id}. It may have expired after server restart.")
         session = self.sessions[assessment_id]
+        if not isinstance(session.get("stakeholder_state"), dict):
+            self._derive_state_for_session(session)
         recommendation = session.get("recommendation")
         if not isinstance(recommendation, dict):
             recommendation = self.generate_recommendation(assessment_id)

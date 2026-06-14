@@ -99,6 +99,11 @@ class StakeholderStateResponse(BaseModel):
     confidence_warnings: list[str]
     questionnaire_version: str
     schema_version: str
+    derivation_mode: str | None = None
+    pain_points: list[str] = []
+    source_wp2_stakeholder_id: str | None = None
+    source_wp2_snapshot_version: str | None = None
+    source_wp3_snapshot_version: str | None = None
 
 
 # ─── Recommendation ─────────────────────────────────────────────────
