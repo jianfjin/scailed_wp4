@@ -424,3 +424,10 @@ def test_d4_1_9_derived_assessment_uses_wp2_wp3_without_client_answers() -> None
     assert "data-catalog" in snapshot["missing_capabilities"]
     assert "gdpr-review-needed" in snapshot["regulatory_flags"]
     assert report["recommended_path"]["trace"]["roadmap_node_ids"]
+
+    events = api_main._get_service().audit_log.events()
+    assert not any(
+        event.event_type == "answers_submitted"
+        and event.event_data.get("assessment_id") == assessment_id
+        for event in events
+    )
