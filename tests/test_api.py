@@ -132,6 +132,46 @@ class ApiTests(unittest.TestCase):
         self.assertIn("audit-log", snapshot["capabilities"])
         self.assertIn("cross-border-use", snapshot["regulatory_flags"])
 
+    def test_derived_session_recommendation_uses_stored_snapshot_after_wp2_import(self) -> None:
+        from pathfinder.services.assessment_service import AssessmentService
+
+        service = AssessmentService()
+        session = service.create_session("academic-spinout-001", "secondary-use-readiness")
+        assessment_id = str(session["assessment_id"])
+
+        first = service.generate_recommendation(assessment_id)
+        first_report = service.report(assessment_id)
+        first_snapshot = first_report["readiness_snapshot"]
+
+        service.import_wp2({
+            "version": "wp2-reimport-v1",
+            "stakeholder_types": [
+                {
+                    "id": "academic-spinout-001",
+                    "label": "Academic spinout changed",
+                    "personas": ["technical reviewer"],
+                    "user_journeys": ["prepare EHDS readiness"],
+                    "capabilities": ["audit-log"],
+                    "pain_points": [],
+                }
+            ],
+        })
+
+        second = service.generate_recommendation(assessment_id)
+        second_report = service.report(assessment_id)
+        second_snapshot = second_report["readiness_snapshot"]
+
+        self.assertEqual(second_snapshot["capabilities"], first_snapshot["capabilities"])
+        self.assertEqual(
+            second_snapshot["source_wp2_snapshot_version"],
+            first_snapshot["source_wp2_snapshot_version"],
+        )
+        self.assertEqual(second["current_node"], first["current_node"])
+        self.assertEqual(
+            second["trace"]["upstream_snapshot_version"],
+            first["trace"]["upstream_snapshot_version"],
+        )
+
     def test_assessment_rejects_empty_or_unknown_stakeholder_type(self) -> None:
         client = TestClient(app)
         headers = {"Authorization": "Bearer demo-token"}

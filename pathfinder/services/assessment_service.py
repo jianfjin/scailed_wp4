@@ -319,6 +319,36 @@ class AssessmentService:
         )
         return payload
 
+    def _state_from_stored_payload(self, payload: dict[str, object]) -> StakeholderState:
+        def string_tuple(key: str) -> tuple[str, ...]:
+            value = payload.get(key, ())
+            if isinstance(value, (list, tuple)):
+                return tuple(str(item) for item in value)
+            return ()
+
+        maturity_scores = payload.get("maturity_scores", {})
+        if not isinstance(maturity_scores, dict):
+            maturity_scores = {}
+
+        answers = payload.get("answers", {})
+        if not isinstance(answers, dict):
+            answers = {}
+
+        return StakeholderState(
+            stakeholder_type=str(payload.get("stakeholder_type", "")),
+            target_scenario=str(payload.get("target_scenario", "")),
+            answers=dict(answers),
+            maturity_scores={str(key): int(value) for key, value in maturity_scores.items()},
+            capabilities=string_tuple("capabilities"),
+            missing_capabilities=string_tuple("missing_capabilities"),
+            regulatory_flags=string_tuple("regulatory_flags"),
+            confidence=float(payload.get("confidence", 0.0)),
+            confidence_warnings=string_tuple("confidence_warnings"),
+            questionnaire_version=str(payload.get("questionnaire_version", "")),
+            schema_version=str(payload.get("schema_version", "")),
+            upstream_snapshot_version=str(payload.get("upstream_snapshot_version", "")),
+        )
+
     def _state_for_recommendation(self, session: dict[str, object]) -> StakeholderState:
         answers = session.get("answers")
         if isinstance(answers, dict) and answers.get("derivation_mode") != "wp2_wp3":
@@ -330,12 +360,7 @@ class AssessmentService:
         state_payload = session.get("stakeholder_state")
         if not isinstance(state_payload, dict) or state_payload.get("derivation_mode") != "wp2_wp3":
             state_payload = self._derive_state_for_session(session)
-        return derive_readiness_state(
-            stakeholder=getattr(self, "wp2_stakeholders", {})[str(session["stakeholder_type"])],
-            target_scenario=str(session["target_scenario"]),
-            wp2_snapshot_version=str(state_payload.get("source_wp2_snapshot_version", "unknown-snapshot")),
-            wp3_snapshot_version=str(state_payload.get("source_wp3_snapshot_version", "unknown-snapshot")),
-        )
+        return self._state_from_stored_payload(state_payload)
 
     def generate_recommendation(
         self,
