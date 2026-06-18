@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 import unittest
 
@@ -485,3 +486,24 @@ class ApiTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_pg_session_persistence_is_best_effort_inside_async_request_loop(monkeypatch) -> None:
+    from pathfinder.services import assessment_service
+    from pathfinder.services.assessment_service import AssessmentService
+
+    async def failing_save_session(pool, session_data):
+        raise RuntimeError("simulated asyncpg loop conflict")
+
+    async def exercise() -> dict[str, object]:
+        service = AssessmentService()
+        monkeypatch.setattr(assessment_service, "_get_pool", lambda: object())
+        monkeypatch.setattr(assessment_service.session_repo, "save_session", failing_save_session)
+        session = service.create_session("academic-spinout-001", "secondary-use-readiness")
+        await asyncio.sleep(0)
+        return session
+
+    session = asyncio.run(exercise())
+
+    assert "assessment_id" in session
+    assert session["status"] == "in_progress"

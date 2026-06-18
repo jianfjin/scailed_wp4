@@ -114,7 +114,7 @@ services:
       - "traefik.http.routers.api.middlewares=api-strip"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-pathfinder}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-pathfinder}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-pathfinder}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-pathfinder}
       - REDIS_URL=redis://redis:6379/0
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - SECRET_KEY=${SECRET_KEY:-dev-secret-change-in-production}

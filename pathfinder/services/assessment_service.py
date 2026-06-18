@@ -9,6 +9,8 @@ API backward compatibility and delegate to the synchronous solver.
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import os
 import sys
 from dataclasses import replace
@@ -34,6 +36,8 @@ from pathfinder.core.solver import PathfinderSolver
 from pathfinder.fhir.export_service import build_assessment_bundle
 from pathfinder.services.derived_readiness import derive_readiness_state
 
+logger = logging.getLogger(__name__)
+
 
 class AssessmentService:
     def __init__(
@@ -53,9 +57,31 @@ class AssessmentService:
 
     # ── PG persistence helpers (best-effort via background event loop) ──
 
+    def _schedule_pg_write(self, coro: object, label: str) -> None:
+        """Run optional PG persistence without failing the assessment flow."""
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            try:
+                run_async(coro, timeout=2.0)
+            except Exception as exc:  # pragma: no cover - logged best-effort path
+                logger.warning("Failed to persist %s to PostgreSQL: %s", label, exc)
+            return
+
+        task = loop.create_task(coro)  # type: ignore[arg-type]
+
+        def log_failure(done: asyncio.Task[object]) -> None:
+            try:
+                done.result()
+            except Exception as exc:  # pragma: no cover - callback exercised in deployed async loop
+                logger.warning("Failed to persist %s to PostgreSQL: %s", label, exc)
+
+        task.add_done_callback(log_failure)
+
     def _pg_write_session(self, session: dict) -> None:
-        """Persist session to PG via background event loop (best-effort)."""
-        if not _get_pool():
+        """Persist session to PG best-effort; in-memory state remains authoritative."""
+        pool = _get_pool()
+        if not pool:
             return  # PG pool not initialised
         from datetime import datetime, timezone
         pg = {
@@ -69,13 +95,14 @@ class AssessmentService:
             "completed_at": datetime.now(timezone.utc).isoformat()
                 if session.get("status") == "complete" else None,
         }
-        run_async(session_repo.save_session(_get_pool(), pg), timeout=2.0)
+        self._schedule_pg_write(session_repo.save_session(pool, pg), "assessment session")
 
     def _pg_write_audit(self, event: dict) -> None:
-        """Persist audit event via background event loop (best-effort)."""
-        if not _get_pool():
+        """Persist audit event best-effort; in-memory audit remains authoritative."""
+        pool = _get_pool()
+        if not pool:
             return
-        run_async(audit_repo.save_audit_event(_get_pool(), event), timeout=2.0)
+        self._schedule_pg_write(audit_repo.save_audit_event(pool, event), "audit event")
 
     def _load_demo_data(self) -> None:
         """Load WP2/WP3/WP8 data from local mock REST services (zero Docker dep).
