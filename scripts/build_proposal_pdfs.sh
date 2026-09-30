@@ -38,14 +38,15 @@ import markdown
 source, target = map(Path, sys.argv[1:])
 body = markdown.markdown(
     source.read_text(),
-    extensions=["fenced_code", "tables", "toc"],
+    extensions=["fenced_code", "tables", "toc", "nl2br"],
     output_format="html5",
 )
 target.write_text(
     "<!doctype html><html><head><meta charset='utf-8'>"
-    "<style>body{font-family:Arial,sans-serif;margin:2cm;line-height:1.35}"
-    "h1,h2,h3{color:#173f35}table{border-collapse:collapse;width:100%}"
-    "th,td{border:1px solid #999;padding:5px;vertical-align:top}"
+    "<style>@page{size:A4;margin:1.5cm}body{font-family:Arial,sans-serif;margin:0;line-height:1.35}"
+    "h1,h2,h3{color:#173f35}table{border-collapse:collapse;width:100%;table-layout:auto}"
+    "th,td{border:1px solid #999;padding:3px 4px;vertical-align:top;font-size:9.5pt;"
+    "word-break:normal;overflow-wrap:normal;white-space:normal;hyphens:none}"
     "code,pre{font-family:monospace}pre{background:#f3f5f4;padding:8px}"
     "</style></head><body>" + body + "</body></html>",
 )
