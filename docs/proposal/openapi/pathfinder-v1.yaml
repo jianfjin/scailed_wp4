@@ -1,0 +1,146 @@
+openapi: 3.0.3
+info:
+  title: SCAILED Pathfinder V1 API
+  version: 1.0.0
+  description: Deterministic, auditable EHDS readiness path planner for the WP4 demo.
+servers:
+  - url: /
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      security: []
+      summary: Runtime health and active import status
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+  /v1/questionnaires:
+    get:
+      summary: List stakeholder types
+      responses:
+        '200':
+          description: Questionnaire catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [stakeholder_types]
+                properties:
+                  stakeholder_types: { type: array, items: { type: string } }
+  /v1/questionnaires/{stakeholder_type}:
+    get:
+      summary: Get a stakeholder questionnaire
+      parameters:
+        - $ref: '#/components/parameters/StakeholderType'
+      responses:
+        '200': { description: Questionnaire }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/assessments:
+    post:
+      summary: Create assessment session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateAssessment' }
+      responses:
+        '201':
+          description: Session created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /v1/assessments/{assessment_id}/answers:
+    post:
+      summary: Submit assessment answers
+      parameters:
+        - $ref: '#/components/parameters/AssessmentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: Derived stakeholder state }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/assessments/{assessment_id}/recommendations:
+    post:
+      summary: Generate a deterministic recommendation
+      parameters:
+        - $ref: '#/components/parameters/AssessmentId'
+        - name: path_backend
+          in: query
+          schema: { type: string, enum: [python, cypher], default: python }
+      responses:
+        '200':
+          description: Path result
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Recommendation' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /v1/assessments/{assessment_id}/report:
+    get:
+      summary: Get a traceable report
+      parameters:
+        - $ref: '#/components/parameters/AssessmentId'
+        - name: format
+          in: query
+          schema: { type: string, enum: [json, html], default: json }
+      responses:
+        '200': { description: Report }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer }
+  parameters:
+    AssessmentId: { name: assessment_id, in: path, required: true, schema: { type: string, format: uuid } }
+    StakeholderType: { name: stakeholder_type, in: path, required: true, schema: { type: string } }
+  responses:
+    NotFound: { description: Resource not found }
+    ValidationError: { description: Request validation failed }
+  schemas:
+    CreateAssessment:
+      type: object
+      required: [stakeholder_type, target_scenario]
+      properties:
+        stakeholder_type: { type: string }
+        target_scenario: { type: string }
+    Session:
+      type: object
+      required: [assessment_id, stakeholder_type, target_scenario, status]
+      properties:
+        assessment_id: { type: string, format: uuid }
+        stakeholder_type: { type: string }
+        target_scenario: { type: string }
+        status: { type: string, enum: [in_progress, complete, blocked, degraded] }
+    Health:
+      type: object
+      required: [mode]
+      properties:
+        mode: { type: string }
+        import_reports: { type: object, additionalProperties: true }
+    Recommendation:
+      type: object
+      required: [status, trace]
+      properties:
+        status: { type: string, enum: [ok, blocked, degraded] }
+        current_node: { type: string }
+        target_node: { type: string }
+        next_steps: { type: array, items: { type: object, additionalProperties: true } }
+        blockers: { type: array, items: { type: string } }
+        warnings: { type: array, items: { type: string } }
+        trace:
+          type: object
+          required: [roadmap_node_ids, triggered_rule_ids]
+          properties:
+            answer_ids: { type: array, items: { type: string } }
+            roadmap_node_ids: { type: array, items: { type: string } }
+            triggered_rule_ids: { type: array, items: { type: string } }
+            regulatory_refs: { type: array, items: { type: string } }
+            upstream_snapshot_version: { type: string }
+            schema_version: { type: string }
+            rule_version: { type: string }

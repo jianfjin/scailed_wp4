@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scailed.example/schemas/assessment-session.schema.json",
+  "title": "Pathfinder Assessment Session",
+  "type": "object",
+  "required": ["assessment_id", "stakeholder_type", "target_scenario", "status"],
+  "properties": {
+    "assessment_id": {"type": "string", "format": "uuid"},
+    "stakeholder_type": {"type": "string", "minLength": 1},
+    "target_scenario": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "enum": ["in_progress", "complete", "blocked", "degraded"]},
+    "answers": {"type": "object", "additionalProperties": true},
+    "questionnaire_version": {"type": "string"},
+    "roadmap_snapshot_version": {"type": "string"},
+    "rule_version": {"type": "string"}
+  },
+  "additionalProperties": false
+}

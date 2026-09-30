@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scailed.example/schemas/rule-bundle.schema.json",
+  "title": "Pathfinder Rule Bundle",
+  "type": "object",
+  "required": ["version", "snapshot_date", "rules"],
+  "properties": {
+    "version": {"type": "string", "minLength": 1},
+    "snapshot_date": {"type": "string", "minLength": 1},
+    "rules": {"type": "array", "items": {"$ref": "#/$defs/rule"}}
+  },
+  "$defs": {
+    "condition": {
+      "type": "object",
+      "additionalProperties": true,
+      "minProperties": 0
+    },
+    "rule": {
+      "type": "object",
+      "required": ["rule_id", "rule_type", "priority", "applies_to", "condition", "action", "compliance_refs", "source_doc_ref", "rule_version"],
+      "properties": {
+        "rule_id": {"type": "string", "minLength": 1},
+        "rule_type": {"type": "string", "enum": ["eligibility", "exclusion", "preference", "override"]},
+        "priority": {"type": "integer"},
+        "applies_to": {"type": "array", "items": {"type": "string"}},
+        "condition": {"$ref": "#/$defs/condition"},
+        "action": {"type": "object", "required": ["title", "text"], "properties": {"title": {"type": "string"}, "text": {"type": "string"}, "node_id": {"type": ["string", "null"]}, "warning": {"type": "string"}, "block": {"type": "boolean"}}, "additionalProperties": false},
+        "compliance_refs": {"type": "array", "items": {"type": "string"}},
+        "source_doc_ref": {"type": "string"},
+        "rule_version": {"type": "string"},
+        "effective_from": {"type": ["string", "null"]},
+        "effective_until": {"type": ["string", "null"]},
+        "parent_rule_id": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    }
+  }
+}
