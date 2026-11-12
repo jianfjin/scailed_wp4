@@ -1,0 +1,349 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "SCAILED WP Boundary Data \u2014 Public Interface Architecture",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1260,
+      520
+    ],
+    "views": [
+      {
+        "id": "publish",
+        "label": "Snapshot publication",
+        "focus": [
+          "wp2",
+          "wp3",
+          "wp8",
+          "contracts"
+        ],
+        "note": "Work packages deliver versioned JSON snapshots into contracts/."
+      },
+      {
+        "id": "runtime",
+        "label": "Pathfinder import and evaluation",
+        "focus": [
+          "contracts",
+          "validator",
+          "store",
+          "core",
+          "api",
+          "wp4fe"
+        ],
+        "note": "CI gates releases; the application server imports snapshots and serves deterministic results."
+      },
+      {
+        "id": "feedback",
+        "label": "Feedback loop",
+        "focus": [
+          "wp4fe",
+          "feedback",
+          "contracts"
+        ],
+        "note": "Cohort-aggregated feedback returns as pf.feedback.v1 snapshots for WP2/WP3/WP8 improvement."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "wp2",
+      "type": "external",
+      "label": "WP2 Developer",
+      "sublabel": "taxonomy + questionnaire",
+      "pos": [
+        40,
+        140
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "wp3",
+      "type": "external",
+      "label": "WP3 Developer",
+      "sublabel": "roadmap + node graph",
+      "pos": [
+        40,
+        220
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "wp8",
+      "type": "external",
+      "label": "WP8 Developer",
+      "sublabel": "rules + decision engine",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "contracts",
+      "type": "cloud",
+      "label": "contracts/ Repository",
+      "sublabel": "schemas + snapshots + ids.md",
+      "pos": [
+        300,
+        220
+      ],
+      "size": [
+        160,
+        64
+      ],
+      "tag": "5 versioned contracts"
+    },
+    {
+      "id": "validator",
+      "type": "security",
+      "label": "Contract Validator",
+      "sublabel": "validate_contracts.py",
+      "pos": [
+        560,
+        220
+      ],
+      "size": [
+        160,
+        64
+      ]
+    },
+    {
+      "id": "store",
+      "type": "database",
+      "label": "Boundary Store",
+      "sublabel": "in-memory | PostgreSQL",
+      "pos": [
+        820,
+        220
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "wp4fe",
+      "type": "frontend",
+      "label": "WP4 Web UI",
+      "sublabel": "TypeScript wizard",
+      "pos": [
+        1050,
+        220
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "core",
+      "type": "backend",
+      "label": "Deterministic Core",
+      "sublabel": "in-memory graph + rules",
+      "pos": [
+        820,
+        390
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "Pathfinder API",
+      "sublabel": "FastAPI",
+      "pos": [
+        1050,
+        390
+      ],
+      "size": [
+        150,
+        64
+      ]
+    },
+    {
+      "id": "feedback",
+      "type": "messagebus",
+      "label": "Feedback Snapshots",
+      "sublabel": "cohorts, k >= 5",
+      "pos": [
+        300,
+        390
+      ],
+      "size": [
+        160,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "scailed_wp4 repository",
+      "wraps": [
+        "contracts",
+        "validator",
+        "store",
+        "wp4fe",
+        "core",
+        "api",
+        "feedback"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "WP2 / WP3 / WP8 teams",
+      "wraps": [
+        "wp2",
+        "wp3",
+        "wp8"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c-wp2",
+      "from": "wp2",
+      "to": "contracts",
+      "label": "pf.taxonomy.v1",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "id": "c-wp3",
+      "from": "wp3",
+      "to": "contracts",
+      "label": "pf.roadmap.v1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-wp8",
+      "from": "wp8",
+      "to": "contracts",
+      "label": "pf.rulebundle.v1",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "c-fb-in",
+      "from": "feedback",
+      "to": "contracts",
+      "label": "pf.feedback.v1",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "c-ci",
+      "from": "contracts",
+      "to": "validator",
+      "label": "CI check",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-release",
+      "from": "validator",
+      "to": "store",
+      "label": "release",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c-active",
+      "from": "store",
+      "to": "core",
+      "label": "active snapshots",
+      "labelAt": [
+        950,
+        338
+      ]
+    },
+    {
+      "id": "c-results",
+      "from": "core",
+      "to": "api",
+      "label": "results"
+    },
+    {
+      "id": "c-rest",
+      "from": "api",
+      "to": "wp4fe",
+      "label": "REST"
+    },
+    {
+      "id": "c-telemetry",
+      "from": "wp4fe",
+      "to": "feedback",
+      "label": "usage (k >= 5)",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "right",
+      "via": [
+        [
+          1235,
+          252
+        ],
+        [
+          1235,
+          490
+        ],
+        [
+          540,
+          490
+        ],
+        [
+          540,
+          422
+        ]
+      ],
+      "labelAt": [
+        880,
+        478
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Boundary principles",
+      "items": [
+        "Freeze the boundary, not WP internals",
+        "Every artifact is a versioned JSON snapshot",
+        "Canonical SHA-256 checksum (NFC + sorted keys)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Four validation gates",
+      "items": [
+        "JSON Schema vs contracts/*.schema.json",
+        "Checksum + manifest integrity (supersedes chain)",
+        "Cross-snapshot referential rules R1-R13",
+        "Behavioural rule tests in CI"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Stable identifiers",
+      "items": [
+        "Namespace pf:<wp>:<type>:<slug>",
+        "IDs never reused or renamed",
+        "Milestones disambiguated as WPn/MSx.y"
+      ]
+    }
+  ]
+}
