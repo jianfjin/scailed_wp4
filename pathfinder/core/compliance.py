@@ -29,7 +29,7 @@ class ComplianceEvaluator:
             return not self.evaluate(condition["not"], state)
 
         field = condition.get("field")
-        operator = condition.get("operator", "eq")
+        operator = condition.get("operator", condition.get("op", "eq"))
         expected = condition.get("value")
         actual = self._resolve_field(field, state)
         return self._compare(actual, operator, expected)

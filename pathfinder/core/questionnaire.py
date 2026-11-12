@@ -77,11 +77,12 @@ class QuestionnaireEngine:
             value = answers.get(question.question_id)
             if question.maturity_dimension and isinstance(value, int):
                 maturity_scores[question.maturity_dimension] = value
-            if question.question_id == "capabilities" and isinstance(value, list):
+            state_field = question.state_field or question.question_id
+            if state_field == "capabilities" and isinstance(value, list):
                 capabilities.extend(value)
-            if question.question_id == "missing_capabilities" and isinstance(value, list):
+            if state_field == "missing_capabilities" and isinstance(value, list):
                 missing_capabilities.extend(value)
-            if question.question_id == "regulatory_flags" and isinstance(value, list):
+            if state_field == "regulatory_flags" and isinstance(value, list):
                 regulatory_flags.extend(value)
 
         required_count = sum(1 for question in questionnaire.questions if question.required)

@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import os
 import shlex
+import re
 import subprocess
 import sys
 import urllib.error
@@ -109,6 +110,9 @@ def step1_docker_ps() -> None:
         name, _, status_str = line.partition(" ")
         containers[name] = status_str
 
+    backend_names = [name for name in containers if re.search(r"(?:^|[-_])backend[-_]\d+$", name)]
+    if "scailed-backend" not in containers and backend_names:
+        containers["scailed-backend"] = containers[backend_names[0]]
     missing = [c for c in EXPECTED_CONTAINERS if c not in containers]
     if missing:
         _fail(f"missing containers: {missing}")

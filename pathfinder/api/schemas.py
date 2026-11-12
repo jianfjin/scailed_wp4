@@ -41,6 +41,8 @@ class HealthResponse(BaseModel):
     audit_events: int
     audit_chain_valid: bool
     import_reports: dict[str, Any] = Field(default_factory=dict)
+    active_snapshot_ids: dict[str, str] = Field(default_factory=dict)
+    regulatory_status: str = "unverified"
 
 
 # ─── Questionnaire ──────────────────────────────────────────────────
@@ -81,6 +83,9 @@ class CreateAssessmentResponse(BaseModel):
     target_scenario: str
     status: str
     mock_data_mode: bool = True
+    snapshot_ids: dict[str, str] | None = None
+    evaluation_date: str | None = None
+    boundary_generation_id: str | None = None
 
 
 class BatchAnswersRequest(BaseModel):
@@ -117,6 +122,9 @@ class TraceRecordResponse(BaseModel):
     schema_version: str
     rule_version: str
     confidence: float
+    snapshot_ids: dict[str, str] | None = None
+    evaluation_date: str | None = None
+    boundary_generation_id: str | None = None
 
 
 class RuleActionResponse(BaseModel):
@@ -136,6 +144,7 @@ class RuleResponse(BaseModel):
     action: RuleActionResponse
     compliance_refs: list[str]
     rule_version: str
+    regulatory_status: str = "verified"
 
 
 class RecommendationResponse(BaseModel):
@@ -149,6 +158,7 @@ class RecommendationResponse(BaseModel):
     trace: TraceRecordResponse
     confidence: float
     path_backend: str = "python"  # "python" | "cypher" | "n/a (blocked)"
+    regulatory_status: str | None = None
 
 
 # ─── Report ─────────────────────────────────────────────────────────

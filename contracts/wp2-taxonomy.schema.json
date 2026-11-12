@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scailed.eu/contracts/wp2-taxonomy.schema.json",
+  "title": "pf.taxonomy.v1 payload — WP2 stakeholder taxonomy (B1)",
+  "description": "Machine-readable projection of T2.1 stakeholder mapping / D2.1. WP2 owns content; format is frozen here.",
+  "type": "object",
+  "required": ["dimensions", "stakeholder_types", "scenarios", "capability_vocabulary"],
+  "additionalProperties": false,
+  "properties": {
+    "capability_vocabulary": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9-]+$"}},
+    "dimensions": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Shared maturity vocabulary. positioning_axis reflects MS4.1 (technical/operational/regulatory positioning).",
+      "items": {
+        "type": "object",
+        "required": ["dimension_id", "label", "positioning_axis", "state_key"],
+        "additionalProperties": false,
+        "properties": {
+          "dimension_id": {"$ref": "#/$defs/id"},
+          "state_key": {"type": "string", "enum": ["governance", "data", "compliance", "infrastructure", "capability"]},
+          "label": {"type": "string", "minLength": 1},
+          "positioning_axis": {"type": "string", "enum": ["technical", "operational", "regulatory"]},
+          "scale": {"type": "object", "properties": {"min": {"const": 1}, "max": {"const": 5}}, "additionalProperties": false}
+        }
+      }
+    },
+    "stakeholder_types": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["stakeholder_type_id", "label", "ehds_roles", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "stakeholder_type_id": {"$ref": "#/$defs/id"},
+          "label": {"type": "string", "minLength": 1},
+          "description": {"type": "string"},
+          "ehds_roles": {"type": "array", "minItems": 1, "items": {"type": "string", "enum": ["data-holder", "data-user", "intermediary", "regulator", "developer"]}, "description": "T2.1 role classification (health data holders/users)."},
+          "segment": {"type": "string", "description": "T2.1 segment: industry, regulators, researchers, patient organisations, healthcare authorities, ..."},
+          "capabilities": {"type": "array", "items": {"type": "string"}},
+          "personas": {"type": "array", "items": {"type": "object", "required": ["persona_id", "label"], "properties": {"persona_id": {"$ref": "#/$defs/id"}, "label": {"type": "string"}, "influence": {"type": "string", "enum": ["low", "medium", "high"]}, "interest": {"type": "string", "enum": ["low", "medium", "high"]}}, "additionalProperties": false}},
+          "status": {"type": "string", "enum": ["active", "deprecated"]},
+          "successor": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/id"}]}
+        }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["scenario_id", "label", "applicable_stakeholder_types"],
+        "additionalProperties": false,
+        "properties": {
+          "scenario_id": {"$ref": "#/$defs/id"},
+          "label": {"type": "string", "minLength": 1},
+          "target_description": {"type": "string"},
+          "applicable_stakeholder_types": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+        }
+      }
+    },
+    "metadata": {"type": "object", "additionalProperties": true}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^pf:wp2:[a-z-]+:[a-z0-9-]{1,64}$"}
+  }
+}

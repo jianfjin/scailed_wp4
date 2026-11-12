@@ -1,0 +1,188 @@
+{
+  "contract": "pf.taxonomy.v1",
+  "manifest": {
+    "contract_version": "1.0.0",
+    "snapshot_id": "136c7555-45e3-40dc-a9ac-6749cc516ef3",
+    "producer_wp": "WP2",
+    "generated_at": "2026-11-10T00:00:00Z",
+    "generator": {
+      "name": "contracts-builder",
+      "version": "1.0.0",
+      "seed": null
+    },
+    "supersedes": null,
+    "items_checksum": "sha256:39ebf4e8ad76be092a83a28bdc942af2ec3b8e75273fc11b2a90a54291678ce3",
+    "derived_from": [
+      {
+        "source": "D2.1",
+        "section": "s.2 stakeholder mapping",
+        "status": "approved"
+      }
+    ],
+    "dependencies": {}
+  },
+  "payload": {
+    "dimensions": [
+      {
+        "dimension_id": "pf:wp2:dimension:maturity-governance",
+        "label": "Governance maturity",
+        "positioning_axis": "operational",
+        "scale": {
+          "min": 1,
+          "max": 5
+        },
+        "state_key": "governance"
+      },
+      {
+        "dimension_id": "pf:wp2:dimension:maturity-data",
+        "label": "Data maturity",
+        "positioning_axis": "technical",
+        "scale": {
+          "min": 1,
+          "max": 5
+        },
+        "state_key": "data"
+      },
+      {
+        "dimension_id": "pf:wp2:dimension:maturity-compliance",
+        "label": "Compliance maturity",
+        "positioning_axis": "regulatory",
+        "scale": {
+          "min": 1,
+          "max": 5
+        },
+        "state_key": "compliance"
+      },
+      {
+        "dimension_id": "pf:wp2:dimension:maturity-infrastructure",
+        "label": "Infrastructure maturity",
+        "positioning_axis": "technical",
+        "state_key": "infrastructure",
+        "scale": {
+          "min": 1,
+          "max": 5
+        }
+      },
+      {
+        "dimension_id": "pf:wp2:dimension:maturity-capability",
+        "label": "Capability maturity",
+        "positioning_axis": "technical",
+        "state_key": "capability",
+        "scale": {
+          "min": 1,
+          "max": 5
+        }
+      }
+    ],
+    "stakeholder_types": [
+      {
+        "stakeholder_type_id": "pf:wp2:stakeholder:biotech-sme",
+        "label": "Biotech SME",
+        "ehds_roles": [
+          "data-user"
+        ],
+        "segment": "industry",
+        "capabilities": [
+          "rd-pipelines"
+        ],
+        "status": "active",
+        "successor": null,
+        "personas": [
+          {
+            "persona_id": "pf:wp2:persona:sme-regulatory-lead",
+            "label": "Regulatory lead at an SME",
+            "influence": "medium",
+            "interest": "high"
+          }
+        ]
+      },
+      {
+        "stakeholder_type_id": "pf:wp2:stakeholder:ai-factory-operator",
+        "label": "AI Factory operator",
+        "ehds_roles": [
+          "intermediary"
+        ],
+        "segment": "infrastructure",
+        "capabilities": [
+          "secure-processing"
+        ],
+        "status": "active",
+        "successor": null
+      },
+      {
+        "stakeholder_type_id": "pf:wp2:stakeholder:health-data-access-body",
+        "label": "Health Data Access Body",
+        "ehds_roles": [
+          "regulator",
+          "intermediary"
+        ],
+        "segment": "healthcare authorities",
+        "status": "active",
+        "successor": null
+      },
+      {
+        "stakeholder_type_id": "pf:wp2:stakeholder:health-data-infrastructure",
+        "label": "Health data infrastructure",
+        "ehds_roles": [
+          "data-holder",
+          "intermediary"
+        ],
+        "segment": "infrastructure",
+        "status": "active",
+        "successor": null
+      },
+      {
+        "stakeholder_type_id": "pf:wp2:stakeholder:research-infrastructure",
+        "label": "Research infrastructure",
+        "ehds_roles": [
+          "data-holder",
+          "data-user"
+        ],
+        "segment": "researchers",
+        "status": "active",
+        "successor": null
+      },
+      {
+        "stakeholder_type_id": "pf:wp2:stakeholder:patient-organisation",
+        "label": "Patient organisation",
+        "ehds_roles": [
+          "data-holder"
+        ],
+        "segment": "patient organisations",
+        "status": "deprecated",
+        "successor": "pf:wp2:stakeholder:research-infrastructure"
+      }
+    ],
+    "scenarios": [
+      {
+        "scenario_id": "pf:wp2:scenario:secondary-use-readiness",
+        "label": "Secondary use readiness",
+        "applicable_stakeholder_types": [
+          "pf:wp2:stakeholder:biotech-sme",
+          "pf:wp2:stakeholder:health-data-infrastructure"
+        ]
+      },
+      {
+        "scenario_id": "pf:wp2:scenario:ai-model-training",
+        "label": "AI model training under EHDS",
+        "applicable_stakeholder_types": [
+          "pf:wp2:stakeholder:biotech-sme",
+          "pf:wp2:stakeholder:ai-factory-operator"
+        ]
+      },
+      {
+        "scenario_id": "pf:wp2:scenario:infrastructure-onboarding",
+        "label": "EHDS infrastructure onboarding",
+        "applicable_stakeholder_types": [
+          "pf:wp2:stakeholder:health-data-infrastructure",
+          "pf:wp2:stakeholder:research-infrastructure"
+        ]
+      }
+    ],
+    "capability_vocabulary": [
+      "legal-basis",
+      "rd-pipelines",
+      "secure-processing"
+    ]
+  }
+}

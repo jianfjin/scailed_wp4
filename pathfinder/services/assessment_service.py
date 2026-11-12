@@ -10,6 +10,8 @@ API backward compatibility and delegate to the synchronous solver.
 from __future__ import annotations
 
 import asyncio
+from copy import deepcopy
+from collections import OrderedDict
 import logging
 import os
 import sys
@@ -17,6 +19,8 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Optional
 from uuid import uuid4
+from threading import RLock
+from datetime import datetime, timezone, date
 
 from pathfinder.adapters.demo_data import (
     demo_questionnaires,
@@ -43,6 +47,7 @@ class AssessmentService:
     def __init__(
         self,
         upstream_client: Optional[UpstreamClient] = None,
+        boundary_store=None,
     ) -> None:
         # ── Data source: upstream client (mock REST) or demo fixtures ──
         if upstream_client is not None:
@@ -54,6 +59,103 @@ class AssessmentService:
         nodes, edges = self._active_roadmap
         self.graph = InMemoryRoadmapGraph(nodes, edges)
         self.solver = PathfinderSolver(self.graph)
+        self._active_boundary = None
+        self._boundary_store = boundary_store
+        self._generation_cache = OrderedDict()
+        self._boundary_lock = RLock()
+        self._session_boundaries = {}
+        self._boundary_snapshot_hashes = {}
+
+    def _generation(self, generation_id, snapshots=None):
+        from pathfinder.core.boundary_runtime import build_boundary_generation
+        with self._boundary_lock:
+            generation = self._generation_cache.get(generation_id)
+            if generation is None:
+                generation = build_boundary_generation(snapshots if snapshots is not None else self._boundary_store.load_generation(generation_id))
+                self._generation_cache[generation_id] = generation
+                if len(self._generation_cache) > 32:
+                    self._generation_cache.popitem(last=False)
+            else:
+                self._generation_cache.move_to_end(generation_id)
+            return generation
+
+    def _active_generation(self):
+        if not self._boundary_store:
+            return None, self._active_boundary
+        generation_id = self._boundary_store.active_generation_id()
+        if not generation_id:
+            return None, None
+        return generation_id, self._generation(generation_id)
+
+    @property
+    def active_boundary(self):
+        return self._active_generation()[1]
+
+    def activate_boundary_snapshots(self, snapshots, ip=None, user_agent=None):
+        from pathfinder.core.boundary_runtime import build_boundary_generation
+
+        snapshots = deepcopy(snapshots)
+        try:
+            generation = build_boundary_generation(snapshots)
+        except (ValueError, TypeError, KeyError):
+            if self._boundary_store:
+                self._boundary_store.append_event("boundary_snapshots_rejected", {"reason": "validation failed"}, ip, user_agent)
+            else:
+                self.audit_log.append("boundary_snapshots_rejected", {"reason": "validation failed"}, ip=ip, user_agent=user_agent)
+            raise
+        if self._boundary_store:
+            try:
+                generation_id = self._boundary_store.activate(snapshots, generation, ip, user_agent)
+            except ValueError:
+                self._boundary_store.append_event("boundary_snapshots_rejected", {"reason": "snapshot identity reused"}, ip, user_agent)
+                raise
+            with self._boundary_lock:
+                self._generation_cache[generation_id] = generation
+                if len(self._generation_cache) > 32:
+                    self._generation_cache.popitem(last=False)
+            return {"accepted": True, "generation_id": generation_id, "snapshot_ids": dict(generation.snapshot_ids),
+                    "questionnaire_ids": dict(generation.questionnaire_ids), "regulatory_status": generation.regulatory_status,
+                    "warnings": list(generation.warnings)}
+        with self._boundary_lock:
+            for snapshot_id, digest in generation.snapshot_hashes.items():
+                existing = self._boundary_snapshot_hashes.get(snapshot_id)
+                if existing is not None and existing != digest:
+                    self.audit_log.append("boundary_snapshots_rejected", {"reason": "snapshot identity reused", "snapshot_id": snapshot_id}, ip=ip, user_agent=user_agent)
+                    raise ValueError(f"snapshot_id {snapshot_id} was already used for different content")
+            self.audit_log.append("boundary_snapshots_activated", {
+                "snapshot_ids": dict(generation.snapshot_ids),
+                "questionnaire_ids": dict(generation.questionnaire_ids),
+                "regulatory_status": generation.regulatory_status,
+            }, ip=ip, user_agent=user_agent)
+            self._boundary_snapshot_hashes.update(generation.snapshot_hashes)
+            self._active_boundary = generation
+        return {"accepted": True, "snapshot_ids": dict(generation.snapshot_ids),
+                "questionnaire_ids": dict(generation.questionnaire_ids),
+                "regulatory_status": generation.regulatory_status, "warnings": list(generation.warnings)}
+
+    def _boundary_for_session(self, session):
+        if self._boundary_store and session.get("boundary_generation_id"):
+            return self._generation(session["boundary_generation_id"])
+        return self._session_boundaries.get(str(session["assessment_id"]))
+
+    def _load_session(self, assessment_id):
+        if self._boundary_store:
+            stored = self._boundary_store.load_session(assessment_id)
+            if stored is None:
+                raise KeyError(f"Assessment not found: {assessment_id}")
+            session, revision, generation_id = stored
+            if session.get("boundary_generation_id") != generation_id:
+                raise ValueError("session generation binding is inconsistent")
+            return session, revision
+        if assessment_id not in self.sessions:
+            raise KeyError(f"Assessment not found: {assessment_id}")
+        return self.sessions[assessment_id], None
+
+    def get_session(self, assessment_id):
+        return self._load_session(assessment_id)[0]
+
+    def audit_event_count(self):
+        return self._boundary_store.audit_count() if self._boundary_store else len(self.audit_log.events())
 
     # ── PG persistence helpers (best-effort via background event loop) ──
 
@@ -249,10 +351,16 @@ class AssessmentService:
         }
 
     def stakeholder_types(self) -> list[str]:
-        return self.questionnaire_engine.stakeholder_types()
+        generation = self.active_boundary
+        if self._boundary_store and generation is None:
+            return []
+        return (generation.questionnaire_engine if generation else self.questionnaire_engine).stakeholder_types()
 
     def get_questionnaire(self, stakeholder_type: str) -> dict[str, object]:
-        return self.questionnaire_engine.get(stakeholder_type).to_dict()
+        generation = self.active_boundary
+        if self._boundary_store and generation is None:
+            raise ValueError("no validated boundary generation is active")
+        return (generation.questionnaire_engine if generation else self.questionnaire_engine).get(stakeholder_type).to_dict()
 
     def create_session(
         self,
@@ -263,7 +371,10 @@ class AssessmentService:
     ) -> dict[str, object]:
         stakeholder_type = stakeholder_type.strip()
         target_scenario = target_scenario.strip()
-        questionnaire = self.questionnaire_engine.get(stakeholder_type)
+        generation_id, generation = self._active_generation()
+        if self._boundary_store and generation is None:
+            raise ValueError("no validated boundary generation is active")
+        questionnaire = (generation.questionnaire_engine if generation else self.questionnaire_engine).get(stakeholder_type)
         if not target_scenario:
             raise ValueError("target_scenario is required")
         if target_scenario not in questionnaire.target_scenarios:
@@ -274,8 +385,16 @@ class AssessmentService:
             "stakeholder_type": stakeholder_type,
             "target_scenario": target_scenario,
             "status": "in_progress",
-            "mock_data_mode": True,
+            "mock_data_mode": generation is None,
         }
+        if generation:
+            session["snapshot_ids"] = generation.versions_for(stakeholder_type)
+            session["evaluation_date"] = datetime.now(timezone.utc).date().isoformat()
+            if self._boundary_store:
+                session["boundary_generation_id"] = generation_id
+                self._boundary_store.create_session(session, generation_id, ip, user_agent)
+                return session
+            self._session_boundaries[session_id] = generation
         self.sessions[session_id] = session
         self.audit_log.append("assessment_session_created", session, ip=ip, user_agent=user_agent)
         self._pg_write_session(session)
@@ -288,16 +407,19 @@ class AssessmentService:
         ip: str | None = None,
         user_agent: str | None = None,
     ) -> dict[str, object]:
-        if assessment_id not in self.sessions:
-            raise KeyError(f"Assessment not found: {assessment_id}")
-        session = self.sessions[assessment_id]
-        state = self.questionnaire_engine.build_state(
+        session, revision = self._load_session(assessment_id)
+        generation = self._boundary_for_session(session)
+        state = (generation.questionnaire_engine if generation else self.questionnaire_engine).build_state(
             str(session["stakeholder_type"]),
             str(session["target_scenario"]),
             answers,
         )
         session["answers"] = answers
         session["stakeholder_state"] = state.to_dict()
+        if self._boundary_store:
+            self._boundary_store.save_session(session, revision, "answers_submitted",
+                {"assessment_id": assessment_id, "answer_ids": sorted(answers)}, ip, user_agent)
+            return state.to_dict()
         self.audit_log.append(
             "answers_submitted",
             {"assessment_id": assessment_id, "answer_ids": sorted(answers)},
@@ -378,8 +500,11 @@ class AssessmentService:
 
     def _state_for_recommendation(self, session: dict[str, object]) -> StakeholderState:
         answers = session.get("answers")
+        generation = self._boundary_for_session(session)
+        if generation and not isinstance(answers, dict):
+            raise ValueError("submit questionnaire answers before requesting a boundary recommendation")
         if isinstance(answers, dict) and answers.get("derivation_mode") != "wp2_wp3":
-            return self.questionnaire_engine.build_state(
+            return (generation.questionnaire_engine if generation else self.questionnaire_engine).build_state(
                 str(session["stakeholder_type"]),
                 str(session["target_scenario"]),
                 answers,
@@ -389,21 +514,44 @@ class AssessmentService:
             state_payload = self._derive_state_for_session(session)
         return self._state_from_stored_payload(state_payload)
 
+    def _recommend_for_session(self, session, state):
+        generation = self._boundary_for_session(session)
+        if not generation:
+            return build_recommendation(self.solver.solve(state, self.rules))
+        evaluation_date = date.fromisoformat(session["evaluation_date"])
+        rules, incomplete = generation.rules_for(evaluation_date)
+        recommendation = build_recommendation(generation.solver.solve(state, rules))
+        status = "unverified" if incomplete else generation.regulatory_status
+        recommendation["regulatory_status"] = status
+        recommendation["warnings"].extend(generation.warnings)
+        if incomplete:
+            recommendation["warnings"].append("Some rules are outside their effective dates; regulatory coverage is unverified.")
+        recommendation["trace"]["snapshot_ids"] = generation.versions_for(str(session["stakeholder_type"]))
+        recommendation["trace"]["evaluation_date"] = evaluation_date.isoformat()
+        if session.get("boundary_generation_id"):
+            recommendation["trace"]["boundary_generation_id"] = session["boundary_generation_id"]
+        recommendation["trace"]["rule_version"] = generation.snapshot_ids["pf.rulebundle.v1"]
+        recommendation["trace"]["upstream_snapshot_version"] = generation.snapshot_ids["pf.taxonomy.v1"]
+        if status == "unverified" and recommendation["status"] == "ready":
+            recommendation["status"] = "degraded"
+        return recommendation
+
     def generate_recommendation(
         self,
         assessment_id: str,
         ip: str | None = None,
         user_agent: str | None = None,
     ) -> dict[str, object]:
-        if assessment_id not in self.sessions:
-            raise KeyError(f"Assessment not found: {assessment_id}")
-        session = self.sessions[assessment_id]
+        session, revision = self._load_session(assessment_id)
         state = self._state_for_recommendation(session)
-        path = self.solver.solve(state, self.rules)
-        recommendation = build_recommendation(path)
+        recommendation = self._recommend_for_session(session, state)
 
         session["recommendation"] = recommendation
         session["status"] = "complete"
+        if self._boundary_store:
+            self._boundary_store.save_session(session, revision, "recommendation_generated",
+                {"assessment_id": assessment_id, "status": recommendation["status"]}, ip, user_agent)
+            return recommendation
         self.audit_log.append(
             "recommendation_generated",
             {"assessment_id": assessment_id, "status": recommendation["status"]},
@@ -420,41 +568,25 @@ class AssessmentService:
         user_agent: str | None = None,
         path_backend: str = "python",
     ) -> dict[str, object]:
-        if assessment_id not in self.sessions:
-            raise KeyError(f"Assessment not found: {assessment_id}")
-        session = self.sessions[assessment_id]
-        state = self._state_for_recommendation(session)
-        path = self.solver.solve(state, self.rules)
-        recommendation = build_recommendation(path)
-
-        session["recommendation"] = recommendation
-        session["status"] = "complete"
-        self.audit_log.append(
-            "recommendation_generated",
-            {"assessment_id": assessment_id, "status": recommendation["status"],
-             "path_backend": path_backend},
-            ip=ip,
-            user_agent=user_agent,
-        )
-        self._pg_write_session(session)
-        return recommendation
+        return await asyncio.to_thread(self.generate_recommendation, assessment_id, ip, user_agent)
 
     def _build_report_payload(self, assessment_id: str) -> dict[str, object]:
-        if assessment_id not in self.sessions:
-            raise KeyError(f"Assessment not found: {assessment_id}. It may have expired after server restart.")
-        session = self.sessions[assessment_id]
-        if not isinstance(session.get("stakeholder_state"), dict):
+        session, _ = self._load_session(assessment_id)
+        if not isinstance(session.get("stakeholder_state"), dict) and not self._boundary_for_session(session):
             self._derive_state_for_session(session)
         recommendation = session.get("recommendation")
         if not isinstance(recommendation, dict):
             recommendation = self.generate_recommendation(assessment_id)
+            if self._boundary_store:
+                session, _ = self._load_session(assessment_id)
+        generation = self._boundary_for_session(session)
         return {
-            "disclaimer": "Demo/non-production report. Real WP2/WP3/WP8 data may change recommendations.",
+            "disclaimer": "Guidance is not a legal conclusion." if generation else "Demo/non-production report. Real WP2/WP3/WP8 data may change recommendations.",
             "session": session,
             "readiness_snapshot": session.get("stakeholder_state", {}),
             "recommended_path": recommendation,
-            "audit_chain_valid": self.audit_log.verify_chain(),
-            "missing_data_warnings": ["mock data mode: partner upstream inputs pending"],
+            "audit_chain_valid": self._boundary_store.verify_audit_chain() if self._boundary_store else self.audit_log.verify_chain(),
+            "missing_data_warnings": list(generation.warnings) if generation else ["mock data mode: partner upstream inputs pending"],
         }
 
     def report(
@@ -464,10 +596,15 @@ class AssessmentService:
         user_agent: str | None = None,
     ) -> dict[str, object]:
         report = self._build_report_payload(assessment_id)
-        self.audit_log.append("report_exported", {"assessment_id": assessment_id}, ip=ip, user_agent=user_agent)
+        if self._boundary_store:
+            self._boundary_store.append_event("report_exported", {"assessment_id": assessment_id}, ip, user_agent)
+        else:
+            self.audit_log.append("report_exported", {"assessment_id": assessment_id}, ip=ip, user_agent=user_agent)
         return report
 
     def _audit_events_for_assessment(self, assessment_id: str) -> tuple[Any, ...]:
+        if self._boundary_store:
+            return tuple(self._boundary_store.events_for_assessment(assessment_id))
         return tuple(
             event for event in self.audit_log.events()
             if event.event_data.get("assessment_id") == assessment_id
@@ -480,9 +617,7 @@ class AssessmentService:
         ip: str | None = None,
         user_agent: str | None = None,
     ) -> dict[str, object]:
-        if assessment_id not in self.sessions:
-            raise KeyError(f"Assessment not found: {assessment_id}")
-        session = self.sessions[assessment_id]
+        session, _ = self._load_session(assessment_id)
         if not isinstance(session.get("answers"), dict):
             raise ValueError("answers must be submitted before FHIR export")
         if not isinstance(session.get("recommendation"), dict):
@@ -490,7 +625,9 @@ class AssessmentService:
 
         try:
             report = self._build_report_payload(assessment_id)
-            questionnaire = self.get_questionnaire(str(session["stakeholder_type"]))
+            generation = self._boundary_for_session(session)
+            questionnaire = (generation.questionnaire_engine.get(str(session["stakeholder_type"])).to_dict()
+                             if generation else self.get_questionnaire(str(session["stakeholder_type"])))
             bundle = build_assessment_bundle(
                 report=report,
                 questionnaire=questionnaire,
@@ -498,28 +635,18 @@ class AssessmentService:
                 fhir_version=fhir_version,
             )
         except Exception as exc:
-            self.audit_log.append(
-                "fhir_export_failed",
-                {
-                    "assessment_id": assessment_id,
-                    "error": str(exc),
-                    "fhir_version": fhir_version,
-                },
-                ip=ip,
-                user_agent=user_agent,
-            )
+            event = {"assessment_id": assessment_id, "error": str(exc), "fhir_version": fhir_version}
+            if self._boundary_store:
+                self._boundary_store.append_event("fhir_export_failed", event, ip, user_agent)
+            else:
+                self.audit_log.append("fhir_export_failed", event, ip=ip, user_agent=user_agent)
             raise
 
-        self.audit_log.append(
-            "fhir_bundle_exported",
-            {
-                "assessment_id": assessment_id,
-                "bundle_id": bundle["id"],
-                "fhir_version": fhir_version,
-            },
-            ip=ip,
-            user_agent=user_agent,
-        )
+        event = {"assessment_id": assessment_id, "bundle_id": bundle["id"], "fhir_version": fhir_version}
+        if self._boundary_store:
+            self._boundary_store.append_event("fhir_bundle_exported", event, ip, user_agent)
+        else:
+            self.audit_log.append("fhir_bundle_exported", event, ip=ip, user_agent=user_agent)
         return build_assessment_bundle(
             report=report,
             questionnaire=questionnaire,
@@ -533,6 +660,8 @@ class AssessmentService:
         ip: str | None = None,
         user_agent: str | None = None,
     ) -> ImportReport:
+        if self._boundary_store:
+            raise ValueError("legacy imports are disabled in PostgreSQL boundary mode; use /v1/admin/import")
         try:
             questionnaires = self._questionnaires_from_wp2(payload)
             stakeholders = self._stakeholders_from_wp2(payload)
@@ -564,6 +693,8 @@ class AssessmentService:
         ip: str | None = None,
         user_agent: str | None = None,
     ) -> ImportReport:
+        if self._boundary_store:
+            raise ValueError("legacy imports are disabled in PostgreSQL boundary mode; use /v1/admin/import")
         try:
             nodes, edges = self._roadmap_from_wp3(payload)
             report = import_structured_payload("wp3", payload)
@@ -590,6 +721,8 @@ class AssessmentService:
         ip: str | None = None,
         user_agent: str | None = None,
     ) -> ImportReport:
+        if self._boundary_store:
+            raise ValueError("legacy imports are disabled in PostgreSQL boundary mode; use /v1/admin/import")
         try:
             loader = RuleLoader(self.questionnaires)
             rules = loader.load_bundle(payload)
@@ -610,15 +743,18 @@ class AssessmentService:
         return report
 
     def status(self) -> dict[str, object]:
+        generation = self.active_boundary
         return {
             "service": "pathfinder",
-            "mode": "demo",
+            "mode": "deployed" if self._boundary_store else "demo",
             "graph_backend": "inmemory",
             "stakeholder_types": self.stakeholder_types(),
-            "rule_version": self.rule_loader.active_version,
-            "audit_events": len(self.audit_log.events()),
-            "audit_chain_valid": self.audit_log.verify_chain(),
+            "rule_version": generation.snapshot_ids["pf.rulebundle.v1"] if generation else self.rule_loader.active_version,
+            "audit_events": self._boundary_store.audit_count() if self._boundary_store else len(self.audit_log.events()),
+            "audit_chain_valid": self._boundary_store.verify_audit_chain() if self._boundary_store else self.audit_log.verify_chain(),
             "import_reports": {key: report.to_dict() for key, report in self.import_reports.items()},
+            "active_snapshot_ids": dict(generation.snapshot_ids) if generation else {},
+            "regulatory_status": generation.regulatory_status if generation else "unverified",
         }
 
     def _questionnaires_from_wp2(self, payload: dict[str, object]) -> list[Questionnaire]:

@@ -1,0 +1,57 @@
+{
+  "contract": "pf.feedback.v1",
+  "manifest": {
+    "contract_version": "1.0.0",
+    "snapshot_id": "a04cb072-fdea-52a6-b5c8-c6a9c8b70040",
+    "producer_wp": "WP4",
+    "generated_at": "2026-11-10T00:00:00Z",
+    "generator": {
+      "name": "contracts-builder",
+      "version": "1.0.0",
+      "seed": null
+    },
+    "supersedes": null,
+    "items_checksum": "sha256:d598808d6f9288203c5c2e739f7a3e6746f728fdac1dbc966d46fb755afa516c",
+    "derived_from": [
+      {
+        "source": "T4.2",
+        "status": "approved"
+      }
+    ],
+    "dependencies": {
+      "pf.taxonomy.v1": "136c7555-45e3-40dc-a9ac-6749cc516ef3",
+      "pf.questionnaire.v1": "cdb84fac-6484-43ce-bf05-ad9502075e71",
+      "pf.roadmap.v1": "ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1",
+      "pf.rulebundle.v1": "5f515fa8-649e-4a91-8fdd-806886f41bd0"
+    }
+  },
+  "payload": {
+    "period": {
+      "from": "2026-09-01",
+      "to": "2026-10-31"
+    },
+    "min_cohort_size": 5,
+    "rules": {
+      "rule_stats": [
+        {
+          "rule_id": "pf:wp8:rule:missing-legal-basis-block",
+          "evaluations": 120,
+          "triggers": 17,
+          "block_events": 17,
+          "cohort_size": 10
+        },
+        {
+          "rule_id": "pf:wp8:rule:biotech-act-provisional",
+          "evaluations": 120,
+          "triggers": 9,
+          "unverified_marker_count": 9,
+          "cohort_size": 10
+        }
+      ],
+      "never_fired_rule_ids": [
+        "pf:wp8:rule:high-risk-model-preference"
+      ]
+    },
+    "recipient": "WP8"
+  }
+}

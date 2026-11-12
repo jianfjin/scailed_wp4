@@ -83,7 +83,7 @@ class PathStepView:
 class ReadinessSummary:
     """Top-line readiness snapshot."""
 
-    status: str  # "blocked" | "ready"
+    status: str  # "blocked" | "ready" | "degraded"
     confidence: float
     path_backend: str
     audit_chain_valid: bool
@@ -96,16 +96,22 @@ class ReadinessSummary:
     def status_label(self) -> str:
         if self.status == "blocked":
             return "NOT READY"
+        if self.status == "degraded":
+            return "UNVERIFIED"
         return "READY"
 
     def status_color(self) -> str:
         if self.status == "blocked":
             return "#9B2C2C"
+        if self.status == "degraded":
+            return "#92400E"
         return "#166534"
 
     def status_bg(self) -> str:
         if self.status == "blocked":
             return "#FED7D7"
+        if self.status == "degraded":
+            return "#FEF3C7"
         return "#DCFCE7"
 
     def confidence_pct(self) -> str:

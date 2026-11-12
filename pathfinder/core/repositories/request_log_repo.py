@@ -7,6 +7,7 @@ and acquire connections internally.
 from __future__ import annotations
 
 from typing import Any
+from datetime import datetime
 
 import asyncpg
 
@@ -22,14 +23,22 @@ async def save_request_log(
         user_agent, error_message, assessment_id
     """
     async with pool.acquire() as conn:
-        await conn.execute(
+        await save_request_log_on_connection(conn, entry)
+
+
+async def save_request_log_on_connection(conn, entry: dict[str, Any]) -> None:
+    """Insert using the caller's connection and transaction."""
+    timestamp = entry.get("timestamp")
+    if isinstance(timestamp, str):
+        timestamp = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    await conn.execute(
             """
             INSERT INTO assess.request_log
                 (timestamp, ip, method, endpoint, status_code, duration_ms,
                  user_agent, error_message, assessment_id)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             """,
-            entry.get("timestamp"),
+            timestamp,
             entry.get("ip"),
             entry.get("method"),
             entry.get("endpoint"),

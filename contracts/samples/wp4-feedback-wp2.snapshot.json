@@ -1,0 +1,51 @@
+{
+  "contract": "pf.feedback.v1",
+  "manifest": {
+    "contract_version": "1.0.0",
+    "snapshot_id": "22d6bd3d-8754-552b-bb2b-352074c22cdd",
+    "producer_wp": "WP4",
+    "generated_at": "2026-11-10T00:00:00Z",
+    "generator": {
+      "name": "contracts-builder",
+      "version": "1.0.0",
+      "seed": null
+    },
+    "supersedes": null,
+    "items_checksum": "sha256:aaa6955167466baad1b2e0864e18e6aa59aafa4516edfe2ad537193fc4b6bcee",
+    "derived_from": [
+      {
+        "source": "T4.2",
+        "status": "approved"
+      }
+    ],
+    "dependencies": {
+      "pf.taxonomy.v1": "136c7555-45e3-40dc-a9ac-6749cc516ef3",
+      "pf.questionnaire.v1": "cdb84fac-6484-43ce-bf05-ad9502075e71",
+      "pf.roadmap.v1": "ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1",
+      "pf.rulebundle.v1": "5f515fa8-649e-4a91-8fdd-806886f41bd0"
+    }
+  },
+  "payload": {
+    "period": {
+      "from": "2026-09-01",
+      "to": "2026-10-31"
+    },
+    "min_cohort_size": 5,
+    "questionnaire": {
+      "question_stats": [
+        {
+          "question_id": "pf:wp4:question:biotech-sme-1",
+          "answers": 120,
+          "cohort_size": 10
+        },
+        {
+          "question_id": "pf:wp4:question:biotech-sme-3",
+          "answers": 118,
+          "ambiguity_flags": 11,
+          "cohort_size": 10
+        }
+      ]
+    },
+    "recipient": "WP2"
+  }
+}

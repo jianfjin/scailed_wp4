@@ -91,6 +91,37 @@ h1 {
   gap: 10px;
 }
 
+.token-form {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.token-form input {
+  border: 1px solid #aebaaa;
+  border-radius: 4px;
+  min-height: 38px;
+  padding: 0 10px;
+  width: 100%;
+}
+
+.token-form button {
+  justify-self: start;
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+.visualization-link {
+  background: none;
+  border: 0;
+  color: #1d5d43;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+}
+
 .selected-stakeholder {
   background: #f6f7f4;
   border: 1px solid #d7ded4;
@@ -204,6 +235,27 @@ h1 {
 
 .question input[type="range"] {
   width: 100%;
+}
+
+.question input[type="text"],
+.question input[type="number"] {
+  border: 1px solid #aebaaa;
+  border-radius: 4px;
+  min-height: 38px;
+  padding: 0 10px;
+  width: 100%;
+}
+
+.question fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.question fieldset small {
+  color: #516052;
+  display: block;
+  margin: 5px 0;
 }
 
 .check-group {
@@ -393,5 +445,20 @@ h1 {
 
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .app-shell {
+    padding: 16px;
+  }
+
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .toolbar-actions {
+    flex-wrap: wrap;
   }
 }

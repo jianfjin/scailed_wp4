@@ -1,0 +1,245 @@
+{
+  "contract": "pf.rulebundle.v1",
+  "manifest": {
+    "contract_version": "1.0.0",
+    "snapshot_id": "5f515fa8-649e-4a91-8fdd-806886f41bd0",
+    "producer_wp": "WP8",
+    "generated_at": "2026-11-10T00:00:00Z",
+    "generator": {
+      "name": "contracts-builder",
+      "version": "1.0.0",
+      "seed": null
+    },
+    "supersedes": null,
+    "items_checksum": "sha256:471e7fc13e81eef9e4868491d988fbd0075255ae0008f47fc9bf7185fb1ba6af",
+    "derived_from": [
+      {
+        "source": "T8.2",
+        "status": "draft"
+      },
+      {
+        "source": "T8.3.2",
+        "status": "approved"
+      }
+    ],
+    "dependencies": {
+      "pf.taxonomy.v1": "136c7555-45e3-40dc-a9ac-6749cc516ef3",
+      "pf.roadmap.v1": "ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1"
+    }
+  },
+  "payload": {
+    "references": [
+      {
+        "ref_id": "pf:wp8:reg:ehdsr",
+        "instrument": "EHDSR",
+        "locator": "Art.9(2)",
+        "status": "in-force",
+        "source_doc_ref": "T8.3.1"
+      },
+      {
+        "ref_id": "pf:wp8:reg:gdpr",
+        "instrument": "GDPR",
+        "locator": "Art.9",
+        "status": "in-force",
+        "source_doc_ref": "T8.3.1"
+      },
+      {
+        "ref_id": "pf:wp8:reg:ai-act",
+        "instrument": "AI-Act",
+        "locator": "Annex III",
+        "status": "in-force",
+        "source_doc_ref": "T8.3.2"
+      },
+      {
+        "ref_id": "pf:wp8:reg:biotech-act",
+        "instrument": "Biotech-Act",
+        "status": "forthcoming",
+        "source_doc_ref": "T8.3.1"
+      }
+    ],
+    "rules": [
+      {
+        "rule_id": "pf:wp8:rule:secondary-use-eligibility",
+        "parent_rule_id": null,
+        "rule_type": "eligibility",
+        "priority": 10,
+        "applies_to": [
+          "pf:wp2:stakeholder:biotech-sme"
+        ],
+        "status": "verified",
+        "condition": {
+          "and": [
+            {
+              "field": "capabilities",
+              "op": "contains",
+              "value": "legal-basis"
+            },
+            {
+              "field": "maturity.compliance",
+              "op": "gte",
+              "value": 2
+            }
+          ]
+        },
+        "action": {
+          "title": "Proceed to secure processing",
+          "text": "Stakeholder may request secondary-use data through an SPE.",
+          "node_id": "pf:wp3:node:spe-secure-processing",
+          "block": false
+        },
+        "compliance_refs": [
+          "pf:wp8:reg:ehdsr"
+        ],
+        "source_doc_ref": "D8.2 s.3",
+        "rule_version": "1.0.0",
+        "effective_from": "2025-12-09",
+        "effective_until": null
+      },
+      {
+        "rule_id": "pf:wp8:rule:missing-legal-basis-block",
+        "parent_rule_id": null,
+        "rule_type": "exclusion",
+        "priority": 20,
+        "applies_to": [
+          "pf:wp2:stakeholder:biotech-sme"
+        ],
+        "status": "verified",
+        "condition": {
+          "not": {
+            "field": "capabilities",
+            "op": "contains",
+            "value": "legal-basis"
+          }
+        },
+        "action": {
+          "title": "Establish a legal basis first",
+          "text": "No route while the legal basis capability is missing.",
+          "node_id": "pf:wp3:node:legal-basis-secondary-use",
+          "block": true
+        },
+        "compliance_refs": [
+          "pf:wp8:reg:gdpr"
+        ],
+        "source_doc_ref": "D8.2 s.3",
+        "rule_version": "1.0.0",
+        "effective_from": "2025-12-09",
+        "effective_until": null
+      },
+      {
+        "rule_id": "pf:wp8:rule:high-risk-model-preference",
+        "parent_rule_id": null,
+        "rule_type": "preference",
+        "priority": 5,
+        "applies_to": [
+          "pf:wp2:stakeholder:biotech-sme"
+        ],
+        "status": "verified",
+        "condition": {
+          "field": "regulatory_flags",
+          "op": "contains",
+          "value": "high-risk-ai"
+        },
+        "action": {
+          "title": "Prefer validated pipelines",
+          "text": "Prefer roadmap routes with an AI Act validation step.",
+          "node_id": null,
+          "block": false
+        },
+        "compliance_refs": [
+          "pf:wp8:reg:ai-act"
+        ],
+        "source_doc_ref": "D8.2 s.3",
+        "rule_version": "1.0.0",
+        "effective_from": "2025-12-09",
+        "effective_until": null
+      },
+      {
+        "rule_id": "pf:wp8:rule:biotech-act-provisional",
+        "parent_rule_id": null,
+        "rule_type": "eligibility",
+        "priority": 1,
+        "applies_to": [
+          "pf:wp2:stakeholder:biotech-sme"
+        ],
+        "status": "provisional",
+        "condition": {
+          "field": "maturity.governance",
+          "op": "gte",
+          "value": 3
+        },
+        "action": {
+          "title": "Provisional upcoming-framework guidance",
+          "text": "Guidance under a forthcoming instrument; not a legal conclusion.",
+          "node_id": null,
+          "block": false
+        },
+        "compliance_refs": [
+          "pf:wp8:reg:biotech-act"
+        ],
+        "source_doc_ref": "D8.2 s.3",
+        "rule_version": "1.0.0",
+        "effective_from": "2025-12-09",
+        "effective_until": null
+      }
+    ],
+    "tests": [
+      {
+        "test_id": "t-eligibility-pass",
+        "rule_id": "pf:wp8:rule:secondary-use-eligibility",
+        "given": {
+          "capabilities": [
+            "legal-basis"
+          ],
+          "maturity.compliance": 3
+        },
+        "expect": {
+          "outcome": "triggered"
+        }
+      },
+      {
+        "test_id": "t-eligibility-fail",
+        "rule_id": "pf:wp8:rule:secondary-use-eligibility",
+        "given": {
+          "capabilities": [],
+          "maturity.compliance": 3
+        },
+        "expect": {
+          "outcome": "not-triggered"
+        }
+      },
+      {
+        "test_id": "t-block",
+        "rule_id": "pf:wp8:rule:missing-legal-basis-block",
+        "given": {
+          "capabilities": []
+        },
+        "expect": {
+          "outcome": "blocked"
+        }
+      },
+      {
+        "test_id": "t-preference",
+        "rule_id": "pf:wp8:rule:high-risk-model-preference",
+        "given": {
+          "regulatory_flags": [
+            "high-risk-ai"
+          ]
+        },
+        "expect": {
+          "outcome": "triggered"
+        }
+      },
+      {
+        "test_id": "t-provisional",
+        "rule_id": "pf:wp8:rule:biotech-act-provisional",
+        "given": {
+          "maturity.governance": 4
+        },
+        "expect": {
+          "outcome": "triggered",
+          "action_contains": "not a legal conclusion"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scailed.eu/contracts/wp4-questionnaire.schema.json",
+  "title": "pf.questionnaire.v1 payload — WP4 questionnaires published for WP2 review (B2)",
+  "description": "T2.4 has WP2 support WP4 pathfinding content; this contract is the review channel. Field names match pathfinder/core/models.py Question/Questionnaire so the snapshot imports without transformation.",
+  "type": "object",
+  "required": ["stakeholder_type", "version", "title", "target_scenarios", "questions"],
+  "additionalProperties": false,
+  "properties": {
+    "stakeholder_type": {"$ref": "#/$defs/taxid", "description": "References an active pf.taxonomy.v1 stakeholder_type_id."},
+    "version": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1},
+    "target_scenarios": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/taxid"}, "description": "Scenario IDs from the active taxonomy."},
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["question_id", "label", "question_type", "required"],
+        "additionalProperties": false,
+        "properties": {
+          "question_id": {"$ref": "#/$defs/qid"},
+          "label": {"type": "string", "minLength": 1},
+          "help_text": {"type": "string"},
+          "question_type": {"type": "string", "enum": ["single_choice", "multi_choice", "numeric", "text"]},
+          "required": {"type": "boolean"},
+          "options": {"type": "array", "items": {"type": "string"}},
+          "min_value": {"type": ["integer", "null"]},
+          "max_value": {"type": ["integer", "null"], "description": "numeric questions: scale 1..5 enforced referentially (integer maturity, RFQ 3.2)."},
+          "maturity_dimension": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/taxid"}], "description": "Taxonomy dimension_id when the question feeds a maturity dimension."},
+          "state_field": {"type": "string", "enum": ["capabilities", "missing_capabilities", "regulatory_flags"], "description": "A multi-choice answer directly supplies this state collection."},
+          "visible_if": {
+            "type": ["object", "null"],
+            "description": "Conditional visibility: same condition grammar as pf.rulebundle.v1 conditions.",
+            "additionalProperties": true
+          },
+          "capability_maps_to": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "review_status": {"type": "string", "enum": ["draft", "for-review", "approved"], "default": "for-review"},
+    "metadata": {"type": "object", "additionalProperties": true}
+  },
+  "$defs": {
+    "qid": {"type": "string", "pattern": "^pf:wp4:question:[a-z0-9-]{1,64}$"},
+    "taxid": {"type": "string", "pattern": "^pf:wp(2|4):[a-z-]+:[a-z0-9-]{1,64}$"}
+  }
+}

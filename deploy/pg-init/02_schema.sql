@@ -4,7 +4,7 @@
 -- 两 Schema: assess (评估数据) + ref (参考数据)
 -- ═══════════════════════════════════════════════════════════════
 
-\c pathfinder
+-- The PostgreSQL entrypoint already connects to POSTGRES_DB.
 
 -- ─── Schema ────────────────────────────────────────────────────
 CREATE SCHEMA IF NOT EXISTS assess;
@@ -137,7 +137,12 @@ CREATE INDEX idx_upstream_snapshots_source ON ref.upstream_data_snapshots(source
 
 -- ─── 8. AGE Graph Setup (图关系投影到 AGE graph) ───────────────
 -- 创建 Cypher 图空间用于 DAG 路径搜索
-SELECT ag_catalog.create_graph('pathfinder_graph');
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'ag_catalog') THEN
+        EXECUTE 'SELECT ag_catalog.create_graph(''pathfinder_graph'')';
+    END IF;
+END $$;
 
 -- ─── Initial schema version record ─────────────────────────────
 INSERT INTO ref.schema_versions (table_name, version, migration_hash, notes)

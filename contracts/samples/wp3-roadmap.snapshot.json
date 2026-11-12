@@ -1,0 +1,252 @@
+{
+  "contract": "pf.roadmap.v1",
+  "manifest": {
+    "contract_version": "1.0.0",
+    "snapshot_id": "ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1",
+    "producer_wp": "WP3",
+    "generated_at": "2026-11-10T00:00:00Z",
+    "generator": {
+      "name": "contracts-builder",
+      "version": "1.0.0",
+      "seed": null
+    },
+    "supersedes": null,
+    "items_checksum": "sha256:ba2dd54a2029be1d6dd019f05dd723f743fe2426d492e9802307979e0955111f",
+    "derived_from": [
+      {
+        "source": "D3.2",
+        "status": "approved"
+      },
+      {
+        "source": "D3.1",
+        "section": "catalogue",
+        "status": "approved"
+      },
+      {
+        "source": "WP3/MS3.1",
+        "status": "draft"
+      }
+    ],
+    "dependencies": {
+      "pf.taxonomy.v1": "136c7555-45e3-40dc-a9ac-6749cc516ef3"
+    }
+  },
+  "payload": {
+    "nodes": [
+      {
+        "node_id": "pf:wp3:node:governance-framework",
+        "label": "Governance Framework",
+        "dimension": "governance",
+        "action_type": "governance_action",
+        "time_horizon": "short",
+        "maturity_level": 1,
+        "stakeholder_types": [
+          "all"
+        ],
+        "prerequisites": [],
+        "dataset_refs": [],
+        "status": "active",
+        "successor": null,
+        "source_wp": "WP3",
+        "source_doc_ref": "D3.2 s.4",
+        "confidence": 0.95
+      },
+      {
+        "node_id": "pf:wp3:node:data-catalogue",
+        "label": "Data Catalogue",
+        "dimension": "data",
+        "action_type": "data_foundation",
+        "time_horizon": "short",
+        "maturity_level": 2,
+        "stakeholder_types": [
+          "all"
+        ],
+        "prerequisites": [
+          "pf:wp3:node:governance-framework"
+        ],
+        "dataset_refs": [
+          "pf:wp3:dataset:priority-oncology-registry"
+        ],
+        "status": "active",
+        "successor": null,
+        "source_wp": "WP3",
+        "source_doc_ref": "D3.2 s.4",
+        "confidence": 0.95
+      },
+      {
+        "node_id": "pf:wp3:node:legal-basis-secondary-use",
+        "label": "Legal Basis Secondary Use",
+        "dimension": "compliance",
+        "action_type": "governance_action",
+        "time_horizon": "short",
+        "maturity_level": 2,
+        "stakeholder_types": [
+          "all"
+        ],
+        "prerequisites": [
+          "pf:wp3:node:governance-framework"
+        ],
+        "dataset_refs": [],
+        "status": "active",
+        "successor": null,
+        "source_wp": "WP3",
+        "source_doc_ref": "D3.2 s.4",
+        "confidence": 0.95
+      },
+      {
+        "node_id": "pf:wp3:node:spe-secure-processing",
+        "label": "Spe Secure Processing",
+        "dimension": "infrastructure",
+        "action_type": "deployment_pathway",
+        "time_horizon": "medium",
+        "maturity_level": 3,
+        "stakeholder_types": [
+          "all"
+        ],
+        "prerequisites": [
+          "pf:wp3:node:data-catalogue",
+          "pf:wp3:node:legal-basis-secondary-use"
+        ],
+        "dataset_refs": [],
+        "status": "active",
+        "successor": null,
+        "source_wp": "WP3",
+        "source_doc_ref": "D3.2 s.4",
+        "confidence": 0.95
+      },
+      {
+        "node_id": "pf:wp3:node:ai-model-validation",
+        "label": "Ai Model Validation",
+        "dimension": "capability",
+        "action_type": "priority_application",
+        "time_horizon": "medium",
+        "maturity_level": 4,
+        "stakeholder_types": [
+          "all"
+        ],
+        "prerequisites": [
+          "pf:wp3:node:spe-secure-processing"
+        ],
+        "dataset_refs": [],
+        "status": "active",
+        "successor": null,
+        "source_wp": "WP3",
+        "source_doc_ref": "D3.2 s.4",
+        "confidence": 0.95
+      },
+      {
+        "node_id": "pf:wp3:node:semantic-interoperability",
+        "label": "Semantic Interoperability",
+        "dimension": "data",
+        "action_type": "semantic_interoperability",
+        "time_horizon": "long",
+        "maturity_level": 4,
+        "stakeholder_types": [
+          "all"
+        ],
+        "prerequisites": [
+          "pf:wp3:node:data-catalogue"
+        ],
+        "dataset_refs": [],
+        "status": "active",
+        "successor": null,
+        "source_wp": "WP3",
+        "source_doc_ref": "D3.2 s.4",
+        "confidence": 0.95
+      },
+      {
+        "node_id": "pf:wp3:node:scale-and-sustain",
+        "label": "Scale And Sustain",
+        "dimension": "governance",
+        "action_type": "infrastructure_provision",
+        "time_horizon": "long",
+        "maturity_level": 5,
+        "stakeholder_types": [
+          "all"
+        ],
+        "prerequisites": [
+          "pf:wp3:node:ai-model-validation",
+          "pf:wp3:node:semantic-interoperability"
+        ],
+        "dataset_refs": [],
+        "status": "active",
+        "successor": null,
+        "source_wp": "WP3",
+        "source_doc_ref": "D3.2 s.4",
+        "confidence": 0.95
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "pf:wp3:edge:gov-catalog",
+        "from_node_id": "pf:wp3:node:governance-framework",
+        "to_node_id": "pf:wp3:node:data-catalogue",
+        "relation_type": "prerequisite",
+        "required": true
+      },
+      {
+        "edge_id": "pf:wp3:edge:gov-legal",
+        "from_node_id": "pf:wp3:node:governance-framework",
+        "to_node_id": "pf:wp3:node:legal-basis-secondary-use",
+        "relation_type": "prerequisite",
+        "required": true
+      },
+      {
+        "edge_id": "pf:wp3:edge:catalog-spe",
+        "from_node_id": "pf:wp3:node:data-catalogue",
+        "to_node_id": "pf:wp3:node:spe-secure-processing",
+        "relation_type": "prerequisite",
+        "required": true
+      },
+      {
+        "edge_id": "pf:wp3:edge:legal-spe",
+        "from_node_id": "pf:wp3:node:legal-basis-secondary-use",
+        "to_node_id": "pf:wp3:node:spe-secure-processing",
+        "relation_type": "prerequisite",
+        "required": true
+      },
+      {
+        "edge_id": "pf:wp3:edge:spe-ai",
+        "from_node_id": "pf:wp3:node:spe-secure-processing",
+        "to_node_id": "pf:wp3:node:ai-model-validation",
+        "relation_type": "prerequisite",
+        "required": true
+      },
+      {
+        "edge_id": "pf:wp3:edge:catalog-sem",
+        "from_node_id": "pf:wp3:node:data-catalogue",
+        "to_node_id": "pf:wp3:node:semantic-interoperability",
+        "relation_type": "enabler",
+        "required": false
+      },
+      {
+        "edge_id": "pf:wp3:edge:ai-scale",
+        "from_node_id": "pf:wp3:node:ai-model-validation",
+        "to_node_id": "pf:wp3:node:scale-and-sustain",
+        "relation_type": "prerequisite",
+        "required": true
+      },
+      {
+        "edge_id": "pf:wp3:edge:sem-scale",
+        "from_node_id": "pf:wp3:node:semantic-interoperability",
+        "to_node_id": "pf:wp3:node:scale-and-sustain",
+        "relation_type": "prerequisite",
+        "required": true
+      }
+    ],
+    "datasets": [
+      {
+        "dataset_id": "pf:wp3:dataset:priority-oncology-registry",
+        "label": "High-priority oncology registry datasets",
+        "availability": "limited",
+        "suitability": 0.8,
+        "quality": 0.7,
+        "representativeness": 0.6,
+        "completeness": 0.65,
+        "ai_act_alignment": "conditional",
+        "source_doc_ref": "D3.1 s.6",
+        "maturity": 0.5
+      }
+    ]
+  }
+}

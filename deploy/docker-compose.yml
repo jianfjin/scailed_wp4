@@ -95,7 +95,6 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile.backend
     image: scailed/backend:latest
-    container_name: scailed-backend
     restart: unless-stopped
     depends_on:
       postgres:
@@ -114,11 +113,14 @@ services:
       - "traefik.http.routers.api.middlewares=api-strip"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-pathfinder}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-pathfinder}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://${POSTGRES_USER:-pathfinder}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-pathfinder}}
       - REDIS_URL=redis://redis:6379/0
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - SECRET_KEY=${SECRET_KEY:-dev-secret-change-in-production}
       - ENVIRONMENT=${ENVIRONMENT:-development}
+      - BOUNDARY_STORAGE
+      - PATHFINDER_ADMIN_TOKEN
+      - PATHFINDER_DEMO_TOKEN
       - WP3_API_URL=${WP3_API_URL:-}
       - WP8_API_URL=${WP8_API_URL:-}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}

@@ -40,6 +40,7 @@ class Question:
     min_value: int | None = None
     max_value: int | None = None
     maturity_dimension: str | None = None
+    state_field: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -138,6 +139,7 @@ class Rule:
     parent_rule_id: str | None = None
     source_doc_ref: str = "demo-data"
     rule_version: str = "demo-rules-v1"
+    regulatory_status: str = "verified"
 
     def applies_to_stakeholder(self, stakeholder_type: str) -> bool:
         return stakeholder_type in self.applies_to or "all" in self.applies_to

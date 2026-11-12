@@ -122,7 +122,8 @@ def build_view_model(raw_report: dict[str, Any]) -> ReportViewModel:
         trace_rule_ids=tuple(str(r) for r in trace.get("triggered_rule_ids", [])),
         trace_refs=tuple(str(r) for r in trace.get("regulatory_refs", [])),
         upstream_snapshot=str(trace.get("upstream_snapshot_version", "")),
-        disclaimer=str(raw_report.get("disclaimer", "")),
+        disclaimer=(str(raw_report.get("disclaimer", "")) +
+                    (" Regulatory status is unverified." if path.get("regulatory_status") == "unverified" else "")),
         generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
     )
 
@@ -150,13 +151,14 @@ def _build_condition_matches(
 
     # Flat condition: {"field": "regulatory_flags", "operator": "contains", "value": "gdpr"}
     field = condition.get("field")
-    operator = condition.get("operator", "eq")
+    operator = condition.get("operator", condition.get("op", "eq"))
     expected = condition.get("value")
 
     if field:
         # Resolve actual value from readiness snapshot
         answers = snapshot.get("answers", {})
-        actual = answers.get(field)
+        actual = (snapshot.get("maturity_scores", {}).get(field.removeprefix("maturity."))
+                  if field.startswith("maturity.") else answers.get(field))
         if actual is None and isinstance(snapshot, dict):
             actual = snapshot.get(field)
         matched = _compare(actual, operator, expected)

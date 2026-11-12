@@ -19,7 +19,7 @@ from fastapi import FastAPI, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from pathfinder.core.repositories.connection import get_pool
-from pathfinder.core.repositories.request_log_repo import save_request_log
+from pathfinder.core.repositories.request_log_repo import save_request_log_on_connection
 
 logger = logging.getLogger(__name__)
 
@@ -136,11 +136,11 @@ class RequestLogger:
             async with pool.acquire() as conn:
                 async with conn.transaction():
                     for entry in entries:
-                        await save_request_log(pool, entry)
+                        await save_request_log_on_connection(conn, entry)
         except Exception:
             # Flush failed — put entries back so they aren't lost
             self.buffer.extendleft(reversed(entries))
-            logger.warning("Failed to flush %d request log entries to PG", len(entries))
+            logger.warning("Failed to flush %d request log entries to PG", len(entries), exc_info=True)
 
 
 # Singleton accessor

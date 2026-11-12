@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import asyncio
 import time
 from contextlib import asynccontextmanager
 
@@ -16,6 +17,7 @@ from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from starlette.middleware import Middleware as StarletteMiddleware
+import psycopg
 
 from pathfinder.api.dashboard import router as dashboard_router
 from pathfinder.api.middleware import (
@@ -26,6 +28,7 @@ from pathfinder.api.middleware import (
     require_demo_token,
 )
 from pathfinder.core.repositories.connection import close_pool, init_pool
+from pathfinder.core.repositories.boundary_store import SessionConflict
 from pathfinder.middleware.request_logger import (
     RequestLoggingMiddleware,
     get_logger,
@@ -73,18 +76,35 @@ def _get_service() -> AssessmentService:
 async def lifespan(app: FastAPI):
     global _service, _upstream_client
 
+    if ENVIRONMENT == "production" and (not DEMO_TOKEN or not ADMIN_TOKEN or DEMO_TOKEN == ADMIN_TOKEN):
+        raise RuntimeError("production requires distinct PATHFINDER_DEMO_TOKEN and PATHFINDER_ADMIN_TOKEN")
+
     # ── Startup: PG pool + request logger ───────────────────
     await init_pool()
     logger_instance = get_logger()
     await logger_instance.start_flush_task()
 
-    # ── Fetch upstream data from Mock WP services ───────────
+    storage = os.environ.get("BOUNDARY_STORAGE", "postgres" if ENVIRONMENT == "production" else "memory")
+    if storage not in {"memory", "postgres"} or (ENVIRONMENT == "production" and storage != "postgres"):
+        raise RuntimeError("production requires BOUNDARY_STORAGE=postgres")
+    boundary_store = None
+    if storage == "postgres":
+        from pathfinder.core.repositories.boundary_store import PostgresBoundaryStore
+        dsn = os.environ.get("DATABASE_URL")
+        if not dsn:
+            raise RuntimeError("DATABASE_URL is required for PostgreSQL boundary storage")
+        boundary_store = PostgresBoundaryStore(dsn)
+        await asyncio.to_thread(boundary_store.check_schema)
+
+    # PostgreSQL snapshots are the authoritative source in durable mode.
     _upstream_client = UpstreamClient()
-    await _upstream_client.startup()
+    if boundary_store is None:
+        await _upstream_client.startup()
 
     # ── Create service with upstream data ───────────────────
     _service = AssessmentService(
         upstream_client=_upstream_client,
+        boundary_store=boundary_store,
     )
 
     yield
@@ -108,10 +128,15 @@ app = FastAPI(
     },
 )
 
+
+@app.exception_handler(psycopg.Error)
+async def boundary_database_unavailable(_request: Request, _exc: psycopg.Error) -> JSONResponse:
+    return JSONResponse(status_code=503, content={"detail": {"error": "SERVER_ERROR", "detail": "boundary database unavailable"}})
+
 # ── CORS ─────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[origin.strip() for origin in os.environ.get("CORS_ORIGINS", "" if ENVIRONMENT == "production" else "*").split(",") if origin.strip()],
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
@@ -181,7 +206,7 @@ def health() -> dict[str, object]:
 def stakeholder_types(authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_demo_token(authorization)
     svc = _get_service()
-    return {"stakeholder_types": svc.stakeholder_types(), "mock_data_mode": True}
+    return {"stakeholder_types": svc.stakeholder_types(), "mock_data_mode": svc._boundary_store is None and svc.active_boundary is None}
 
 
 @app.get("/v1/questionnaires/{stakeholder_type}", response_model=QuestionnaireResponse)
@@ -190,6 +215,8 @@ def questionnaire(stakeholder_type: str, authorization: str | None = Header(defa
     svc = _get_service()
     try:
         return svc.get_questionnaire(stakeholder_type)
+    except psycopg.Error:
+        raise
     except Exception as exc:
         raise _not_found(str(exc)) from exc
 
@@ -203,7 +230,7 @@ async def create_assessment(
     require_demo_token(authorization)
     body = CreateAssessmentRequest.model_validate(await request.json())
     try:
-        return _get_service().create_session(
+        return await asyncio.to_thread(_get_service().create_session,
             stakeholder_type=body.stakeholder_type,
             target_scenario=body.target_scenario,
             **_audit_context(request),
@@ -217,7 +244,7 @@ def get_assessment(assessment_id: str, authorization: str | None = Header(defaul
     require_demo_token(authorization)
     svc = _get_service()
     try:
-        return svc.sessions[assessment_id]
+        return svc.get_session(assessment_id)
     except KeyError:
         raise _not_found("assessment not found")
 
@@ -231,7 +258,11 @@ async def submit_answers(
     require_demo_token(authorization)
     body = BatchAnswersRequest.model_validate(await request.json())
     try:
-        return _get_service().submit_answers(assessment_id, body.answers, **_audit_context(request))
+        return await asyncio.to_thread(_get_service().submit_answers, assessment_id, body.answers, **_audit_context(request))
+    except psycopg.Error:
+        raise
+    except SessionConflict as exc:
+        raise HTTPException(status_code=409, detail=ApiError(error="VALIDATION_ERROR", detail=str(exc)).model_dump()) from exc
     except Exception as exc:
         raise _validation_error(str(exc)) from exc
 
@@ -246,6 +277,10 @@ async def recommendations(
         return await _get_service().generate_recommendation_async(
             assessment_id, path_backend=path_backend, **_audit_context(request)
         )
+    except psycopg.Error:
+        raise
+    except SessionConflict as exc:
+        raise HTTPException(status_code=409, detail=ApiError(error="VALIDATION_ERROR", detail=str(exc)).model_dump()) from exc
     except Exception as exc:
         raise _validation_error(str(exc)) from exc
 
@@ -260,12 +295,14 @@ def report(
 ):
     # Accept token from query param for browser-friendly HTML visualization
     auth_value = authorization
-    if not auth_value and token:
+    if not auth_value and token and ENVIRONMENT != "production":
         auth_value = f"Bearer {token}"
     if auth_value not in {f"Bearer {DEMO_TOKEN}", f"Bearer {ADMIN_TOKEN}"}:
         raise _auth_error("invited demo token required")
     try:
         raw = _get_service().report(assessment_id, **_audit_context(request))
+    except psycopg.Error:
+        raise
     except Exception as exc:
         raise _validation_error(str(exc)) from exc
 
@@ -294,6 +331,8 @@ def fhir_assessment_bundle(
             fhir_version=fhir_version,
             **_audit_context(request),
         )
+    except psycopg.Error:
+        raise
     except KeyError as exc:
         raise _not_found("assessment not found") from exc
     except ValueError as exc:
@@ -314,7 +353,11 @@ def fhir_assessment_bundle(
 @app.get("/v1/roadmap", response_model=RoadmapResponse)
 def roadmap(authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_demo_token(authorization)
-    return _get_service().graph.to_dict()
+    svc = _get_service()
+    generation = svc.active_boundary
+    if svc._boundary_store and generation is None:
+        raise HTTPException(status_code=503, detail=ApiError(error="SERVER_ERROR", detail="no validated boundary generation is active").model_dump())
+    return (generation.graph if generation else svc.graph).to_dict()
 
 
 @app.get("/v1/roadmap/{node_id}", response_model=RoadmapNodeResponse)
@@ -322,7 +365,10 @@ def roadmap_node(node_id: str, authorization: str | None = Header(default=None))
     require_demo_token(authorization)
     svc = _get_service()
     try:
-        return svc.graph.nodes[node_id].to_dict()
+        generation = svc.active_boundary
+        if svc._boundary_store and generation is None:
+            raise HTTPException(status_code=503, detail=ApiError(error="SERVER_ERROR", detail="no validated boundary generation is active").model_dump())
+        return (generation.graph if generation else svc.graph).nodes[node_id].to_dict()
     except KeyError:
         raise _not_found("roadmap node not found")
 
@@ -330,6 +376,18 @@ def roadmap_node(node_id: str, authorization: str | None = Header(default=None))
 # ─── Admin ──────────────────────────────────────────────────────────
 
 app.include_router(dashboard_router)
+
+
+@app.post("/v1/admin/import")
+async def import_boundary_snapshots(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
+    require_admin_token(authorization)
+    payload = await request.json()
+    if not isinstance(payload, dict) or not isinstance(payload.get("snapshots"), list):
+        raise _validation_error("snapshots must be an array of complete boundary snapshots")
+    try:
+        return await asyncio.to_thread(_get_service().activate_boundary_snapshots, payload["snapshots"], **_audit_context(request))
+    except (ValueError, TypeError, KeyError) as exc:
+        raise _validation_error(str(exc)) from exc
 
 @app.post("/admin/import/wp2", response_model=AdminImportResponse)
 async def import_wp2(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
@@ -365,5 +423,7 @@ async def import_wp8(request: Request, authorization: str | None = Header(defaul
 def reload_rules(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_admin_token(authorization)
     svc = _get_service()
+    if svc._boundary_store:
+        raise _validation_error("legacy rule reload is disabled in PostgreSQL boundary mode")
     svc.audit_log.append("rule_reload", {"rule_version": svc.rule_loader.active_version}, **_audit_context(request))
     return {"accepted": True, "active_rule_version": svc.rule_loader.active_version}

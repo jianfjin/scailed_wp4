@@ -9,6 +9,8 @@ Provides:
 from __future__ import annotations
 
 import logging
+import asyncio
+import os
 import time
 from typing import Callable
 
@@ -82,7 +84,7 @@ class AuditWhitelistMiddleware:
         # Snapshot audit count before handling.
         try:
             service = self._get_service()
-            count_before = len(service.audit_log.events())
+            count_before = await asyncio.to_thread(service.audit_event_count)
         except Exception:
             count_before = 0
 
@@ -90,7 +92,7 @@ class AuditWhitelistMiddleware:
 
         try:
             service = self._get_service()
-            count_after = len(service.audit_log.events())
+            count_after = await asyncio.to_thread(service.audit_event_count)
         except Exception:
             count_after = 0
 
@@ -180,6 +182,11 @@ class DefaultDenyAuthMiddleware:
             await self.app(scope, receive, send)
             return
 
+        headers = dict(scope.get("headers", []))
+        if scope.get("method") == "OPTIONS" and b"origin" in headers and b"access-control-request-method" in headers:
+            await self.app(scope, receive, send)
+            return
+
         path = scope.get("path", "/")
 
         # Normalize: strip trailing slash for public path matching
@@ -199,7 +206,7 @@ class DefaultDenyAuthMiddleware:
                 break
 
         # Fallback: accept ?token= from query string (browser-friendly HTML viz)
-        if not auth:
+        if not auth and os.environ.get("ENVIRONMENT", "development").lower() != "production":
             qs = scope.get("query_string", b"")
             if qs:
                 from urllib.parse import parse_qs

@@ -1,0 +1,57 @@
+{
+  "contract": "pf.feedback.v1",
+  "manifest": {
+    "contract_version": "1.0.0",
+    "snapshot_id": "7fec3a8e-50c0-45ab-87fd-a31a1a2c2766",
+    "producer_wp": "WP4",
+    "generated_at": "2026-11-10T00:00:00Z",
+    "generator": {
+      "name": "contracts-builder",
+      "version": "1.0.0",
+      "seed": null
+    },
+    "supersedes": null,
+    "items_checksum": "sha256:c8e76eefa93f08c7e68b48d173570e02b582733c2ce2024612dee6441cdb975a",
+    "derived_from": [
+      {
+        "source": "T4.2",
+        "status": "approved"
+      }
+    ],
+    "dependencies": {
+      "pf.taxonomy.v1": "136c7555-45e3-40dc-a9ac-6749cc516ef3",
+      "pf.questionnaire.v1": "cdb84fac-6484-43ce-bf05-ad9502075e71",
+      "pf.roadmap.v1": "ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1",
+      "pf.rulebundle.v1": "5f515fa8-649e-4a91-8fdd-806886f41bd0"
+    }
+  },
+  "payload": {
+    "period": {
+      "from": "2026-09-01",
+      "to": "2026-10-31"
+    },
+    "min_cohort_size": 5,
+    "roadmap": {
+      "node_stats": [
+        {
+          "node_id": "pf:wp3:node:governance-framework",
+          "visits": 84,
+          "as_current_position": 61,
+          "as_target": 23,
+          "blocked_by_prerequisite_count": 0,
+          "cohort_size": 10
+        },
+        {
+          "node_id": "pf:wp3:node:spe-secure-processing",
+          "visits": 40,
+          "as_current_position": 5,
+          "as_target": 35,
+          "blocked_by_prerequisite_count": 17,
+          "cohort_size": 10
+        }
+      ],
+      "unsatisfiable_route_ids": []
+    },
+    "recipient": "WP3"
+  }
+}

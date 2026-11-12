@@ -28,6 +28,7 @@ type PathfinderReport = {
   };
   recommended_path?: {
     status?: string;
+    regulatory_status?: string;
     current_node?: string;
     target_node?: string;
     next_steps?: Array<{ node_id?: string; label?: string; dimension?: string }>;
@@ -46,15 +47,32 @@ type PathfinderReport = {
   };
 };
 
+type BoundaryQuestion = {
+  question_id: string;
+  label: string;
+  question_type: "single_choice" | "multi_choice" | "numeric" | "text";
+  required: boolean;
+  options: string[];
+  min_value: number | null;
+  max_value: number | null;
+};
+type BoundaryQuestionnaire = {
+  stakeholder_type: string;
+  title: string;
+  target_scenarios: string[];
+  questions: BoundaryQuestion[];
+};
+type Answer = string | number | string[];
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
-const TOKEN = "demo-token";
+let accessToken = import.meta.env.DEV ? "demo-token" : "";
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${TOKEN}`,
+      Authorization: `Bearer ${accessToken}`,
       ...(init?.headers || {}),
     },
   });
@@ -99,6 +117,27 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
   const snapshot = report.readiness_snapshot;
   const trace = path?.trace;
   const blocked = path?.status === "blocked";
+  const [viewError, setViewError] = useState("");
+
+  async function openVisualization() {
+    if (!assessmentId) return;
+    const tab = window.open("", "_blank");
+    if (!tab) { setViewError("Allow pop-ups to open the visualization."); return; }
+    tab.opener = null;
+    try {
+      const response = await fetch(`${API_BASE}/v1/assessments/${encodeURIComponent(assessmentId)}/report?format=html`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!response.ok) throw new Error(`Report request failed (${response.status})`);
+      const url = URL.createObjectURL(await response.blob());
+      tab.location.href = url;
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      setViewError("");
+    } catch (err) {
+      tab.close();
+      setViewError(String(err));
+    }
+  }
 
   const backendLabel =
     path?.path_backend === "cypher" ? "AGE Cypher" :
@@ -108,11 +147,12 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
   return (
     <div className="report-summary">
       <div className="status-row">
-        <strong>{blocked ? "Blocked" : "Ready"}</strong>
+        <strong>{blocked ? "Blocked" : path?.status === "degraded" ? "Unverified" : "Ready"}</strong>
         <span>{report.audit_chain_valid ? "Audit chain valid" : "Audit chain needs review"}</span>
       </div>
 
       {report.disclaimer && <p className="notice">{report.disclaimer}</p>}
+      {path?.regulatory_status === "unverified" && <p className="notice">Regulatory status is unverified.</p>}
 
       <div className="summary-grid">
         <div>
@@ -141,7 +181,7 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
         </div>
       </div>
 
-      <KeyValueList
+      {snapshot?.derivation_mode && <KeyValueList
         title="Derived readiness"
         values={{
           Mode: snapshot?.derivation_mode,
@@ -149,7 +189,7 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
           "WP2 snapshot": snapshot?.source_wp2_snapshot_version,
           "WP3 snapshot": snapshot?.source_wp3_snapshot_version,
         }}
-      />
+      />}
       <EvidenceList title="WP2 capabilities" items={snapshot?.capabilities} />
       <EvidenceList title="WP2 pain points" items={snapshot?.pain_points} />
       <EvidenceList title="Derived missing capabilities" items={snapshot?.missing_capabilities} />
@@ -173,14 +213,8 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
 
       {assessmentId && (
         <p style={{marginTop:12, marginBottom:8}}>
-          <a
-            href={`/v1/assessments/${assessmentId}/report?format=html&token=${TOKEN}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{color:"#1d5d43",fontWeight:600}}
-          >
-            View visualization →
-          </a>
+          <button type="button" className="visualization-link" onClick={openVisualization}>View visualization →</button>
+          {viewError && <span className="error" role="alert"> {viewError}</span>}
         </p>
       )}
 
@@ -307,6 +341,8 @@ function StakeholderPicker({
 
 function App() {
   const [types, setTypes] = useState<string[]>([]);
+  const [token, setToken] = useState(accessToken);
+  const [tokenInput, setTokenInput] = useState(accessToken);
   const [stakeholderType, setStakeholderType] = useState("");
   const [report, setReport] = useState<PathfinderReport | null>(null);
   const [error, setError] = useState("");
@@ -314,6 +350,12 @@ function App() {
   const [pathBackend, setPathBackend] = useState("python");
   const [bannerText, setBannerText] = useState("Loading status…");
   const [lastAssessmentId, setLastAssessmentId] = useState("");
+  const [boundaryMode, setBoundaryMode] = useState(false);
+  const [questionnaire, setQuestionnaire] = useState<BoundaryQuestionnaire | null>(null);
+  const [targetScenario, setTargetScenario] = useState("");
+  const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [invalidQuestions, setInvalidQuestions] = useState<string[]>([]);
+  const validationRef = useRef<HTMLDivElement>(null);
   const assessmentRunRef = useRef(0);
   const stakeholderOptions = useMemo(() => buildStakeholderOptions(types), [types]);
   const loadedCopy = useMemo(() => formatStakeholderLoadedCopy(stakeholderOptions), [stakeholderOptions]);
@@ -325,12 +367,17 @@ function App() {
     setError("");
     setLastAssessmentId("");
     setLoading(false);
+    setQuestionnaire(null);
+    setAnswers({});
+    setInvalidQuestions([]);
   }
 
   useEffect(() => {
-    api<{ stakeholder_types: string[] }>("/v1/questionnaires")
+    if (!token) return;
+    api<{ stakeholder_types: string[]; mock_data_mode: boolean }>("/v1/questionnaires")
       .then((data) => {
         setTypes(data.stakeholder_types);
+        setBoundaryMode(!data.mock_data_mode);
         setStakeholderType((current) => (
           current && data.stakeholder_types.includes(current)
             ? current
@@ -338,9 +385,11 @@ function App() {
         ));
       })
       .catch((err) => setError(String(err)));
-    api<{ mode: string; import_reports?: Record<string, { activated_records?: number }> }>("/health")
+    api<{ mode: string; active_snapshot_ids?: Record<string, string>; import_reports?: Record<string, { activated_records?: number }> }>("/health")
       .then((h) => {
-        if (h.mode === "deployed" && h.import_reports?.upstream) {
+        if (h.active_snapshot_ids && Object.keys(h.active_snapshot_ids).length) {
+          setBannerText("Validated partner snapshots active.");
+        } else if (h.mode === "deployed" && h.import_reports?.upstream) {
           const records = h.import_reports.upstream.activated_records;
           const recordText = typeof records === "number" ? `${records} records` : "upstream records";
           setBannerText(`Deployed mode. Mock upstream data loaded (${recordText}).`);
@@ -351,11 +400,45 @@ function App() {
         }
       })
       .catch(() => setBannerText("Demo mode. WP2/WP3/WP8 inputs pending."));
-  }, []);
+  }, [token]);
+
+  useEffect(() => {
+    if (!boundaryMode || !stakeholderType) return;
+    let cancelled = false;
+    setQuestionnaire(null);
+    setAnswers({});
+    setInvalidQuestions([]);
+    api<BoundaryQuestionnaire>(`/v1/questionnaires/${encodeURIComponent(stakeholderType)}`)
+      .then((data) => {
+        if (cancelled) return;
+        setQuestionnaire(data);
+        setTargetScenario(data.target_scenarios[0] || "");
+        setAnswers(Object.fromEntries(data.questions.filter((q) => q.question_type === "multi_choice").map((q) => [q.question_id, []])));
+      })
+      .catch((err) => { if (!cancelled) setError(String(err)); });
+    return () => { cancelled = true; };
+  }, [boundaryMode, stakeholderType]);
 
 
   async function runAssessment() {
     if (!stakeholderType) return;
+    if (boundaryMode) {
+      if (!questionnaire || questionnaire.stakeholder_type !== stakeholderType || !targetScenario) return;
+      const invalid = questionnaire.questions.filter((q) => {
+        const value = answers[q.question_id];
+        if (q.required && (value === undefined || value === "")) return true;
+        if (value === undefined || value === "") return false;
+        return q.question_type === "numeric" && value !== undefined &&
+          (typeof value !== "number" || !Number.isInteger(value) ||
+           (q.min_value !== null && value < q.min_value) || (q.max_value !== null && value > q.max_value));
+      });
+      if (invalid.length) {
+        setInvalidQuestions(invalid.map((q) => q.question_id));
+        setTimeout(() => validationRef.current?.focus(), 0);
+        return;
+      }
+      setInvalidQuestions([]);
+    }
     const runId = assessmentRunRef.current + 1;
     assessmentRunRef.current = runId;
     setError("");
@@ -364,10 +447,16 @@ function App() {
     try {
       const session = await api<{ assessment_id: string }>("/v1/assessments", {
         method: "POST",
-        body: JSON.stringify({ stakeholder_type: stakeholderType, target_scenario: "secondary-use-readiness" }),
+        body: JSON.stringify({ stakeholder_type: stakeholderType, target_scenario: boundaryMode ? targetScenario : "secondary-use-readiness" }),
       });
       if (assessmentRunRef.current !== runId) return;
       setLastAssessmentId(session.assessment_id);
+      if (boundaryMode) {
+        await api(`/v1/assessments/${session.assessment_id}/answers/batch`, {
+          method: "POST", body: JSON.stringify({ answers }),
+        });
+        if (assessmentRunRef.current !== runId) return;
+      }
       await api(`/v1/assessments/${session.assessment_id}/recommendations?path_backend=${pathBackend}`, {
         method: "POST",
       });
@@ -391,41 +480,82 @@ function App() {
       <section className="toolbar">
         <div>
           <h1>SCAILED Pathfinder</h1>
-          <p>EHDS readiness path planner. Select a stakeholder to derive your roadmap path with full trace.</p>
+          <p>EHDS readiness path planner. Select a stakeholder to build a roadmap path with full trace.</p>
         </div>
         <div className="toolbar-actions">
           <BackendToggle value={pathBackend} onChange={setPathBackend} />
-          <button type="button" className="submit-btn" onClick={runAssessment} disabled={!stakeholderType || loading}>
-            {loading ? "Running..." : "Run derived assessment"}
+          <button type="button" className="submit-btn" onClick={runAssessment} disabled={!stakeholderType || loading || (boundaryMode && (!questionnaire || questionnaire.stakeholder_type !== stakeholderType))}>
+            {loading ? "Running..." : boundaryMode ? "Run assessment" : "Run derived assessment"}
           </button>
         </div>
       </section>
 
       <section className="layout">
         <aside className="panel">
+          <form className="token-form" onSubmit={(event) => {
+            event.preventDefault();
+            const next = tokenInput.trim();
+            if (next === token) return;
+            accessToken = next;
+            setToken(next);
+            setTypes([]);
+            setStakeholderType("");
+            setQuestionnaire(null);
+            setReport(null);
+            setError("");
+          }}>
+            <label htmlFor="access-token">Access token</label>
+            <input id="access-token" type="password" autoComplete="current-password" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} />
+            <button type="submit">Connect</button>
+          </form>
+          {!token && <p className="notice">Enter your access token to load stakeholder profiles.</p>}
           <StakeholderPicker
             options={stakeholderOptions}
             value={stakeholderType}
             onChange={handleStakeholderTypeChange}
           />
           <div className="banner">
-            <strong>{loadedCopy}</strong>
+            <strong>{boundaryMode ? `${types.length} stakeholder profile${types.length === 1 ? "" : "s"} available.` : loadedCopy}</strong>
             <span>{bannerText}</span>
           </div>
         </aside>
 
         <section className="panel">
-          <h2>Derived readiness evidence</h2>
-          <p className="notice">
-            Readiness is derived from WP2 stakeholder capabilities and WP3 roadmap evidence.
-          </p>
+          <h2>{boundaryMode ? "Readiness questionnaire" : "Derived readiness evidence"}</h2>
+          <p className="notice">{boundaryMode ? "Answer the questions to generate a traceable roadmap." : "Readiness is derived from WP2 stakeholder capabilities and WP3 roadmap evidence."}</p>
+          {boundaryMode && questionnaire && <div className="question-list">
+            {invalidQuestions.length > 0 && <div className="error" role="alert" tabIndex={-1} ref={validationRef}>
+              <strong>Please check these answers:</strong>
+              <ul>{questionnaire.questions.filter((q) => invalidQuestions.includes(q.question_id)).map((q) => <li key={q.question_id}><a href={`#${q.question_id}`}>{q.label}</a></li>)}</ul>
+            </div>}
+            <label htmlFor="target-scenario">Target scenario</label>
+            <select id="target-scenario" value={targetScenario} onChange={(event) => setTargetScenario(event.target.value)}>
+              {questionnaire.target_scenarios.map((scenario) => <option key={scenario} value={scenario}>{scenario.split(":").at(-1)?.replaceAll("-", " ")}</option>)}
+            </select>
+            {questionnaire.questions.map((q) => <div className="question" key={q.question_id}>
+              {q.question_type === "multi_choice" ? <fieldset id={q.question_id}>
+                <legend>{q.label}{q.required ? " *" : ""}</legend>
+                <small>Select all that apply, or leave empty if none apply.</small>
+                {q.options.map((option) => <label className="check-label" key={option}><input type="checkbox" checked={(answers[q.question_id] as string[] || []).includes(option)} onChange={(event) => {
+                  const current = answers[q.question_id] as string[] || [];
+                  setAnswers({ ...answers, [q.question_id]: event.target.checked ? [...current, option] : current.filter((item) => item !== option) });
+                }} />{option}</label>)}
+              </fieldset> : <>
+                <label htmlFor={q.question_id}>{q.label}{q.required ? " *" : ""}</label>
+                {q.question_type === "single_choice" ? <select id={q.question_id} value={String(answers[q.question_id] ?? "")} aria-required={q.required} aria-invalid={invalidQuestions.includes(q.question_id)} aria-describedby={invalidQuestions.includes(q.question_id) ? `${q.question_id}-error` : undefined} onChange={(event) => setAnswers({ ...answers, [q.question_id]: event.target.value })}>
+                  <option value="">Select an answer</option>{q.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                </select> : <input id={q.question_id} type={q.question_type === "numeric" ? "number" : "text"} min={q.min_value ?? undefined} max={q.max_value ?? undefined} step={q.question_type === "numeric" ? 1 : undefined} value={answers[q.question_id] as string | number ?? ""} aria-required={q.required} aria-invalid={invalidQuestions.includes(q.question_id)} aria-describedby={invalidQuestions.includes(q.question_id) ? `${q.question_id}-error` : undefined} onChange={(event) => setAnswers({ ...answers, [q.question_id]: q.question_type === "numeric" && event.target.value !== "" ? Number(event.target.value) : event.target.value })} />}
+                {invalidQuestions.includes(q.question_id) && <span id={`${q.question_id}-error`} className="error">Enter a valid answer{q.question_type === "numeric" ? ` (${q.min_value}–${q.max_value})` : ""}.</span>}
+              </>}
+            </div>)}
+          </div>}
           <div className="evidence-block">
             <h3>Selected source</h3>
             <dl>
               <dt>Stakeholder</dt>
               <dd>{stakeholderType || "n/a"}</dd>
               <dt>Scenario</dt>
-              <dd>secondary-use-readiness</dd>
+              <dd>{boundaryMode ? targetScenario || "n/a" : "secondary-use-readiness"}</dd>
             </dl>
           </div>
         </section>
@@ -433,7 +563,7 @@ function App() {
           <h2>Traceable report</h2>
           {error && <p className="error">{error}</p>}
           {loading && <p>Running assessment…</p>}
-          {!report && !loading && <p>Run a derived assessment to see your roadmap path.</p>}
+          {!report && !loading && <p>{boundaryMode ? "Complete the questionnaire to see your roadmap path." : "Run a derived assessment to see your roadmap path."}</p>}
           {report && <ReportSummary report={report} assessmentId={lastAssessmentId} />}
         </section>
       </section>

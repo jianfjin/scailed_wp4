@@ -20,6 +20,7 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
+import re
 
 API_BASE = "http://localhost/api"
 DEMO_TOKEN = "demo-token"
@@ -82,6 +83,10 @@ def step1_docker() -> None:
             continue
         parts = line.split(" ", 1)
         containers[parts[0]] = parts[1] if len(parts) > 1 else ""
+
+    backend_names = [name for name in containers if re.search(r"(?:^|[-_])backend[-_]\d+$", name)]
+    if "scailed-backend" not in containers and backend_names:
+        containers["scailed-backend"] = containers[backend_names[0]]
 
     for name in required:
         if name not in containers:

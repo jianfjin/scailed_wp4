@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scailed.eu/contracts/wp3-roadmap.schema.json",
+  "title": "pf.roadmap.v1 payload — WP3 strategic roadmap + landscape catalog (B3)",
+  "description": "Machine-readable projection of T3.3/D3.2 roadmap actions and the D3.1 priority-dataset catalog. Node categories follow the T3.3 wording: priority applications, essential data foundations, deployment pathways, semantic interoperability, governance, emerging infrastructures; time horizons are the short/medium/long-term actions of T3.3.",
+  "type": "object",
+  "required": ["nodes", "edges"],
+  "additionalProperties": false,
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["node_id", "label", "dimension", "maturity_level", "stakeholder_types", "prerequisites", "source_wp", "source_doc_ref", "confidence"],
+        "additionalProperties": false,
+        "properties": {
+          "node_id": {"$ref": "#/$defs/id"},
+          "label": {"type": "string", "minLength": 1},
+          "description": {"type": "string"},
+          "dimension": {"type": "string", "enum": ["governance", "data", "compliance", "infrastructure", "capability"]},
+          "action_type": {"type": "string", "enum": ["priority_application", "data_foundation", "deployment_pathway", "semantic_interoperability", "governance_action", "infrastructure_provision"]},
+          "time_horizon": {"type": "string", "enum": ["short", "medium", "long"]},
+          "maturity_level": {"type": "integer", "minimum": 1, "maximum": 5},
+          "stakeholder_types": {"type": "array", "minItems": 1, "items": {"type": "string"}, "description": "Taxonomy stakeholder_type IDs or 'all'. T3.3: clear responsibilities and actions for all stakeholders."},
+          "responsibility_notes": {"type": "array", "items": {"type": "string"}},
+          "prerequisites": {"type": "array", "items": {"$ref": "#/$defs/id"}},
+          "dataset_refs": {"type": "array", "items": {"$ref": "#/$defs/dsid"}, "description": "Optional links to the D3.1 priority dataset catalog below."},
+          "status": {"type": "string", "enum": ["active", "deprecated"]},
+          "successor": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/id"}]},
+          "source_wp": {"type": "string", "const": "WP3"},
+          "source_doc_ref": {"type": "string", "minLength": 1},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+          "metadata": {"type": "object", "additionalProperties": true}
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["edge_id", "from_node_id", "to_node_id", "relation_type"],
+        "additionalProperties": false,
+        "properties": {
+          "edge_id": {"$ref": "#/$defs/eid"},
+          "from_node_id": {"$ref": "#/$defs/id"},
+          "to_node_id": {"$ref": "#/$defs/id"},
+          "relation_type": {"type": "string", "enum": ["prerequisite", "enabler", "alternative"]},
+          "required": {"type": "boolean", "default": true},
+          "source_doc_ref": {"type": "string"}
+        }
+      }
+    },
+    "datasets": {
+      "type": "array",
+      "description": "D3.1 catalogue of high-priority datasets; characteristics per T3.1.1.",
+      "items": {
+        "type": "object",
+        "required": ["dataset_id", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "dataset_id": {"$ref": "#/$defs/dsid"},
+          "label": {"type": "string", "minLength": 1},
+          "availability": {"type": "string", "enum": ["available", "planned", "limited", "unknown"]},
+          "suitability": {"type": "number", "minimum": 0, "maximum": 1},
+          "quality": {"type": "number", "minimum": 0, "maximum": 1},
+          "representativeness": {"type": "number", "minimum": 0, "maximum": 1},
+          "completeness": {"type": "number", "minimum": 0, "maximum": 1},
+          "ai_act_alignment": {"type": "string", "enum": ["aligned", "conditional", "gap", "unassessed"]},
+          "maturity": {"type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "T3.1.1 seventh characterisation attribute: dataset maturity."},
+          "source_doc_ref": {"type": "string"}
+        }
+      }
+    },
+    "metadata": {"type": "object", "additionalProperties": true}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^pf:wp3:node:[a-z0-9-]{1,64}$"},
+    "eid": {"type": "string", "pattern": "^pf:wp3:edge:[a-z0-9-]{1,64}$"},
+    "dsid": {"type": "string", "pattern": "^pf:wp3:dataset:[a-z0-9-]{1,64}$"}
+  }
+}
