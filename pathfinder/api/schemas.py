@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ─── Error Model (standardized, 5 codes) ────────────────────────────
@@ -212,3 +212,60 @@ class AdminImportResponse(BaseModel):
 class AdminReloadResponse(BaseModel):
     accepted: bool
     active_rule_version: str
+
+
+class AssessmentStateResponse(BaseModel):
+    """Current state of an assessment session (GET /v1/assessments/{id})."""
+
+    model_config = ConfigDict(extra="allow")
+
+    assessment_id: str
+    stakeholder_type: str
+    target_scenario: str
+    status: str
+    mock_data_mode: bool
+    snapshot_ids: dict[str, str] | None = None
+    evaluation_date: str | None = None
+    boundary_generation_id: str | None = None
+
+
+class TopEndpoint(BaseModel):
+    endpoint: str
+    count: int
+
+
+class RequestStatsResponse(BaseModel):
+    total_requests: int
+    error_count: int
+    error_rate: float
+    unique_ips: int
+    active_now: int
+    top_endpoints: list[TopEndpoint]
+
+
+class RequestLogEntry(BaseModel):
+    timestamp: str
+    ip: str
+    method: str
+    endpoint: str
+    status_code: int | None = None
+    duration_ms: int = 0
+    user_agent: str = ""
+    error_message: str | None = None
+    assessment_id: str | None = None
+
+
+class AbusiveIp(BaseModel):
+    ip: str
+    request_count: int
+    endpoints: list[str] = []
+
+
+class FhirBundle(BaseModel):
+    """Minimal FHIR Bundle envelope (contents follow the FHIR version)."""
+
+    model_config = ConfigDict(extra="allow")
+
+    resourceType: str = "Bundle"
+    type: str
+    entry: list[dict[str, Any]] = []

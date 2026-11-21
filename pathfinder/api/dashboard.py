@@ -12,6 +12,7 @@ import os
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from pathfinder.api.schemas import AbusiveIp, RequestLogEntry, RequestStatsResponse
 from pathfinder.middleware.request_logger import get_logger
 
 router = APIRouter(prefix="/admin", tags=["admin-dashboard"])
@@ -36,21 +37,21 @@ async def dashboard_page() -> HTMLResponse:
     return HTMLResponse(content=content)
 
 
-@router.get("/api/recent")
+@router.get("/api/recent", response_model=list[RequestLogEntry])
 async def api_recent(n: int = 100) -> list[dict]:
     """Return recent requests from the in-memory logger buffer."""
     logger_instance = get_logger()
     return logger_instance.get_recent(n=n)
 
 
-@router.get("/api/stats")
+@router.get("/api/stats", response_model=RequestStatsResponse)
 async def api_stats() -> dict:
     """Return aggregated stats from the in-memory logger buffer."""
     logger_instance = get_logger()
     return logger_instance.get_stats()
 
 
-@router.get("/api/abusive")
+@router.get("/api/abusive", response_model=list[AbusiveIp])
 async def api_abusive() -> list[dict]:
     """Return IPs exceeding the rate threshold from the in-memory buffer.
 

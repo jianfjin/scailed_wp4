@@ -35,6 +35,8 @@ from pathfinder.middleware.request_logger import (
 )
 from pathfinder.api.schemas import (
     AdminImportResponse,
+    AssessmentStateResponse,
+    FhirBundle,
     AdminReloadResponse,
     ApiError,
     BatchAnswersRequest,
@@ -225,10 +227,11 @@ def questionnaire(stakeholder_type: str, authorization: str | None = Header(defa
 
 @app.post("/v1/assessments", response_model=CreateAssessmentResponse)
 async def create_assessment(
-    request: Request, authorization: str | None = Header(default=None)
+    request: Request,
+    body: CreateAssessmentRequest,
+    authorization: str | None = Header(default=None),
 ) -> dict[str, object]:
     require_demo_token(authorization)
-    body = CreateAssessmentRequest.model_validate(await request.json())
     try:
         return await asyncio.to_thread(_get_service().create_session,
             stakeholder_type=body.stakeholder_type,
@@ -239,7 +242,7 @@ async def create_assessment(
         raise _validation_error(str(exc)) from exc
 
 
-@app.get("/v1/assessments/{assessment_id}", response_model=dict[str, object])
+@app.get("/v1/assessments/{assessment_id}", response_model=AssessmentStateResponse)
 def get_assessment(assessment_id: str, authorization: str | None = Header(default=None)) -> dict[str, object]:
     require_demo_token(authorization)
     svc = _get_service()
@@ -253,10 +256,10 @@ def get_assessment(assessment_id: str, authorization: str | None = Header(defaul
 async def submit_answers(
     assessment_id: str,
     request: Request,
+    body: BatchAnswersRequest,
     authorization: str | None = Header(default=None),
 ) -> dict[str, object]:
     require_demo_token(authorization)
-    body = BatchAnswersRequest.model_validate(await request.json())
     try:
         return await asyncio.to_thread(_get_service().submit_answers, assessment_id, body.answers, **_audit_context(request))
     except psycopg.Error:
@@ -285,7 +288,18 @@ async def recommendations(
         raise _validation_error(str(exc)) from exc
 
 
-@app.get("/v1/assessments/{assessment_id}/report")
+@app.get(
+    "/v1/assessments/{assessment_id}/report",
+    responses={
+        200: {
+            "description": "Report document: JSON (default) or HTML with format=html.",
+            "content": {
+                "application/json": {"schema": {"$ref": "#/components/schemas/ReportResponse"}},
+                "text/html": {"schema": {"type": "string"}},
+            },
+        }
+    },
+)
 def report(
     assessment_id: str,
     request: Request,
@@ -317,7 +331,16 @@ def report(
     return raw
 
 
-@app.get("/v1/assessments/{assessment_id}/fhir")
+@app.get(
+    "/v1/assessments/{assessment_id}/fhir",
+    response_class=Response,
+    responses={
+        200: {
+            "description": "FHIR Bundle export of the assessment.",
+            "content": {"application/fhir+json": {"schema": {"$ref": "#/components/schemas/FhirBundle"}}},
+        }
+    },
+)
 def fhir_assessment_bundle(
     assessment_id: str,
     request: Request,
