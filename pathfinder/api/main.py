@@ -1,29 +1,30 @@
 """FastAPI wrapper for the Pathfinder V1 deterministic kernel.
 
 All response types are locked via Pydantic schemas in api/schemas.py.
-Error model: 5 standardized codes (AUTH_REQUIRED, FORBIDDEN, NOT_FOUND,
-VALIDATION_ERROR, SERVER_ERROR).
+Error codes: AUTH_REQUIRED, FORBIDDEN, NOT_FOUND, VALIDATION_ERROR,
+SERVER_ERROR and RATE_LIMITED, inside the standard detail envelope.
 """
 
 from __future__ import annotations
 
-import json
 import os
 import asyncio
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Header, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware import Middleware as StarletteMiddleware
 import psycopg
 
 from pathfinder.api.dashboard import router as dashboard_router
+from pathfinder.api.openapi import install_openapi
 from pathfinder.api.middleware import (
     AuditWhitelistMiddleware,
     DefaultDenyAuthMiddleware,
     RateLimitMiddleware,
+    bearer_authorization,
     require_admin_token,
     require_demo_token,
 )
@@ -39,6 +40,7 @@ from pathfinder.api.schemas import (
     FhirBundle,
     AdminReloadResponse,
     ApiError,
+    ApiErrorEnvelope,
     BatchAnswersRequest,
     CreateAssessmentRequest,
     CreateAssessmentResponse,
@@ -122,11 +124,12 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
     responses={
-        401: {"model": ApiError, "description": "Missing or invalid token"},
-        403: {"model": ApiError, "description": "Insufficient permissions"},
-        404: {"model": ApiError, "description": "Resource not found"},
-        400: {"model": ApiError, "description": "Validation error"},
-        500: {"model": ApiError, "description": "Internal server error"},
+        401: {"model": ApiErrorEnvelope, "description": "Missing or invalid token"},
+        403: {"model": ApiErrorEnvelope, "description": "Insufficient permissions"},
+        404: {"model": ApiErrorEnvelope, "description": "Resource not found"},
+        400: {"model": ApiErrorEnvelope, "description": "Validation error"},
+        500: {"model": ApiErrorEnvelope, "description": "Internal server error"},
+        503: {"model": ApiErrorEnvelope, "description": "Boundary database unavailable or no validated generation is active"},
     },
 )
 
@@ -205,14 +208,14 @@ def health() -> dict[str, object]:
 # ─── Questionnaire ──────────────────────────────────────────────────
 
 @app.get("/v1/questionnaires", response_model=StakeholderTypesResponse)
-def stakeholder_types(authorization: str | None = Header(default=None)) -> dict[str, object]:
+def stakeholder_types(authorization: str | None = Depends(bearer_authorization)) -> dict[str, object]:
     require_demo_token(authorization)
     svc = _get_service()
     return {"stakeholder_types": svc.stakeholder_types(), "mock_data_mode": svc._boundary_store is None and svc.active_boundary is None}
 
 
 @app.get("/v1/questionnaires/{stakeholder_type}", response_model=QuestionnaireResponse)
-def questionnaire(stakeholder_type: str, authorization: str | None = Header(default=None)) -> dict[str, object]:
+def questionnaire(stakeholder_type: str, authorization: str | None = Depends(bearer_authorization)) -> dict[str, object]:
     require_demo_token(authorization)
     svc = _get_service()
     try:
@@ -229,7 +232,7 @@ def questionnaire(stakeholder_type: str, authorization: str | None = Header(defa
 async def create_assessment(
     request: Request,
     body: CreateAssessmentRequest,
-    authorization: str | None = Header(default=None),
+    authorization: str | None = Depends(bearer_authorization),
 ) -> dict[str, object]:
     require_demo_token(authorization)
     try:
@@ -243,7 +246,7 @@ async def create_assessment(
 
 
 @app.get("/v1/assessments/{assessment_id}", response_model=AssessmentStateResponse)
-def get_assessment(assessment_id: str, authorization: str | None = Header(default=None)) -> dict[str, object]:
+def get_assessment(assessment_id: str, authorization: str | None = Depends(bearer_authorization)) -> dict[str, object]:
     require_demo_token(authorization)
     svc = _get_service()
     try:
@@ -252,27 +255,35 @@ def get_assessment(assessment_id: str, authorization: str | None = Header(defaul
         raise _not_found("assessment not found")
 
 
-@app.post("/v1/assessments/{assessment_id}/answers/batch", response_model=StakeholderStateResponse)
+@app.post(
+    "/v1/assessments/{assessment_id}/answers/batch", response_model=StakeholderStateResponse,
+    responses={409: {"model": ApiErrorEnvelope, "description": "Assessment changed during this write; reload and retry"}},
+)
 async def submit_answers(
     assessment_id: str,
     request: Request,
     body: BatchAnswersRequest,
-    authorization: str | None = Header(default=None),
+    authorization: str | None = Depends(bearer_authorization),
 ) -> dict[str, object]:
     require_demo_token(authorization)
     try:
         return await asyncio.to_thread(_get_service().submit_answers, assessment_id, body.answers, **_audit_context(request))
     except psycopg.Error:
         raise
+    except KeyError as exc:
+        raise _not_found("assessment not found") from exc
     except SessionConflict as exc:
         raise HTTPException(status_code=409, detail=ApiError(error="VALIDATION_ERROR", detail=str(exc)).model_dump()) from exc
     except Exception as exc:
         raise _validation_error(str(exc)) from exc
 
 
-@app.post("/v1/assessments/{assessment_id}/recommendations", response_model=RecommendationResponse)
+@app.post(
+    "/v1/assessments/{assessment_id}/recommendations", response_model=RecommendationResponse,
+    responses={409: {"model": ApiErrorEnvelope, "description": "Assessment changed during this write; reload and retry"}},
+)
 async def recommendations(
-    assessment_id: str, request: Request, authorization: str | None = Header(default=None),
+    assessment_id: str, request: Request, authorization: str | None = Depends(bearer_authorization),
     path_backend: str = "python",
 ) -> dict[str, object]:
     require_demo_token(authorization)
@@ -282,6 +293,8 @@ async def recommendations(
         )
     except psycopg.Error:
         raise
+    except KeyError as exc:
+        raise _not_found("assessment not found") from exc
     except SessionConflict as exc:
         raise HTTPException(status_code=409, detail=ApiError(error="VALIDATION_ERROR", detail=str(exc)).model_dump()) from exc
     except Exception as exc:
@@ -290,8 +303,10 @@ async def recommendations(
 
 @app.get(
     "/v1/assessments/{assessment_id}/report",
+    response_model=None,
     responses={
         200: {
+            "model": ReportResponse,
             "description": "Report document: JSON (default) or HTML with format=html.",
             "content": {
                 "application/json": {"schema": {"$ref": "#/components/schemas/ReportResponse"}},
@@ -303,7 +318,7 @@ async def recommendations(
 def report(
     assessment_id: str,
     request: Request,
-    authorization: str | None = Header(default=None),
+    authorization: str | None = Depends(bearer_authorization),
     format: str = Query(default="json"),
     token: str = Query(default=""),
 ):
@@ -317,6 +332,8 @@ def report(
         raw = _get_service().report(assessment_id, **_audit_context(request))
     except psycopg.Error:
         raise
+    except KeyError as exc:
+        raise _not_found("assessment not found") from exc
     except Exception as exc:
         raise _validation_error(str(exc)) from exc
 
@@ -331,11 +348,16 @@ def report(
     return raw
 
 
+class FhirResponse(JSONResponse):
+    media_type = "application/fhir+json"
+
+
 @app.get(
     "/v1/assessments/{assessment_id}/fhir",
-    response_class=Response,
+    response_class=FhirResponse,
     responses={
         200: {
+            "model": FhirBundle,
             "description": "FHIR Bundle export of the assessment.",
             "content": {"application/fhir+json": {"schema": {"$ref": "#/components/schemas/FhirBundle"}}},
         }
@@ -344,7 +366,7 @@ def report(
 def fhir_assessment_bundle(
     assessment_id: str,
     request: Request,
-    authorization: str | None = Header(default=None),
+    authorization: str | None = Depends(bearer_authorization),
     fhir_version: str = Query(default="R4"),
 ):
     require_demo_token(authorization)
@@ -365,16 +387,13 @@ def fhir_assessment_bundle(
             status_code=500,
             content={"detail": ApiError(error="SERVER_ERROR", detail="internal server error").model_dump()},
         )
-    return Response(
-        content=json.dumps(bundle),
-        media_type="application/fhir+json",
-    )
+    return FhirResponse(content=bundle)
 
 
 # ─── Roadmap ────────────────────────────────────────────────────────
 
 @app.get("/v1/roadmap", response_model=RoadmapResponse)
-def roadmap(authorization: str | None = Header(default=None)) -> dict[str, object]:
+def roadmap(authorization: str | None = Depends(bearer_authorization)) -> dict[str, object]:
     require_demo_token(authorization)
     svc = _get_service()
     generation = svc.active_boundary
@@ -384,7 +403,7 @@ def roadmap(authorization: str | None = Header(default=None)) -> dict[str, objec
 
 
 @app.get("/v1/roadmap/{node_id}", response_model=RoadmapNodeResponse)
-def roadmap_node(node_id: str, authorization: str | None = Header(default=None)) -> dict[str, object]:
+def roadmap_node(node_id: str, authorization: str | None = Depends(bearer_authorization)) -> dict[str, object]:
     require_demo_token(authorization)
     svc = _get_service()
     try:
@@ -402,7 +421,7 @@ app.include_router(dashboard_router)
 
 
 @app.post("/v1/admin/import")
-async def import_boundary_snapshots(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
+async def import_boundary_snapshots(request: Request, authorization: str | None = Depends(bearer_authorization)) -> dict[str, object]:
     require_admin_token(authorization)
     payload = await request.json()
     if not isinstance(payload, dict) or not isinstance(payload.get("snapshots"), list):
@@ -413,7 +432,7 @@ async def import_boundary_snapshots(request: Request, authorization: str | None 
         raise _validation_error(str(exc)) from exc
 
 @app.post("/admin/import/wp2", response_model=AdminImportResponse)
-async def import_wp2(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
+async def import_wp2(request: Request, authorization: str | None = Depends(bearer_authorization)) -> dict[str, object]:
     require_admin_token(authorization)
     try:
         report = _get_service().import_wp2(await request.json(), **_audit_context(request))
@@ -423,7 +442,7 @@ async def import_wp2(request: Request, authorization: str | None = Header(defaul
 
 
 @app.post("/admin/import/wp3", response_model=AdminImportResponse)
-async def import_wp3(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
+async def import_wp3(request: Request, authorization: str | None = Depends(bearer_authorization)) -> dict[str, object]:
     require_admin_token(authorization)
     try:
         report = _get_service().import_wp3(await request.json(), **_audit_context(request))
@@ -433,7 +452,7 @@ async def import_wp3(request: Request, authorization: str | None = Header(defaul
 
 
 @app.post("/admin/import/wp8", response_model=AdminImportResponse)
-async def import_wp8(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
+async def import_wp8(request: Request, authorization: str | None = Depends(bearer_authorization)) -> dict[str, object]:
     require_admin_token(authorization)
     try:
         report = _get_service().import_wp8(await request.json(), **_audit_context(request))
@@ -443,10 +462,14 @@ async def import_wp8(request: Request, authorization: str | None = Header(defaul
 
 
 @app.post("/admin/rules/reload", response_model=AdminReloadResponse)
-def reload_rules(request: Request, authorization: str | None = Header(default=None)) -> dict[str, object]:
+def reload_rules(request: Request, authorization: str | None = Depends(bearer_authorization)) -> dict[str, object]:
     require_admin_token(authorization)
     svc = _get_service()
     if svc._boundary_store:
         raise _validation_error("legacy rule reload is disabled in PostgreSQL boundary mode")
     svc.audit_log.append("rule_reload", {"rule_version": svc.rule_loader.active_version}, **_audit_context(request))
     return {"accepted": True, "active_rule_version": svc.rule_loader.active_version}
+
+
+# Register after all routes, so live docs and generated artifacts share one schema.
+install_openapi(app)

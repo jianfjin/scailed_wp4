@@ -51,7 +51,12 @@ body{{margin:0;background:#fafafa}}
 <script>
 const SPEC = {json.dumps(spec)};
 window.ui = SwaggerUIBundle({{ spec: SPEC, dom_id: "#swagger-ui", deepLinking: true, tryItOutEnabled: true,
- presets: SwaggerUIBundle.presets.apis, layout: "BaseLayout", filter: true, docExpansion: "list" }});
+ presets: SwaggerUIBundle.presets.apis, layout: "BaseLayout", filter: true, docExpansion: "list",
+ onComplete: () => {{
+   if (window.location.protocol === "file:") {{
+     window.ui.oas3Actions.setSelectedServer("http://localhost:8000");
+   }}
+ }} }});
 </script></body></html>"""
     OUT.write_text(html)
     print(f"wrote {OUT.name} ({OUT.stat().st_size // 1024} KB)")

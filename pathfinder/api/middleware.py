@@ -14,8 +14,9 @@ import os
 import time
 from typing import Callable
 
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, Security
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from pathfinder.api.schemas import ApiError
 
@@ -129,6 +130,25 @@ _PUBLIC_PATHS = frozenset({
 })
 
 
+bearer_scheme = HTTPBearer(
+    scheme_name="BearerAuth",
+    description=(
+        "Use PATHFINDER_DEMO_TOKEN for invited /v1 business operations, or "
+        "PATHFINDER_ADMIN_TOKEN for all operations. Boundary imports and every "
+        "/admin operation require the admin token."
+    ),
+    auto_error=False,
+)
+
+
+def bearer_authorization(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
+) -> str | None:
+    """Declare Bearer auth while preserving the existing raw-header checks."""
+    return request.headers.get("authorization")
+
+
 def require_demo_token(authorization: str | None = Header(default=None)) -> None:
     """Dependency: require demo token (or admin token)."""
     import os
@@ -155,6 +175,18 @@ def require_admin_token(authorization: str | None = Header(default=None)) -> Non
     )
     if authorization != f"Bearer {admin_token}":
         raise _forbidden_error("admin token required")
+
+
+def require_dashboard_admin(
+    request: Request,
+    authorization: str | None = Depends(bearer_authorization),
+) -> None:
+    # Preserve development dashboard links using ?token=; production is header-only.
+    if not authorization and os.environ.get("ENVIRONMENT", "development").lower() != "production":
+        token = request.query_params.get("token")
+        if token:
+            authorization = f"Bearer {token}"
+    require_admin_token(authorization)
 
 
 class DefaultDenyAuthMiddleware:

@@ -8,8 +8,13 @@ on:
     paths:
       - "pathfinder/api/**"
       - "contracts/**"
+      - "pathfinder/core/rules/schema.json"
       - "scripts/build_openapi.py"
+      - "scripts/build_swagger_ui.py"
       - "docs/18_pathfinder_openapi.*"
+      - "docs/18_pathfinder_swagger.html"
+      - "tests/test_openapi_contract.py"
+      - "tests/test_api_contract_behavior.py"
       - ".github/workflows/openapi-contract.yml"
   pull_request:
   workflow_dispatch:
@@ -31,4 +36,9 @@ jobs:
       - name: Spec is valid OpenAPI 3.1
         run: python3 -m openapi_spec_validator docs/18_pathfinder_openapi.json
       - name: Contract tests
-        run: python3 -m pytest tests/test_openapi_contract.py -v
+        env:
+          ENVIRONMENT: development
+          PATHFINDER_DEMO_TOKEN: demo-token
+          PATHFINDER_ADMIN_TOKEN: admin-token
+          BOUNDARY_STORAGE: memory
+        run: python3 -m pytest tests/test_openapi_contract.py tests/test_api_contract_behavior.py -v

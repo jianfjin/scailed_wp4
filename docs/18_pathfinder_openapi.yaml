@@ -34,31 +34,37 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
       tags:
       - Health
       description: Reports the active boundary snapshot generation when PostgreSQL mode is on.
@@ -66,15 +72,6 @@ paths:
     get:
       summary: Stakeholder Types
       operationId: stakeholder_types_v1_questionnaires_get
-      parameters:
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -87,43 +84,53 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
-        '422':
-          description: Validation Error
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+      security:
+      - BearerAuth: []
       tags:
       - Questionnaires
   /v1/questionnaires/{stakeholder_type}:
     get:
       summary: Questionnaire
       operationId: questionnaire_v1_questionnaires__stakeholder_type__get
+      security:
+      - BearerAuth: []
       parameters:
       - name: stakeholder_type
         in: path
@@ -131,14 +138,6 @@ paths:
         schema:
           type: string
           title: Stakeholder Type
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -151,58 +150,61 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
       tags:
       - Questionnaires
   /v1/assessments:
     post:
       summary: Create Assessment
       operationId: create_assessment_v1_assessments_post
-      parameters:
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateAssessmentRequest'
+        required: true
       responses:
         '200':
           description: Successful Response
@@ -215,43 +217,59 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+      security:
+      - BearerAuth: []
       tags:
       - Assessments
   /v1/assessments/{assessment_id}:
     get:
       summary: Get Assessment
       operationId: get_assessment_v1_assessments__assessment_id__get
+      security:
+      - BearerAuth: []
       parameters:
       - name: assessment_id
         in: path
@@ -259,14 +277,6 @@ paths:
         schema:
           type: string
           title: Assessment Id
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -279,43 +289,57 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
       tags:
       - Assessments
   /v1/assessments/{assessment_id}/answers/batch:
     post:
       summary: Submit Answers
       operationId: submit_answers_v1_assessments__assessment_id__answers_batch_post
+      security:
+      - BearerAuth: []
       parameters:
       - name: assessment_id
         in: path
@@ -323,14 +347,6 @@ paths:
         schema:
           type: string
           title: Assessment Id
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       requestBody:
         required: true
         content:
@@ -349,43 +365,63 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '409':
+          description: Assessment changed during this write; reload and retry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
       tags:
       - Assessments
   /v1/assessments/{assessment_id}/recommendations:
     post:
       summary: Recommendations
       operationId: recommendations_v1_assessments__assessment_id__recommendations_post
+      security:
+      - BearerAuth: []
       parameters:
       - name: assessment_id
         in: path
@@ -400,14 +436,6 @@ paths:
           type: string
           default: python
           title: Path Backend
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -420,43 +448,63 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '409':
+          description: Assessment changed during this write; reload and retry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
       tags:
       - Assessments
   /v1/assessments/{assessment_id}/report:
     get:
       summary: Report
       operationId: report_v1_assessments__assessment_id__report_get
+      security:
+      - BearerAuth: []
       parameters:
       - name: assessment_id
         in: path
@@ -478,14 +526,6 @@ paths:
           type: string
           default: ''
           title: Token
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       responses:
         '200':
           description: 'Report document: JSON (default) or HTML with format=html.'
@@ -501,43 +541,57 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
       tags:
       - Assessments
   /v1/assessments/{assessment_id}/fhir:
     get:
       summary: Fhir Assessment Bundle
       operationId: fhir_assessment_bundle_v1_assessments__assessment_id__fhir_get
+      security:
+      - BearerAuth: []
       parameters:
       - name: assessment_id
         in: path
@@ -552,14 +606,6 @@ paths:
           type: string
           default: R4
           title: Fhir Version
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       responses:
         '200':
           description: FHIR Bundle export of the assessment.
@@ -572,52 +618,55 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
       tags:
       - Assessments
   /v1/roadmap:
     get:
       summary: Roadmap
       operationId: roadmap_v1_roadmap_get
-      parameters:
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -630,43 +679,53 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
-        '422':
-          description: Validation Error
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+      security:
+      - BearerAuth: []
       tags:
       - Roadmap
   /v1/roadmap/{node_id}:
     get:
       summary: Roadmap Node
       operationId: roadmap_node_v1_roadmap__node_id__get
+      security:
+      - BearerAuth: []
       parameters:
       - name: node_id
         in: path
@@ -674,14 +733,6 @@ paths:
         schema:
           type: string
           title: Node Id
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -694,37 +745,49 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
       tags:
       - Roadmap
   /admin/:
@@ -744,33 +807,47 @@ paths:
         '401':
           description: Missing or invalid token
           content:
-            text/html:
+            application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
-            text/html:
+            application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
-            text/html:
+            application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
-            text/html:
+            application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
-            text/html:
+            application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+      security:
+      - BearerAuth: []
   /admin/api/recent:
     get:
       tags:
@@ -778,6 +855,8 @@ paths:
       summary: Api Recent
       description: Return recent requests from the in-memory logger buffer.
       operationId: api_recent_admin_api_recent_get
+      security:
+      - BearerAuth: []
       parameters:
       - name: n
         in: query
@@ -801,37 +880,49 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '422':
           description: Validation Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
   /admin/api/stats:
     get:
       tags:
@@ -851,31 +942,45 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+      security:
+      - BearerAuth: []
   /admin/api/abusive:
     get:
       tags:
@@ -905,44 +1010,49 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+      security:
+      - BearerAuth: []
   /v1/admin/import:
     post:
       summary: Import & activate boundary snapshots (atomic)
       operationId: import_boundary_snapshots_v1_admin_import_post
-      parameters:
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       responses:
         '200':
           description: Batch validated and activated as a new generation.
@@ -955,41 +1065,47 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
-        '422':
-          description: Validation Error
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+      security:
+      - BearerAuth: []
       tags:
       - Boundary contracts
-      security:
-      - AdminBearer: []
       description: Validates each envelope against `contracts/` (Gate 1 schema, Gate 2 checksum + manifest, Gate
         3 referential R1–R13, Gate 4 rule tests) and, only if the whole batch passes, activates it as a new generation.
         On any violation nothing changes and a 400 Validation error lists every finding.
@@ -1004,8 +1120,7 @@ paths:
                 summary: One snapshot per producer contract
                 value:
                   snapshots:
-                  - &id001
-                    contract: pf.taxonomy.v1
+                  - contract: pf.taxonomy.v1
                     manifest:
                       contract_version: 1.0.0
                       snapshot_id: 136c7555-45e3-40dc-a9ac-6749cc516ef3
@@ -1134,8 +1249,7 @@ paths:
                       - legal-basis
                       - rd-pipelines
                       - secure-processing
-                  - &id002
-                    contract: pf.roadmap.v1
+                  - contract: pf.roadmap.v1
                     manifest:
                       contract_version: 1.0.0
                       snapshot_id: ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1
@@ -1402,8 +1516,7 @@ paths:
                         - legal-basis
                         - secure-processing
                         state_field: capabilities
-                  - &id003
-                    contract: pf.rulebundle.v1
+                  - contract: pf.rulebundle.v1
                     manifest:
                       contract_version: 1.0.0
                       snapshot_id: 5f515fa8-649e-4a91-8fdd-806886f41bd0
@@ -1578,15 +1691,6 @@ paths:
     post:
       summary: Import Wp2
       operationId: import_wp2_admin_import_wp2_post
-      parameters:
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -1599,65 +1703,77 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
-        '422':
-          description: Validation Error
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+      security:
+      - BearerAuth: []
       tags:
       - Admin (legacy demo)
-      security:
-      - AdminBearer: []
-      description: Legacy single-snapshot import for the in-memory demo mode; accepts one `pf.taxonomy.v1` SnapshotEnvelope.
-        In PostgreSQL boundary mode this endpoint is disabled — use `POST /v1/admin/import` (protocol §8–9).
+      deprecated: true
+      description: Admin token required. Legacy flat JSON import for the in-memory demo mode. The root contains
+        version and stakeholder_types (WP2), nodes/edges (WP3), or rules/tests (WP8); it is not a SnapshotEnvelope.
+        Schema validation, duplicate/reference checks and paired rule tests run before activation. Disabled in PostgreSQL
+        boundary mode; use POST /v1/admin/import.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SnapshotEnvelope'
+              $ref: '#/components/schemas/LegacyWP2ImportRequest'
             examples:
-              pf.taxonomy.v1:
-                value: *id001
+              flat-demo:
+                summary: Legacy demo payload
+                value:
+                  version: legacy-wp2-v1
+                  stakeholder_types:
+                  - id: biotech-sme
+                    label: Biotech SME
+                    personas:
+                    - Research lead
+                    user_journeys:
+                    - Assess secondary-use readiness
+                    capabilities:
+                    - secure-processing
+                    pain_points: []
   /admin/import/wp3:
     post:
       summary: Import Wp3
       operationId: import_wp3_admin_import_wp3_post
-      parameters:
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -1670,65 +1786,76 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
-        '422':
-          description: Validation Error
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+      security:
+      - BearerAuth: []
       tags:
       - Admin (legacy demo)
-      security:
-      - AdminBearer: []
-      description: Legacy single-snapshot import for the in-memory demo mode; accepts one `pf.roadmap.v1` SnapshotEnvelope.
-        In PostgreSQL boundary mode this endpoint is disabled — use `POST /v1/admin/import` (protocol §8–9).
+      deprecated: true
+      description: Admin token required. Legacy flat JSON import for the in-memory demo mode. The root contains
+        version and stakeholder_types (WP2), nodes/edges (WP3), or rules/tests (WP8); it is not a SnapshotEnvelope.
+        Schema validation, duplicate/reference checks and paired rule tests run before activation. Disabled in PostgreSQL
+        boundary mode; use POST /v1/admin/import.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SnapshotEnvelope'
+              $ref: '#/components/schemas/LegacyWP3ImportRequest'
             examples:
-              pf.roadmap.v1:
-                value: *id002
+              flat-demo:
+                summary: Legacy demo payload
+                value:
+                  version: legacy-wp3-v1
+                  nodes:
+                  - node_id: legacy-intake
+                    label: Readiness intake
+                    dimension: governance
+                    maturity_level: 1
+                    stakeholder_types:
+                    - all
+                    prerequisites: []
+                  edges: []
   /admin/import/wp8:
     post:
       summary: Import Wp8
       operationId: import_wp8_admin_import_wp8_post
-      parameters:
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -1741,65 +1868,93 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
-        '422':
-          description: Validation Error
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+      security:
+      - BearerAuth: []
       tags:
       - Admin (legacy demo)
-      security:
-      - AdminBearer: []
-      description: Legacy single-snapshot import for the in-memory demo mode; accepts one `pf.rulebundle.v1` SnapshotEnvelope.
-        In PostgreSQL boundary mode this endpoint is disabled — use `POST /v1/admin/import` (protocol §8–9).
+      deprecated: true
+      description: Admin token required. Legacy flat JSON import for the in-memory demo mode. The root contains
+        version and stakeholder_types (WP2), nodes/edges (WP3), or rules/tests (WP8); it is not a SnapshotEnvelope.
+        Schema validation, duplicate/reference checks and paired rule tests run before activation. Disabled in PostgreSQL
+        boundary mode; use POST /v1/admin/import.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SnapshotEnvelope'
+              $ref: '#/components/schemas/LegacyWP8ImportRequest'
             examples:
-              pf.rulebundle.v1:
-                value: *id003
+              flat-demo:
+                summary: Legacy demo payload
+                value:
+                  version: legacy-wp8-v1
+                  rules:
+                  - rule_id: LEGACY-REVIEW-001
+                    rule_type: preference
+                    priority: 10
+                    applies_to:
+                    - all
+                    condition: {}
+                    action:
+                      title: Review evidence
+                      text: Review readiness evidence before proceeding.
+                    compliance_refs:
+                    - D4.1
+                  tests:
+                  - name: Readiness evidence review
+                    state:
+                      stakeholder_type: biotech-sme
+                      target_scenario: secondary-use-readiness
+                      answers:
+                        governance_maturity: 1
+                        data_maturity: 1
+                        compliance_maturity: 1
+                        capabilities: []
+                        missing_capabilities: []
+                        regulatory_flags: []
+                    expected_rule_ids:
+                    - LEGACY-REVIEW-001
   /admin/rules/reload:
     post:
       summary: Reload Rules
       operationId: reload_rules_admin_rules_reload_post
-      parameters:
-      - name: authorization
-        in: header
-        required: false
-        schema:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -1812,41 +1967,47 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '403':
           description: Insufficient permissions
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '404':
           description: Resource not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '400':
           description: Validation error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
-        '422':
-          description: Validation Error
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '503':
+          description: Boundary database unavailable or no validated generation is active
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+        '429':
+          description: Per-token/IP rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorEnvelope'
+      security:
+      - BearerAuth: []
       tags:
       - Admin (legacy demo)
-      security:
-      - AdminBearer: []
       description: Reload rule bundle in the in-memory demo mode; rejected in PostgreSQL boundary mode.
 components:
   schemas:
@@ -1936,7 +2097,16 @@ components:
       - error
       - detail
       title: ApiError
-      description: Standard error response. 5 error codes cover all V1 scenarios.
+      description: Machine-readable error carried inside FastAPI's detail envelope.
+    ApiErrorEnvelope:
+      properties:
+        detail:
+          $ref: '#/components/schemas/ApiError'
+      type: object
+      required:
+      - detail
+      title: ApiErrorEnvelope
+      description: Wire format shared by HTTP exceptions and middleware errors.
     AssessmentStateResponse:
       properties:
         assessment_id:
@@ -2046,6 +2216,28 @@ components:
       - target_scenario
       - status
       title: CreateAssessmentResponse
+    FhirBundle:
+      properties:
+        resourceType:
+          type: string
+          title: Resourcetype
+          default: Bundle
+        type:
+          type: string
+          title: Type
+        entry:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Entry
+          default: []
+      additionalProperties: true
+      type: object
+      required:
+      - type
+      title: FhirBundle
+      description: Minimal FHIR Bundle envelope (contents follow the FHIR version).
     HTTPValidationError:
       properties:
         detail:
@@ -2235,6 +2427,36 @@ components:
       - trace
       - confidence
       title: RecommendationResponse
+    ReportResponse:
+      properties:
+        disclaimer:
+          type: string
+          title: Disclaimer
+        audit_chain_valid:
+          type: boolean
+          title: Audit Chain Valid
+        missing_data_warnings:
+          items:
+            type: string
+          type: array
+          title: Missing Data Warnings
+        session:
+          additionalProperties: true
+          type: object
+          title: Session
+        readiness_snapshot:
+          $ref: '#/components/schemas/StakeholderStateResponse'
+        recommended_path:
+          $ref: '#/components/schemas/RecommendationResponse'
+      type: object
+      required:
+      - disclaimer
+      - audit_chain_valid
+      - missing_data_warnings
+      - session
+      - readiness_snapshot
+      - recommended_path
+      title: ReportResponse
     RequestLogEntry:
       properties:
         timestamp:
@@ -3704,8 +3926,9 @@ components:
           minItems: 1
           items:
             $ref: '#/components/schemas/SnapshotEnvelope'
-          description: 'Complete dependency closure: every snapshot referenced by supersedes/depends_on must be
-            present in this call or already active.'
+          description: 'Complete runtime dependency closure in THIS batch: include taxonomy, roadmap, questionnaire(s)
+            and rulebundle, plus every exact manifest.dependencies snapshot. Active snapshots are not merged into
+            this batch. manifest.supersedes is historical lineage and does not require resubmitting its predecessor.'
       title: BoundaryImportRequest
     ActivationReport:
       type: object
@@ -3737,64 +3960,335 @@ components:
           description: Non-blocking findings (e.g. unverified compliance references, protocol §6).
       title: ActivationReport
       description: 400 + Validation error when any gate fails (all-or-nothing activation).
-    FhirBundle:
-      additionalProperties: true
-      description: Minimal FHIR Bundle envelope (contents follow the FHIR version).
+    LegacyWP2ImportRequest:
+      type: object
+      required:
+      - version
+      - stakeholder_types
       properties:
-        resourceType:
-          default: Bundle
-          title: Resourcetype
+        version: &id001
           type: string
-        type:
-          title: Type
-          type: string
-        entry:
-          default: []
+          minLength: 1
+        stakeholder_types:
+          type: array
+          minItems: 1
           items:
-            additionalProperties: true
             type: object
-          title: Entry
-          type: array
-      required:
-      - type
-      title: FhirBundle
+            required:
+            - id
+            - label
+            - personas
+            - user_journeys
+            properties:
+              id: *id001
+              label: *id001
+              personas: &id002
+                type: array
+                items:
+                  type: string
+              user_journeys: *id002
+              capabilities: *id002
+              pain_points: *id002
+              feedback_categories: *id002
+    LegacyWP3ImportRequest:
       type: object
-    ReportResponse:
+      required:
+      - version
+      - nodes
+      - edges
       properties:
-        disclaimer:
-          title: Disclaimer
-          type: string
-        audit_chain_valid:
-          title: Audit Chain Valid
-          type: boolean
-        missing_data_warnings:
-          items:
-            type: string
-          title: Missing Data Warnings
+        version: *id001
+        nodes:
           type: array
-        session:
-          additionalProperties: true
-          title: Session
-          type: object
-        readiness_snapshot:
-          $ref: '#/components/schemas/StakeholderStateResponse'
-        recommended_path:
-          $ref: '#/components/schemas/RecommendationResponse'
-      required:
-      - disclaimer
-      - audit_chain_valid
-      - missing_data_warnings
-      - session
-      - readiness_snapshot
-      - recommended_path
-      title: ReportResponse
+          minItems: 1
+          items:
+            type: object
+            required:
+            - node_id
+            - label
+            - dimension
+            - maturity_level
+            - stakeholder_types
+            properties:
+              node_id: *id001
+              label: *id001
+              dimension: *id001
+              maturity_level:
+                type: integer
+              stakeholder_types: *id002
+              description:
+                type: string
+              prerequisites: *id002
+              source_doc_ref:
+                type: string
+        edges:
+          type: array
+          items:
+            type: object
+            required:
+            - edge_id
+            - from_node_id
+            - to_node_id
+            properties:
+              edge_id: *id001
+              from_node_id: *id001
+              to_node_id: *id001
+              relation_type:
+                type: string
+              required:
+                type: boolean
+              source_doc_ref:
+                type: string
+    LegacyWP8ImportRequest:
+      title: Pathfinder V1 Rule Bundle
+      description: Schema for Pathfinder rule bundles consumed by RuleLoader. Defines deterministic condition DSL
+        and action structure for WP8 compliance rules.
       type: object
+      required:
+      - version
+      - rules
+      - tests
+      properties:
+        version:
+          type: string
+          description: Semantic version of this rule bundle (e.g. 'gen-1000-rules-v1')
+          pattern: ^[a-zA-Z0-9._-]+$
+        rules:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/LegacyWP8ImportRequest/$defs/rule'
+        tests:
+          type: array
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/LegacyWP8ImportRequest/$defs/ruleTest'
+      $defs:
+        rule:
+          type: object
+          required:
+          - rule_id
+          - rule_type
+          - priority
+          - applies_to
+          - condition
+          - action
+          - compliance_refs
+          properties:
+            rule_id:
+              type: string
+              description: Unique rule identifier within the bundle (e.g. 'WP8-RULE-0001')
+              pattern: ^[A-Z0-9_-]+$
+            rule_type:
+              type: string
+              enum:
+              - eligibility
+              - exclusion
+              - preference
+              - override
+              description: eligibility = prerequisite check, exclusion = block path, preference = prioritised recommendation,
+                override = force override other rules
+            priority:
+              type: integer
+              description: Execution priority (higher = evaluated first; used for conflict resolution)
+              minimum: 0
+              maximum: 1000
+            applies_to:
+              type: array
+              description: Stakeholder types this rule applies to. Use ['all'] for universal rules.
+              items:
+                type: string
+              minItems: 1
+            condition:
+              $ref: '#/components/schemas/LegacyWP8ImportRequest/$defs/condition'
+            action:
+              $ref: '#/components/schemas/LegacyWP8ImportRequest/$defs/action'
+            compliance_refs:
+              type: array
+              description: References to regulations (e.g. 'GDPR-Art.9', 'DGA-Art.7', 'EHDS-Art.33')
+              items:
+                type: string
+              minItems: 1
+            source_doc_ref:
+              type: string
+              description: Source document or spec section that defined this rule
+              default: demo-data
+            rule_version:
+              type: string
+              description: Version tag for this specific rule (may differ from bundle version)
+              default: demo-rules-v1
+            effective_from:
+              type:
+              - string
+              - 'null'
+              format: date
+              description: Date from which this rule is effective (null = always)
+              default: null
+            effective_until:
+              type:
+              - string
+              - 'null'
+              format: date
+              description: Date after which this rule expires (null = never)
+              default: null
+            parent_rule_id:
+              type:
+              - string
+              - 'null'
+              description: Parent rule ID for rule versioning/overrides
+              default: null
+        condition:
+          description: 'Deterministic condition DSL. One of: compound (and/or/not), atomic (field+operator+value),
+            or empty (always true).'
+          oneOf:
+          - $ref: '#/components/schemas/LegacyWP8ImportRequest/$defs/conditionCompoundAnd'
+          - $ref: '#/components/schemas/LegacyWP8ImportRequest/$defs/conditionCompoundOr'
+          - $ref: '#/components/schemas/LegacyWP8ImportRequest/$defs/conditionCompoundNot'
+          - $ref: '#/components/schemas/LegacyWP8ImportRequest/$defs/conditionAtomic'
+          - $ref: '#/components/schemas/LegacyWP8ImportRequest/$defs/conditionEmpty'
+        conditionCompoundAnd:
+          type: object
+          required:
+          - and
+          properties:
+            and:
+              type: array
+              description: ALL sub-conditions must evaluate to true
+              items:
+                $ref: '#/components/schemas/LegacyWP8ImportRequest/$defs/condition'
+              minItems: 1
+          additionalProperties: false
+        conditionCompoundOr:
+          type: object
+          required:
+          - or
+          properties:
+            or:
+              type: array
+              description: ANY sub-condition must evaluate to true
+              items:
+                $ref: '#/components/schemas/LegacyWP8ImportRequest/$defs/condition'
+              minItems: 1
+          additionalProperties: false
+        conditionCompoundNot:
+          type: object
+          required:
+          - not
+          properties:
+            not:
+              description: Sub-condition that must evaluate to false
+              $ref: '#/components/schemas/LegacyWP8ImportRequest/$defs/condition'
+          additionalProperties: false
+        conditionAtomic:
+          type: object
+          required:
+          - field
+          - operator
+          description: Atomic field comparison. The 'value' field is required for all operators except 'exists'.
+          properties:
+            field:
+              type: string
+              description: Field path in StakeholderState to evaluate
+              pattern: ^(answers\.|maturity\.)?[a-zA-Z_][a-zA-Z0-9_.]*$
+              examples:
+              - answers.governance_maturity
+              - maturity.governance
+              - stakeholder_type
+              - capabilities
+              - missing_capabilities
+              - regulatory_flags
+              - target_scenario
+            operator:
+              type: string
+              enum:
+              - eq
+              - ne
+              - gt
+              - gte
+              - lt
+              - lte
+              - in
+              - not_in
+              - contains
+              - exists
+              description: Comparison operator. 'contains' checks membership in a list field. 'exists' checks non-null/non-empty.
+            value:
+              description: 'Expected value. Type depends on the operator: scalar for eq/ne/gt/gte/lt/lte, array
+                for in/not_in/contains, ignored for exists.'
+          additionalProperties: false
+        conditionEmpty:
+          type: object
+          description: Empty condition = always true (matches all states)
+          maxProperties: 0
+        action:
+          type: object
+          required:
+          - title
+          - text
+          properties:
+            title:
+              type: string
+              description: Short human-readable action title
+            text:
+              type: string
+              description: Detailed action description displayed to the user
+            node_id:
+              type:
+              - string
+              - 'null'
+              description: Suggested roadmap node to route to when this rule triggers (null = no reroute)
+            warning:
+              type:
+              - string
+              - 'null'
+              description: Warning message appended to the path result (null = no warning)
+            block:
+              type: boolean
+              description: If true, this rule BLOCKS the current path (produces a blocker in PathResult)
+              default: false
+          additionalProperties: false
+        ruleTest:
+          type: object
+          required:
+          - name
+          - state
+          - expected_rule_ids
+          properties:
+            name:
+              type: string
+              description: Human-readable test case name
+            state:
+              $ref: '#/components/schemas/LegacyWP8ImportRequest/$defs/testState'
+            expected_rule_ids:
+              type: array
+              description: Rule IDs that should trigger for this state (sorted alphabetically for comparison)
+              items:
+                type: string
+        testState:
+          type: object
+          required:
+          - stakeholder_type
+          - target_scenario
+          - answers
+          properties:
+            stakeholder_type:
+              type: string
+            target_scenario:
+              type: string
+            answers:
+              type: object
+              description: Questionnaire answers including maturity scores, capabilities, missing_capabilities,
+                regulatory_flags
+              additionalProperties: true
   securitySchemes:
-    AdminBearer:
+    BearerAuth:
       type: http
+      description: Use PATHFINDER_DEMO_TOKEN for invited /v1 business operations, or PATHFINDER_ADMIN_TOKEN for
+        all operations. Boundary imports and every /admin operation require the admin token.
       scheme: bearer
-      description: PATHFINDER_ADMIN_TOKEN. Required on all boundary/admin operations.
 servers:
+- url: /
+  description: Current API origin (hosted documentation)
 - url: http://localhost:8000
   description: local development (docker compose up)
 tags:

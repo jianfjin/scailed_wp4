@@ -13,10 +13,10 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 
-# ─── Error Model (standardized, 5 codes) ────────────────────────────
+# ─── Error Models ─────────────────────────────────────────────────
 
 class ApiError(BaseModel):
-    """Standard error response. 5 error codes cover all V1 scenarios."""
+    """Machine-readable error carried inside FastAPI's detail envelope."""
 
     error: str = Field(description="Machine-readable error code")
     detail: str = Field(description="Human-readable message")
@@ -27,6 +27,13 @@ class ApiError(BaseModel):
     #   NOT_FOUND        — assessment, questionnaire, or node not found
     #   VALIDATION_ERROR — invalid answers, missing fields, out-of-range values
     #   SERVER_ERROR     — unexpected internal error
+    #   RATE_LIMITED     — per-token/IP rate limit exceeded
+
+
+class ApiErrorEnvelope(BaseModel):
+    """Wire format shared by HTTP exceptions and middleware errors."""
+
+    detail: ApiError
 
 
 # ─── Health ─────────────────────────────────────────────────────────

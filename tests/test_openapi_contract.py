@@ -48,6 +48,8 @@ def _check_matches_committed() -> tuple[bool, list[str]]:
     for name in sorted(set(gen_comps) | set(com_comps)):
         if json.dumps(gen_comps.get(name), sort_keys=True) != json.dumps(com_comps.get(name), sort_keys=True):
             diffs.append(f"component schema {name} differs")
+    if generated != committed and not diffs:
+        diffs.append("metadata, security schemes, or other contract fields differ")
     return (not diffs, diffs)
 
 
@@ -102,6 +104,7 @@ def main() -> int:
     print(f"all operations typed: {'OK' if ok else f'{len(gaps)} gap(s)'}")
     for g in gaps[:20]:
         print(f"  - {g}")
+    rc = rc or (0 if ok else 1)
     return rc
 
 
@@ -118,6 +121,53 @@ def test_committed_contract_is_valid_openapi():
 def test_all_operations_have_typed_models():
     ok, gaps = _check_every_operation_typed()
     assert ok, "untyped request/response models:\n" + "\n".join(gaps)
+
+
+def test_live_json_yaml_and_swagger_serve_the_same_contract():
+    import yaml
+    from fastapi.testclient import TestClient
+    from pathfinder.api.main import app
+
+    spec = json.loads(SPEC_PATH.read_text())
+    assert spec["servers"][0]["url"] == "/"  # Hosted docs must target their own origin.
+    assert TestClient(app).get("/openapi.json").json() == spec
+    assert yaml.safe_load(SPEC_PATH.with_suffix(".yaml").read_text()) == spec
+    html = (ROOT / "docs/18_pathfinder_swagger.html").read_text()
+    embedded, _ = json.JSONDecoder().raw_decode(html.rsplit("const SPEC = ", 1)[1])
+    assert embedded == spec
+
+
+def test_all_local_schema_references_resolve():
+    spec = _generated_spec()
+
+    def walk(node):
+        if isinstance(node, dict):
+            ref = node.get("$ref", "")
+            if ref.startswith("#/"):
+                target = spec
+                for part in ref[2:].split("/"):
+                    target = target[part.replace("~1", "/").replace("~0", "~")]
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(spec)
+
+
+def test_every_protected_operation_declares_bearer_auth_and_rate_limits():
+    spec = _generated_spec()
+    assert spec["components"]["securitySchemes"]["BearerAuth"]["scheme"] == "bearer"
+    for path, methods in spec["paths"].items():
+        for operation in methods.values():
+            if path == "/health":
+                assert not operation.get("security")
+                continue
+            assert operation["security"] == [{"BearerAuth": []}], path
+            assert "429" in operation["responses"], path
+            assert not any(p["in"] == "header" and p["name"].lower() == "authorization"
+                           for p in operation.get("parameters", [])), path
 
 
 if __name__ == "__main__":

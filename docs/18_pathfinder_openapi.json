@@ -26,7 +26,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -36,7 +36,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -46,7 +46,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -56,7 +56,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -66,7 +66,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -82,24 +92,6 @@
       "get": {
         "summary": "Stakeholder Types",
         "operationId": "stakeholder_types_v1_questionnaires_get",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -116,7 +108,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -126,7 +118,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -136,7 +128,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -146,7 +138,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -156,22 +148,37 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "Questionnaires"
         ]
@@ -181,6 +188,11 @@
       "get": {
         "summary": "Questionnaire",
         "operationId": "questionnaire_v1_questionnaires__stakeholder_type__get",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "stakeholder_type",
@@ -189,22 +201,6 @@
             "schema": {
               "type": "string",
               "title": "Stakeholder Type"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
             }
           }
         ],
@@ -224,7 +220,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -234,7 +230,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -244,7 +240,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -254,7 +250,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -264,7 +260,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -275,6 +281,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -289,33 +305,15 @@
       "post": {
         "summary": "Create Assessment",
         "operationId": "create_assessment_v1_assessments_post",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CreateAssessmentRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -333,7 +331,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -343,7 +341,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -353,7 +351,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -363,7 +361,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -373,7 +371,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -387,8 +395,23 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "Assessments"
         ]
@@ -398,6 +421,11 @@
       "get": {
         "summary": "Get Assessment",
         "operationId": "get_assessment_v1_assessments__assessment_id__get",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "assessment_id",
@@ -406,22 +434,6 @@
             "schema": {
               "type": "string",
               "title": "Assessment Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
             }
           }
         ],
@@ -441,7 +453,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -451,7 +463,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -461,7 +473,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -471,7 +483,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -481,7 +493,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -492,6 +514,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -506,6 +538,11 @@
       "post": {
         "summary": "Submit Answers",
         "operationId": "submit_answers_v1_assessments__assessment_id__answers_batch_post",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "assessment_id",
@@ -514,22 +551,6 @@
             "schema": {
               "type": "string",
               "title": "Assessment Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
             }
           }
         ],
@@ -559,7 +580,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -569,7 +590,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -579,7 +600,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -589,7 +610,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -599,7 +620,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Assessment changed during this write; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -610,6 +651,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -624,6 +675,11 @@
       "post": {
         "summary": "Recommendations",
         "operationId": "recommendations_v1_assessments__assessment_id__recommendations_post",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "assessment_id",
@@ -643,22 +699,6 @@
               "default": "python",
               "title": "Path Backend"
             }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
           }
         ],
         "responses": {
@@ -677,7 +717,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -687,7 +727,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -697,7 +737,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -707,7 +747,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -717,7 +757,27 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Assessment changed during this write; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -728,6 +788,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -742,6 +812,11 @@
       "get": {
         "summary": "Report",
         "operationId": "report_v1_assessments__assessment_id__report_get",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "assessment_id",
@@ -771,22 +846,6 @@
               "default": "",
               "title": "Token"
             }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
           }
         ],
         "responses": {
@@ -810,7 +869,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -820,7 +879,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -830,7 +889,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -840,7 +899,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -850,7 +909,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -861,6 +930,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -875,6 +954,11 @@
       "get": {
         "summary": "Fhir Assessment Bundle",
         "operationId": "fhir_assessment_bundle_v1_assessments__assessment_id__fhir_get",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "assessment_id",
@@ -894,22 +978,6 @@
               "default": "R4",
               "title": "Fhir Version"
             }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
           }
         ],
         "responses": {
@@ -928,7 +996,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -938,7 +1006,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -948,7 +1016,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -958,7 +1026,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -968,7 +1036,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -979,6 +1057,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -993,24 +1081,6 @@
       "get": {
         "summary": "Roadmap",
         "operationId": "roadmap_v1_roadmap_get",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1027,7 +1097,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1037,7 +1107,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1047,7 +1117,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1057,7 +1127,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1067,22 +1137,37 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "Roadmap"
         ]
@@ -1092,6 +1177,11 @@
       "get": {
         "summary": "Roadmap Node",
         "operationId": "roadmap_node_v1_roadmap__node_id__get",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "node_id",
@@ -1100,22 +1190,6 @@
             "schema": {
               "type": "string",
               "title": "Node Id"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
             }
           }
         ],
@@ -1135,7 +1209,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1145,7 +1219,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1155,7 +1229,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1165,7 +1239,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1175,7 +1249,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1186,6 +1270,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1218,9 +1312,9 @@
           "401": {
             "description": "Missing or invalid token",
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1228,9 +1322,9 @@
           "403": {
             "description": "Insufficient permissions",
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1238,9 +1332,9 @@
           "404": {
             "description": "Resource not found",
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1248,9 +1342,9 @@
           "400": {
             "description": "Validation error",
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1258,14 +1352,39 @@
           "500": {
             "description": "Internal server error",
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
       }
     },
     "/admin/api/recent": {
@@ -1276,6 +1395,11 @@
         "summary": "Api Recent",
         "description": "Return recent requests from the in-memory logger buffer.",
         "operationId": "api_recent_admin_api_recent_get",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "n",
@@ -1308,7 +1432,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1318,7 +1442,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1328,7 +1452,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1338,7 +1462,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1348,7 +1472,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1359,6 +1493,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1390,7 +1534,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1400,7 +1544,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1410,7 +1554,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1420,7 +1564,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1430,12 +1574,37 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
       }
     },
     "/admin/api/abusive": {
@@ -1466,7 +1635,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1476,7 +1645,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1486,7 +1655,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1496,7 +1665,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1506,36 +1675,43 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
       }
     },
     "/v1/admin/import": {
       "post": {
         "summary": "Import & activate boundary snapshots (atomic)",
         "operationId": "import_boundary_snapshots_v1_admin_import_post",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Batch validated and activated as a new generation.",
@@ -1552,7 +1728,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1562,7 +1738,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1572,7 +1748,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1582,7 +1758,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -1592,29 +1768,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           }
         },
-        "tags": [
-          "Boundary contracts"
-        ],
         "security": [
           {
-            "AdminBearer": []
+            "BearerAuth": []
           }
+        ],
+        "tags": [
+          "Boundary contracts"
         ],
         "description": "Validates each envelope against `contracts/` (Gate 1 schema, Gate 2 checksum + manifest, Gate 3 referential R1\u2013R13, Gate 4 rule tests) and, only if the whole batch passes, activates it as a new generation. On any violation nothing changes and a 400 Validation error lists every finding.",
         "requestBody": {
@@ -2427,24 +2613,6 @@
       "post": {
         "summary": "Import Wp2",
         "operationId": "import_wp2_admin_import_wp2_post",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2461,7 +2629,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -2471,7 +2639,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -2481,7 +2649,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -2491,7 +2659,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -2501,227 +2669,70 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "Admin (legacy demo)"
         ],
-        "security": [
-          {
-            "AdminBearer": []
-          }
-        ],
-        "description": "Legacy single-snapshot import for the in-memory demo mode; accepts one `pf.taxonomy.v1` SnapshotEnvelope. In PostgreSQL boundary mode this endpoint is disabled \u2014 use `POST /v1/admin/import` (protocol \u00a78\u20139).",
+        "deprecated": true,
+        "description": "Admin token required. Legacy flat JSON import for the in-memory demo mode. The root contains version and stakeholder_types (WP2), nodes/edges (WP3), or rules/tests (WP8); it is not a SnapshotEnvelope. Schema validation, duplicate/reference checks and paired rule tests run before activation. Disabled in PostgreSQL boundary mode; use POST /v1/admin/import.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SnapshotEnvelope"
+                "$ref": "#/components/schemas/LegacyWP2ImportRequest"
               },
               "examples": {
-                "pf.taxonomy.v1": {
+                "flat-demo": {
+                  "summary": "Legacy demo payload",
                   "value": {
-                    "contract": "pf.taxonomy.v1",
-                    "manifest": {
-                      "contract_version": "1.0.0",
-                      "snapshot_id": "136c7555-45e3-40dc-a9ac-6749cc516ef3",
-                      "producer_wp": "WP2",
-                      "generated_at": "2026-11-10T00:00:00Z",
-                      "generator": {
-                        "name": "contracts-builder",
-                        "version": "1.0.0",
-                        "seed": null
-                      },
-                      "supersedes": null,
-                      "items_checksum": "sha256:39ebf4e8ad76be092a83a28bdc942af2ec3b8e75273fc11b2a90a54291678ce3",
-                      "derived_from": [
-                        {
-                          "source": "D2.1",
-                          "section": "s.2 stakeholder mapping",
-                          "status": "approved"
-                        }
-                      ],
-                      "dependencies": {}
-                    },
-                    "payload": {
-                      "dimensions": [
-                        {
-                          "dimension_id": "pf:wp2:dimension:maturity-governance",
-                          "label": "Governance maturity",
-                          "positioning_axis": "operational",
-                          "scale": {
-                            "min": 1,
-                            "max": 5
-                          },
-                          "state_key": "governance"
-                        },
-                        {
-                          "dimension_id": "pf:wp2:dimension:maturity-data",
-                          "label": "Data maturity",
-                          "positioning_axis": "technical",
-                          "scale": {
-                            "min": 1,
-                            "max": 5
-                          },
-                          "state_key": "data"
-                        },
-                        {
-                          "dimension_id": "pf:wp2:dimension:maturity-compliance",
-                          "label": "Compliance maturity",
-                          "positioning_axis": "regulatory",
-                          "scale": {
-                            "min": 1,
-                            "max": 5
-                          },
-                          "state_key": "compliance"
-                        },
-                        {
-                          "dimension_id": "pf:wp2:dimension:maturity-infrastructure",
-                          "label": "Infrastructure maturity",
-                          "positioning_axis": "technical",
-                          "state_key": "infrastructure",
-                          "scale": {
-                            "min": 1,
-                            "max": 5
-                          }
-                        },
-                        {
-                          "dimension_id": "pf:wp2:dimension:maturity-capability",
-                          "label": "Capability maturity",
-                          "positioning_axis": "technical",
-                          "state_key": "capability",
-                          "scale": {
-                            "min": 1,
-                            "max": 5
-                          }
-                        }
-                      ],
-                      "stakeholder_types": [
-                        {
-                          "stakeholder_type_id": "pf:wp2:stakeholder:biotech-sme",
-                          "label": "Biotech SME",
-                          "ehds_roles": [
-                            "data-user"
-                          ],
-                          "segment": "industry",
-                          "capabilities": [
-                            "rd-pipelines"
-                          ],
-                          "status": "active",
-                          "successor": null,
-                          "personas": [
-                            {
-                              "persona_id": "pf:wp2:persona:sme-regulatory-lead",
-                              "label": "Regulatory lead at an SME",
-                              "influence": "medium",
-                              "interest": "high"
-                            }
-                          ]
-                        },
-                        {
-                          "stakeholder_type_id": "pf:wp2:stakeholder:ai-factory-operator",
-                          "label": "AI Factory operator",
-                          "ehds_roles": [
-                            "intermediary"
-                          ],
-                          "segment": "infrastructure",
-                          "capabilities": [
-                            "secure-processing"
-                          ],
-                          "status": "active",
-                          "successor": null
-                        },
-                        {
-                          "stakeholder_type_id": "pf:wp2:stakeholder:health-data-access-body",
-                          "label": "Health Data Access Body",
-                          "ehds_roles": [
-                            "regulator",
-                            "intermediary"
-                          ],
-                          "segment": "healthcare authorities",
-                          "status": "active",
-                          "successor": null
-                        },
-                        {
-                          "stakeholder_type_id": "pf:wp2:stakeholder:health-data-infrastructure",
-                          "label": "Health data infrastructure",
-                          "ehds_roles": [
-                            "data-holder",
-                            "intermediary"
-                          ],
-                          "segment": "infrastructure",
-                          "status": "active",
-                          "successor": null
-                        },
-                        {
-                          "stakeholder_type_id": "pf:wp2:stakeholder:research-infrastructure",
-                          "label": "Research infrastructure",
-                          "ehds_roles": [
-                            "data-holder",
-                            "data-user"
-                          ],
-                          "segment": "researchers",
-                          "status": "active",
-                          "successor": null
-                        },
-                        {
-                          "stakeholder_type_id": "pf:wp2:stakeholder:patient-organisation",
-                          "label": "Patient organisation",
-                          "ehds_roles": [
-                            "data-holder"
-                          ],
-                          "segment": "patient organisations",
-                          "status": "deprecated",
-                          "successor": "pf:wp2:stakeholder:research-infrastructure"
-                        }
-                      ],
-                      "scenarios": [
-                        {
-                          "scenario_id": "pf:wp2:scenario:secondary-use-readiness",
-                          "label": "Secondary use readiness",
-                          "applicable_stakeholder_types": [
-                            "pf:wp2:stakeholder:biotech-sme",
-                            "pf:wp2:stakeholder:health-data-infrastructure"
-                          ]
-                        },
-                        {
-                          "scenario_id": "pf:wp2:scenario:ai-model-training",
-                          "label": "AI model training under EHDS",
-                          "applicable_stakeholder_types": [
-                            "pf:wp2:stakeholder:biotech-sme",
-                            "pf:wp2:stakeholder:ai-factory-operator"
-                          ]
-                        },
-                        {
-                          "scenario_id": "pf:wp2:scenario:infrastructure-onboarding",
-                          "label": "EHDS infrastructure onboarding",
-                          "applicable_stakeholder_types": [
-                            "pf:wp2:stakeholder:health-data-infrastructure",
-                            "pf:wp2:stakeholder:research-infrastructure"
-                          ]
-                        }
-                      ],
-                      "capability_vocabulary": [
-                        "legal-basis",
-                        "rd-pipelines",
-                        "secure-processing"
-                      ]
-                    }
+                    "version": "legacy-wp2-v1",
+                    "stakeholder_types": [
+                      {
+                        "id": "biotech-sme",
+                        "label": "Biotech SME",
+                        "personas": [
+                          "Research lead"
+                        ],
+                        "user_journeys": [
+                          "Assess secondary-use readiness"
+                        ],
+                        "capabilities": [
+                          "secure-processing"
+                        ],
+                        "pain_points": []
+                      }
+                    ]
                   }
                 }
               }
@@ -2734,24 +2745,6 @@
       "post": {
         "summary": "Import Wp3",
         "operationId": "import_wp3_admin_import_wp3_post",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2768,7 +2761,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -2778,7 +2771,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -2788,7 +2781,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -2798,7 +2791,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -2808,291 +2801,67 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "Admin (legacy demo)"
         ],
-        "security": [
-          {
-            "AdminBearer": []
-          }
-        ],
-        "description": "Legacy single-snapshot import for the in-memory demo mode; accepts one `pf.roadmap.v1` SnapshotEnvelope. In PostgreSQL boundary mode this endpoint is disabled \u2014 use `POST /v1/admin/import` (protocol \u00a78\u20139).",
+        "deprecated": true,
+        "description": "Admin token required. Legacy flat JSON import for the in-memory demo mode. The root contains version and stakeholder_types (WP2), nodes/edges (WP3), or rules/tests (WP8); it is not a SnapshotEnvelope. Schema validation, duplicate/reference checks and paired rule tests run before activation. Disabled in PostgreSQL boundary mode; use POST /v1/admin/import.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SnapshotEnvelope"
+                "$ref": "#/components/schemas/LegacyWP3ImportRequest"
               },
               "examples": {
-                "pf.roadmap.v1": {
+                "flat-demo": {
+                  "summary": "Legacy demo payload",
                   "value": {
-                    "contract": "pf.roadmap.v1",
-                    "manifest": {
-                      "contract_version": "1.0.0",
-                      "snapshot_id": "ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1",
-                      "producer_wp": "WP3",
-                      "generated_at": "2026-11-10T00:00:00Z",
-                      "generator": {
-                        "name": "contracts-builder",
-                        "version": "1.0.0",
-                        "seed": null
-                      },
-                      "supersedes": null,
-                      "items_checksum": "sha256:ba2dd54a2029be1d6dd019f05dd723f743fe2426d492e9802307979e0955111f",
-                      "derived_from": [
-                        {
-                          "source": "D3.2",
-                          "status": "approved"
-                        },
-                        {
-                          "source": "D3.1",
-                          "section": "catalogue",
-                          "status": "approved"
-                        },
-                        {
-                          "source": "WP3/MS3.1",
-                          "status": "draft"
-                        }
-                      ],
-                      "dependencies": {
-                        "pf.taxonomy.v1": "136c7555-45e3-40dc-a9ac-6749cc516ef3"
+                    "version": "legacy-wp3-v1",
+                    "nodes": [
+                      {
+                        "node_id": "legacy-intake",
+                        "label": "Readiness intake",
+                        "dimension": "governance",
+                        "maturity_level": 1,
+                        "stakeholder_types": [
+                          "all"
+                        ],
+                        "prerequisites": []
                       }
-                    },
-                    "payload": {
-                      "nodes": [
-                        {
-                          "node_id": "pf:wp3:node:governance-framework",
-                          "label": "Governance Framework",
-                          "dimension": "governance",
-                          "action_type": "governance_action",
-                          "time_horizon": "short",
-                          "maturity_level": 1,
-                          "stakeholder_types": [
-                            "all"
-                          ],
-                          "prerequisites": [],
-                          "dataset_refs": [],
-                          "status": "active",
-                          "successor": null,
-                          "source_wp": "WP3",
-                          "source_doc_ref": "D3.2 s.4",
-                          "confidence": 0.95
-                        },
-                        {
-                          "node_id": "pf:wp3:node:data-catalogue",
-                          "label": "Data Catalogue",
-                          "dimension": "data",
-                          "action_type": "data_foundation",
-                          "time_horizon": "short",
-                          "maturity_level": 2,
-                          "stakeholder_types": [
-                            "all"
-                          ],
-                          "prerequisites": [
-                            "pf:wp3:node:governance-framework"
-                          ],
-                          "dataset_refs": [
-                            "pf:wp3:dataset:priority-oncology-registry"
-                          ],
-                          "status": "active",
-                          "successor": null,
-                          "source_wp": "WP3",
-                          "source_doc_ref": "D3.2 s.4",
-                          "confidence": 0.95
-                        },
-                        {
-                          "node_id": "pf:wp3:node:legal-basis-secondary-use",
-                          "label": "Legal Basis Secondary Use",
-                          "dimension": "compliance",
-                          "action_type": "governance_action",
-                          "time_horizon": "short",
-                          "maturity_level": 2,
-                          "stakeholder_types": [
-                            "all"
-                          ],
-                          "prerequisites": [
-                            "pf:wp3:node:governance-framework"
-                          ],
-                          "dataset_refs": [],
-                          "status": "active",
-                          "successor": null,
-                          "source_wp": "WP3",
-                          "source_doc_ref": "D3.2 s.4",
-                          "confidence": 0.95
-                        },
-                        {
-                          "node_id": "pf:wp3:node:spe-secure-processing",
-                          "label": "Spe Secure Processing",
-                          "dimension": "infrastructure",
-                          "action_type": "deployment_pathway",
-                          "time_horizon": "medium",
-                          "maturity_level": 3,
-                          "stakeholder_types": [
-                            "all"
-                          ],
-                          "prerequisites": [
-                            "pf:wp3:node:data-catalogue",
-                            "pf:wp3:node:legal-basis-secondary-use"
-                          ],
-                          "dataset_refs": [],
-                          "status": "active",
-                          "successor": null,
-                          "source_wp": "WP3",
-                          "source_doc_ref": "D3.2 s.4",
-                          "confidence": 0.95
-                        },
-                        {
-                          "node_id": "pf:wp3:node:ai-model-validation",
-                          "label": "Ai Model Validation",
-                          "dimension": "capability",
-                          "action_type": "priority_application",
-                          "time_horizon": "medium",
-                          "maturity_level": 4,
-                          "stakeholder_types": [
-                            "all"
-                          ],
-                          "prerequisites": [
-                            "pf:wp3:node:spe-secure-processing"
-                          ],
-                          "dataset_refs": [],
-                          "status": "active",
-                          "successor": null,
-                          "source_wp": "WP3",
-                          "source_doc_ref": "D3.2 s.4",
-                          "confidence": 0.95
-                        },
-                        {
-                          "node_id": "pf:wp3:node:semantic-interoperability",
-                          "label": "Semantic Interoperability",
-                          "dimension": "data",
-                          "action_type": "semantic_interoperability",
-                          "time_horizon": "long",
-                          "maturity_level": 4,
-                          "stakeholder_types": [
-                            "all"
-                          ],
-                          "prerequisites": [
-                            "pf:wp3:node:data-catalogue"
-                          ],
-                          "dataset_refs": [],
-                          "status": "active",
-                          "successor": null,
-                          "source_wp": "WP3",
-                          "source_doc_ref": "D3.2 s.4",
-                          "confidence": 0.95
-                        },
-                        {
-                          "node_id": "pf:wp3:node:scale-and-sustain",
-                          "label": "Scale And Sustain",
-                          "dimension": "governance",
-                          "action_type": "infrastructure_provision",
-                          "time_horizon": "long",
-                          "maturity_level": 5,
-                          "stakeholder_types": [
-                            "all"
-                          ],
-                          "prerequisites": [
-                            "pf:wp3:node:ai-model-validation",
-                            "pf:wp3:node:semantic-interoperability"
-                          ],
-                          "dataset_refs": [],
-                          "status": "active",
-                          "successor": null,
-                          "source_wp": "WP3",
-                          "source_doc_ref": "D3.2 s.4",
-                          "confidence": 0.95
-                        }
-                      ],
-                      "edges": [
-                        {
-                          "edge_id": "pf:wp3:edge:gov-catalog",
-                          "from_node_id": "pf:wp3:node:governance-framework",
-                          "to_node_id": "pf:wp3:node:data-catalogue",
-                          "relation_type": "prerequisite",
-                          "required": true
-                        },
-                        {
-                          "edge_id": "pf:wp3:edge:gov-legal",
-                          "from_node_id": "pf:wp3:node:governance-framework",
-                          "to_node_id": "pf:wp3:node:legal-basis-secondary-use",
-                          "relation_type": "prerequisite",
-                          "required": true
-                        },
-                        {
-                          "edge_id": "pf:wp3:edge:catalog-spe",
-                          "from_node_id": "pf:wp3:node:data-catalogue",
-                          "to_node_id": "pf:wp3:node:spe-secure-processing",
-                          "relation_type": "prerequisite",
-                          "required": true
-                        },
-                        {
-                          "edge_id": "pf:wp3:edge:legal-spe",
-                          "from_node_id": "pf:wp3:node:legal-basis-secondary-use",
-                          "to_node_id": "pf:wp3:node:spe-secure-processing",
-                          "relation_type": "prerequisite",
-                          "required": true
-                        },
-                        {
-                          "edge_id": "pf:wp3:edge:spe-ai",
-                          "from_node_id": "pf:wp3:node:spe-secure-processing",
-                          "to_node_id": "pf:wp3:node:ai-model-validation",
-                          "relation_type": "prerequisite",
-                          "required": true
-                        },
-                        {
-                          "edge_id": "pf:wp3:edge:catalog-sem",
-                          "from_node_id": "pf:wp3:node:data-catalogue",
-                          "to_node_id": "pf:wp3:node:semantic-interoperability",
-                          "relation_type": "enabler",
-                          "required": false
-                        },
-                        {
-                          "edge_id": "pf:wp3:edge:ai-scale",
-                          "from_node_id": "pf:wp3:node:ai-model-validation",
-                          "to_node_id": "pf:wp3:node:scale-and-sustain",
-                          "relation_type": "prerequisite",
-                          "required": true
-                        },
-                        {
-                          "edge_id": "pf:wp3:edge:sem-scale",
-                          "from_node_id": "pf:wp3:node:semantic-interoperability",
-                          "to_node_id": "pf:wp3:node:scale-and-sustain",
-                          "relation_type": "prerequisite",
-                          "required": true
-                        }
-                      ],
-                      "datasets": [
-                        {
-                          "dataset_id": "pf:wp3:dataset:priority-oncology-registry",
-                          "label": "High-priority oncology registry datasets",
-                          "availability": "limited",
-                          "suitability": 0.8,
-                          "quality": 0.7,
-                          "representativeness": 0.6,
-                          "completeness": 0.65,
-                          "ai_act_alignment": "conditional",
-                          "source_doc_ref": "D3.1 s.6",
-                          "maturity": 0.5
-                        }
-                      ]
-                    }
+                    ],
+                    "edges": []
                   }
                 }
               }
@@ -3105,24 +2874,6 @@
       "post": {
         "summary": "Import Wp8",
         "operationId": "import_wp8_admin_import_wp8_post",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -3139,7 +2890,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -3149,7 +2900,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -3159,7 +2910,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -3169,7 +2920,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -3179,284 +2930,92 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           }
         },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
         "tags": [
           "Admin (legacy demo)"
         ],
-        "security": [
-          {
-            "AdminBearer": []
-          }
-        ],
-        "description": "Legacy single-snapshot import for the in-memory demo mode; accepts one `pf.rulebundle.v1` SnapshotEnvelope. In PostgreSQL boundary mode this endpoint is disabled \u2014 use `POST /v1/admin/import` (protocol \u00a78\u20139).",
+        "deprecated": true,
+        "description": "Admin token required. Legacy flat JSON import for the in-memory demo mode. The root contains version and stakeholder_types (WP2), nodes/edges (WP3), or rules/tests (WP8); it is not a SnapshotEnvelope. Schema validation, duplicate/reference checks and paired rule tests run before activation. Disabled in PostgreSQL boundary mode; use POST /v1/admin/import.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SnapshotEnvelope"
+                "$ref": "#/components/schemas/LegacyWP8ImportRequest"
               },
               "examples": {
-                "pf.rulebundle.v1": {
+                "flat-demo": {
+                  "summary": "Legacy demo payload",
                   "value": {
-                    "contract": "pf.rulebundle.v1",
-                    "manifest": {
-                      "contract_version": "1.0.0",
-                      "snapshot_id": "5f515fa8-649e-4a91-8fdd-806886f41bd0",
-                      "producer_wp": "WP8",
-                      "generated_at": "2026-11-10T00:00:00Z",
-                      "generator": {
-                        "name": "contracts-builder",
-                        "version": "1.0.0",
-                        "seed": null
-                      },
-                      "supersedes": null,
-                      "items_checksum": "sha256:471e7fc13e81eef9e4868491d988fbd0075255ae0008f47fc9bf7185fb1ba6af",
-                      "derived_from": [
-                        {
-                          "source": "T8.2",
-                          "status": "draft"
+                    "version": "legacy-wp8-v1",
+                    "rules": [
+                      {
+                        "rule_id": "LEGACY-REVIEW-001",
+                        "rule_type": "preference",
+                        "priority": 10,
+                        "applies_to": [
+                          "all"
+                        ],
+                        "condition": {},
+                        "action": {
+                          "title": "Review evidence",
+                          "text": "Review readiness evidence before proceeding."
                         },
-                        {
-                          "source": "T8.3.2",
-                          "status": "approved"
-                        }
-                      ],
-                      "dependencies": {
-                        "pf.taxonomy.v1": "136c7555-45e3-40dc-a9ac-6749cc516ef3",
-                        "pf.roadmap.v1": "ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1"
+                        "compliance_refs": [
+                          "D4.1"
+                        ]
                       }
-                    },
-                    "payload": {
-                      "references": [
-                        {
-                          "ref_id": "pf:wp8:reg:ehdsr",
-                          "instrument": "EHDSR",
-                          "locator": "Art.9(2)",
-                          "status": "in-force",
-                          "source_doc_ref": "T8.3.1"
-                        },
-                        {
-                          "ref_id": "pf:wp8:reg:gdpr",
-                          "instrument": "GDPR",
-                          "locator": "Art.9",
-                          "status": "in-force",
-                          "source_doc_ref": "T8.3.1"
-                        },
-                        {
-                          "ref_id": "pf:wp8:reg:ai-act",
-                          "instrument": "AI-Act",
-                          "locator": "Annex III",
-                          "status": "in-force",
-                          "source_doc_ref": "T8.3.2"
-                        },
-                        {
-                          "ref_id": "pf:wp8:reg:biotech-act",
-                          "instrument": "Biotech-Act",
-                          "status": "forthcoming",
-                          "source_doc_ref": "T8.3.1"
-                        }
-                      ],
-                      "rules": [
-                        {
-                          "rule_id": "pf:wp8:rule:secondary-use-eligibility",
-                          "parent_rule_id": null,
-                          "rule_type": "eligibility",
-                          "priority": 10,
-                          "applies_to": [
-                            "pf:wp2:stakeholder:biotech-sme"
-                          ],
-                          "status": "verified",
-                          "condition": {
-                            "and": [
-                              {
-                                "field": "capabilities",
-                                "op": "contains",
-                                "value": "legal-basis"
-                              },
-                              {
-                                "field": "maturity.compliance",
-                                "op": "gte",
-                                "value": 2
-                              }
-                            ]
-                          },
-                          "action": {
-                            "title": "Proceed to secure processing",
-                            "text": "Stakeholder may request secondary-use data through an SPE.",
-                            "node_id": "pf:wp3:node:spe-secure-processing",
-                            "block": false
-                          },
-                          "compliance_refs": [
-                            "pf:wp8:reg:ehdsr"
-                          ],
-                          "source_doc_ref": "D8.2 s.3",
-                          "rule_version": "1.0.0",
-                          "effective_from": "2025-12-09",
-                          "effective_until": null
-                        },
-                        {
-                          "rule_id": "pf:wp8:rule:missing-legal-basis-block",
-                          "parent_rule_id": null,
-                          "rule_type": "exclusion",
-                          "priority": 20,
-                          "applies_to": [
-                            "pf:wp2:stakeholder:biotech-sme"
-                          ],
-                          "status": "verified",
-                          "condition": {
-                            "not": {
-                              "field": "capabilities",
-                              "op": "contains",
-                              "value": "legal-basis"
-                            }
-                          },
-                          "action": {
-                            "title": "Establish a legal basis first",
-                            "text": "No route while the legal basis capability is missing.",
-                            "node_id": "pf:wp3:node:legal-basis-secondary-use",
-                            "block": true
-                          },
-                          "compliance_refs": [
-                            "pf:wp8:reg:gdpr"
-                          ],
-                          "source_doc_ref": "D8.2 s.3",
-                          "rule_version": "1.0.0",
-                          "effective_from": "2025-12-09",
-                          "effective_until": null
-                        },
-                        {
-                          "rule_id": "pf:wp8:rule:high-risk-model-preference",
-                          "parent_rule_id": null,
-                          "rule_type": "preference",
-                          "priority": 5,
-                          "applies_to": [
-                            "pf:wp2:stakeholder:biotech-sme"
-                          ],
-                          "status": "verified",
-                          "condition": {
-                            "field": "regulatory_flags",
-                            "op": "contains",
-                            "value": "high-risk-ai"
-                          },
-                          "action": {
-                            "title": "Prefer validated pipelines",
-                            "text": "Prefer roadmap routes with an AI Act validation step.",
-                            "node_id": null,
-                            "block": false
-                          },
-                          "compliance_refs": [
-                            "pf:wp8:reg:ai-act"
-                          ],
-                          "source_doc_ref": "D8.2 s.3",
-                          "rule_version": "1.0.0",
-                          "effective_from": "2025-12-09",
-                          "effective_until": null
-                        },
-                        {
-                          "rule_id": "pf:wp8:rule:biotech-act-provisional",
-                          "parent_rule_id": null,
-                          "rule_type": "eligibility",
-                          "priority": 1,
-                          "applies_to": [
-                            "pf:wp2:stakeholder:biotech-sme"
-                          ],
-                          "status": "provisional",
-                          "condition": {
-                            "field": "maturity.governance",
-                            "op": "gte",
-                            "value": 3
-                          },
-                          "action": {
-                            "title": "Provisional upcoming-framework guidance",
-                            "text": "Guidance under a forthcoming instrument; not a legal conclusion.",
-                            "node_id": null,
-                            "block": false
-                          },
-                          "compliance_refs": [
-                            "pf:wp8:reg:biotech-act"
-                          ],
-                          "source_doc_ref": "D8.2 s.3",
-                          "rule_version": "1.0.0",
-                          "effective_from": "2025-12-09",
-                          "effective_until": null
-                        }
-                      ],
-                      "tests": [
-                        {
-                          "test_id": "t-eligibility-pass",
-                          "rule_id": "pf:wp8:rule:secondary-use-eligibility",
-                          "given": {
-                            "capabilities": [
-                              "legal-basis"
-                            ],
-                            "maturity.compliance": 3
-                          },
-                          "expect": {
-                            "outcome": "triggered"
-                          }
-                        },
-                        {
-                          "test_id": "t-eligibility-fail",
-                          "rule_id": "pf:wp8:rule:secondary-use-eligibility",
-                          "given": {
+                    ],
+                    "tests": [
+                      {
+                        "name": "Readiness evidence review",
+                        "state": {
+                          "stakeholder_type": "biotech-sme",
+                          "target_scenario": "secondary-use-readiness",
+                          "answers": {
+                            "governance_maturity": 1,
+                            "data_maturity": 1,
+                            "compliance_maturity": 1,
                             "capabilities": [],
-                            "maturity.compliance": 3
-                          },
-                          "expect": {
-                            "outcome": "not-triggered"
+                            "missing_capabilities": [],
+                            "regulatory_flags": []
                           }
                         },
-                        {
-                          "test_id": "t-block",
-                          "rule_id": "pf:wp8:rule:missing-legal-basis-block",
-                          "given": {
-                            "capabilities": []
-                          },
-                          "expect": {
-                            "outcome": "blocked"
-                          }
-                        },
-                        {
-                          "test_id": "t-preference",
-                          "rule_id": "pf:wp8:rule:high-risk-model-preference",
-                          "given": {
-                            "regulatory_flags": [
-                              "high-risk-ai"
-                            ]
-                          },
-                          "expect": {
-                            "outcome": "triggered"
-                          }
-                        },
-                        {
-                          "test_id": "t-provisional",
-                          "rule_id": "pf:wp8:rule:biotech-act-provisional",
-                          "given": {
-                            "maturity.governance": 4
-                          },
-                          "expect": {
-                            "outcome": "triggered",
-                            "action_contains": "not a legal conclusion"
-                          }
-                        }
-                      ]
-                    }
+                        "expected_rule_ids": [
+                          "LEGACY-REVIEW-001"
+                        ]
+                      }
+                    ]
                   }
                 }
               }
@@ -3469,24 +3028,6 @@
       "post": {
         "summary": "Reload Rules",
         "operationId": "reload_rules_admin_rules_reload_post",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -3503,7 +3044,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -3513,7 +3054,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -3523,7 +3064,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -3533,7 +3074,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
@@ -3543,29 +3084,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           },
-          "422": {
-            "description": "Validation Error",
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
                 }
               }
             }
           }
         },
-        "tags": [
-          "Admin (legacy demo)"
-        ],
         "security": [
           {
-            "AdminBearer": []
+            "BearerAuth": []
           }
+        ],
+        "tags": [
+          "Admin (legacy demo)"
         ],
         "description": "Reload rule bundle in the in-memory demo mode; rejected in PostgreSQL boundary mode."
       }
@@ -3687,7 +3238,20 @@
           "detail"
         ],
         "title": "ApiError",
-        "description": "Standard error response. 5 error codes cover all V1 scenarios."
+        "description": "Machine-readable error carried inside FastAPI's detail envelope."
+      },
+      "ApiErrorEnvelope": {
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/ApiError"
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "ApiErrorEnvelope",
+        "description": "Wire format shared by HTTP exceptions and middleware errors."
       },
       "AssessmentStateResponse": {
         "properties": {
@@ -3860,6 +3424,35 @@
           "status"
         ],
         "title": "CreateAssessmentResponse"
+      },
+      "FhirBundle": {
+        "properties": {
+          "resourceType": {
+            "type": "string",
+            "title": "Resourcetype",
+            "default": "Bundle"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "entry": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Entry",
+            "default": []
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "FhirBundle",
+        "description": "Minimal FHIR Bundle envelope (contents follow the FHIR version)."
       },
       "HTTPValidationError": {
         "properties": {
@@ -4128,6 +3721,46 @@
           "confidence"
         ],
         "title": "RecommendationResponse"
+      },
+      "ReportResponse": {
+        "properties": {
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer"
+          },
+          "audit_chain_valid": {
+            "type": "boolean",
+            "title": "Audit Chain Valid"
+          },
+          "missing_data_warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Data Warnings"
+          },
+          "session": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Session"
+          },
+          "readiness_snapshot": {
+            "$ref": "#/components/schemas/StakeholderStateResponse"
+          },
+          "recommended_path": {
+            "$ref": "#/components/schemas/RecommendationResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "disclaimer",
+          "audit_chain_valid",
+          "missing_data_warnings",
+          "session",
+          "readiness_snapshot",
+          "recommended_path"
+        ],
+        "title": "ReportResponse"
       },
       "RequestLogEntry": {
         "properties": {
@@ -6224,7 +5857,7 @@
             "items": {
               "$ref": "#/components/schemas/SnapshotEnvelope"
             },
-            "description": "Complete dependency closure: every snapshot referenced by supersedes/depends_on must be present in this call or already active."
+            "description": "Complete runtime dependency closure in THIS batch: include taxonomy, roadmap, questionnaire(s) and rulebundle, plus every exact manifest.dependencies snapshot. Active snapshots are not merged into this batch. manifest.supersedes is historical lineage and does not require resubmitting its predecessor."
           }
         },
         "title": "BoundaryImportRequest"
@@ -6271,85 +5904,507 @@
         "title": "ActivationReport",
         "description": "400 + Validation error when any gate fails (all-or-nothing activation)."
       },
-      "FhirBundle": {
-        "additionalProperties": true,
-        "description": "Minimal FHIR Bundle envelope (contents follow the FHIR version).",
-        "properties": {
-          "resourceType": {
-            "default": "Bundle",
-            "title": "Resourcetype",
-            "type": "string"
-          },
-          "type": {
-            "title": "Type",
-            "type": "string"
-          },
-          "entry": {
-            "default": [],
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "title": "Entry",
-            "type": "array"
-          }
-        },
+      "LegacyWP2ImportRequest": {
+        "type": "object",
         "required": [
-          "type"
+          "version",
+          "stakeholder_types"
         ],
-        "title": "FhirBundle",
-        "type": "object"
+        "properties": {
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "stakeholder_types": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "label",
+                "personas",
+                "user_journeys"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "personas": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "user_journeys": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "capabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "pain_points": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "feedback_categories": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
       },
-      "ReportResponse": {
+      "LegacyWP3ImportRequest": {
+        "type": "object",
+        "required": [
+          "version",
+          "nodes",
+          "edges"
+        ],
         "properties": {
-          "disclaimer": {
-            "title": "Disclaimer",
-            "type": "string"
+          "version": {
+            "type": "string",
+            "minLength": 1
           },
-          "audit_chain_valid": {
-            "title": "Audit Chain Valid",
-            "type": "boolean"
-          },
-          "missing_data_warnings": {
+          "nodes": {
+            "type": "array",
+            "minItems": 1,
             "items": {
-              "type": "string"
-            },
-            "title": "Missing Data Warnings",
-            "type": "array"
+              "type": "object",
+              "required": [
+                "node_id",
+                "label",
+                "dimension",
+                "maturity_level",
+                "stakeholder_types"
+              ],
+              "properties": {
+                "node_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "dimension": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "maturity_level": {
+                  "type": "integer"
+                },
+                "stakeholder_types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "description": {
+                  "type": "string"
+                },
+                "prerequisites": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "source_doc_ref": {
+                  "type": "string"
+                }
+              }
+            }
           },
-          "session": {
-            "additionalProperties": true,
-            "title": "Session",
-            "type": "object"
+          "edges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "edge_id",
+                "from_node_id",
+                "to_node_id"
+              ],
+              "properties": {
+                "edge_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "from_node_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "to_node_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "relation_type": {
+                  "type": "string"
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "source_doc_ref": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "LegacyWP8ImportRequest": {
+        "title": "Pathfinder V1 Rule Bundle",
+        "description": "Schema for Pathfinder rule bundles consumed by RuleLoader. Defines deterministic condition DSL and action structure for WP8 compliance rules.",
+        "type": "object",
+        "required": [
+          "version",
+          "rules",
+          "tests"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "description": "Semantic version of this rule bundle (e.g. 'gen-1000-rules-v1')",
+            "pattern": "^[a-zA-Z0-9._-]+$"
           },
-          "readiness_snapshot": {
-            "$ref": "#/components/schemas/StakeholderStateResponse"
+          "rules": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/LegacyWP8ImportRequest/$defs/rule"
+            }
           },
-          "recommended_path": {
-            "$ref": "#/components/schemas/RecommendationResponse"
+          "tests": {
+            "type": "array",
+            "minItems": 0,
+            "items": {
+              "$ref": "#/components/schemas/LegacyWP8ImportRequest/$defs/ruleTest"
+            }
           }
         },
-        "required": [
-          "disclaimer",
-          "audit_chain_valid",
-          "missing_data_warnings",
-          "session",
-          "readiness_snapshot",
-          "recommended_path"
-        ],
-        "title": "ReportResponse",
-        "type": "object"
+        "$defs": {
+          "rule": {
+            "type": "object",
+            "required": [
+              "rule_id",
+              "rule_type",
+              "priority",
+              "applies_to",
+              "condition",
+              "action",
+              "compliance_refs"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string",
+                "description": "Unique rule identifier within the bundle (e.g. 'WP8-RULE-0001')",
+                "pattern": "^[A-Z0-9_-]+$"
+              },
+              "rule_type": {
+                "type": "string",
+                "enum": [
+                  "eligibility",
+                  "exclusion",
+                  "preference",
+                  "override"
+                ],
+                "description": "eligibility = prerequisite check, exclusion = block path, preference = prioritised recommendation, override = force override other rules"
+              },
+              "priority": {
+                "type": "integer",
+                "description": "Execution priority (higher = evaluated first; used for conflict resolution)",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "applies_to": {
+                "type": "array",
+                "description": "Stakeholder types this rule applies to. Use ['all'] for universal rules.",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "condition": {
+                "$ref": "#/components/schemas/LegacyWP8ImportRequest/$defs/condition"
+              },
+              "action": {
+                "$ref": "#/components/schemas/LegacyWP8ImportRequest/$defs/action"
+              },
+              "compliance_refs": {
+                "type": "array",
+                "description": "References to regulations (e.g. 'GDPR-Art.9', 'DGA-Art.7', 'EHDS-Art.33')",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "source_doc_ref": {
+                "type": "string",
+                "description": "Source document or spec section that defined this rule",
+                "default": "demo-data"
+              },
+              "rule_version": {
+                "type": "string",
+                "description": "Version tag for this specific rule (may differ from bundle version)",
+                "default": "demo-rules-v1"
+              },
+              "effective_from": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date",
+                "description": "Date from which this rule is effective (null = always)",
+                "default": null
+              },
+              "effective_until": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date",
+                "description": "Date after which this rule expires (null = never)",
+                "default": null
+              },
+              "parent_rule_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Parent rule ID for rule versioning/overrides",
+                "default": null
+              }
+            }
+          },
+          "condition": {
+            "description": "Deterministic condition DSL. One of: compound (and/or/not), atomic (field+operator+value), or empty (always true).",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LegacyWP8ImportRequest/$defs/conditionCompoundAnd"
+              },
+              {
+                "$ref": "#/components/schemas/LegacyWP8ImportRequest/$defs/conditionCompoundOr"
+              },
+              {
+                "$ref": "#/components/schemas/LegacyWP8ImportRequest/$defs/conditionCompoundNot"
+              },
+              {
+                "$ref": "#/components/schemas/LegacyWP8ImportRequest/$defs/conditionAtomic"
+              },
+              {
+                "$ref": "#/components/schemas/LegacyWP8ImportRequest/$defs/conditionEmpty"
+              }
+            ]
+          },
+          "conditionCompoundAnd": {
+            "type": "object",
+            "required": [
+              "and"
+            ],
+            "properties": {
+              "and": {
+                "type": "array",
+                "description": "ALL sub-conditions must evaluate to true",
+                "items": {
+                  "$ref": "#/components/schemas/LegacyWP8ImportRequest/$defs/condition"
+                },
+                "minItems": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "conditionCompoundOr": {
+            "type": "object",
+            "required": [
+              "or"
+            ],
+            "properties": {
+              "or": {
+                "type": "array",
+                "description": "ANY sub-condition must evaluate to true",
+                "items": {
+                  "$ref": "#/components/schemas/LegacyWP8ImportRequest/$defs/condition"
+                },
+                "minItems": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "conditionCompoundNot": {
+            "type": "object",
+            "required": [
+              "not"
+            ],
+            "properties": {
+              "not": {
+                "description": "Sub-condition that must evaluate to false",
+                "$ref": "#/components/schemas/LegacyWP8ImportRequest/$defs/condition"
+              }
+            },
+            "additionalProperties": false
+          },
+          "conditionAtomic": {
+            "type": "object",
+            "required": [
+              "field",
+              "operator"
+            ],
+            "description": "Atomic field comparison. The 'value' field is required for all operators except 'exists'.",
+            "properties": {
+              "field": {
+                "type": "string",
+                "description": "Field path in StakeholderState to evaluate",
+                "pattern": "^(answers\\.|maturity\\.)?[a-zA-Z_][a-zA-Z0-9_.]*$",
+                "examples": [
+                  "answers.governance_maturity",
+                  "maturity.governance",
+                  "stakeholder_type",
+                  "capabilities",
+                  "missing_capabilities",
+                  "regulatory_flags",
+                  "target_scenario"
+                ]
+              },
+              "operator": {
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "gt",
+                  "gte",
+                  "lt",
+                  "lte",
+                  "in",
+                  "not_in",
+                  "contains",
+                  "exists"
+                ],
+                "description": "Comparison operator. 'contains' checks membership in a list field. 'exists' checks non-null/non-empty."
+              },
+              "value": {
+                "description": "Expected value. Type depends on the operator: scalar for eq/ne/gt/gte/lt/lte, array for in/not_in/contains, ignored for exists."
+              }
+            },
+            "additionalProperties": false
+          },
+          "conditionEmpty": {
+            "type": "object",
+            "description": "Empty condition = always true (matches all states)",
+            "maxProperties": 0
+          },
+          "action": {
+            "type": "object",
+            "required": [
+              "title",
+              "text"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Short human-readable action title"
+              },
+              "text": {
+                "type": "string",
+                "description": "Detailed action description displayed to the user"
+              },
+              "node_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Suggested roadmap node to route to when this rule triggers (null = no reroute)"
+              },
+              "warning": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Warning message appended to the path result (null = no warning)"
+              },
+              "block": {
+                "type": "boolean",
+                "description": "If true, this rule BLOCKS the current path (produces a blocker in PathResult)",
+                "default": false
+              }
+            },
+            "additionalProperties": false
+          },
+          "ruleTest": {
+            "type": "object",
+            "required": [
+              "name",
+              "state",
+              "expected_rule_ids"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Human-readable test case name"
+              },
+              "state": {
+                "$ref": "#/components/schemas/LegacyWP8ImportRequest/$defs/testState"
+              },
+              "expected_rule_ids": {
+                "type": "array",
+                "description": "Rule IDs that should trigger for this state (sorted alphabetically for comparison)",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "testState": {
+            "type": "object",
+            "required": [
+              "stakeholder_type",
+              "target_scenario",
+              "answers"
+            ],
+            "properties": {
+              "stakeholder_type": {
+                "type": "string"
+              },
+              "target_scenario": {
+                "type": "string"
+              },
+              "answers": {
+                "type": "object",
+                "description": "Questionnaire answers including maturity scores, capabilities, missing_capabilities, regulatory_flags",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
       }
     },
     "securitySchemes": {
-      "AdminBearer": {
+      "BearerAuth": {
         "type": "http",
-        "scheme": "bearer",
-        "description": "PATHFINDER_ADMIN_TOKEN. Required on all boundary/admin operations."
+        "description": "Use PATHFINDER_DEMO_TOKEN for invited /v1 business operations, or PATHFINDER_ADMIN_TOKEN for all operations. Boundary imports and every /admin operation require the admin token.",
+        "scheme": "bearer"
       }
     }
   },
   "servers": [
+    {
+      "url": "/",
+      "description": "Current API origin (hosted documentation)"
+    },
     {
       "url": "http://localhost:8000",
       "description": "local development (docker compose up)"

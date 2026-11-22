@@ -9,13 +9,17 @@ from __future__ import annotations
 
 import os
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from pathfinder.api.schemas import AbusiveIp, RequestLogEntry, RequestStatsResponse
+from pathfinder.api.middleware import require_dashboard_admin
 from pathfinder.middleware.request_logger import get_logger
 
-router = APIRouter(prefix="/admin", tags=["admin-dashboard"])
+router = APIRouter(
+    prefix="/admin", tags=["admin-dashboard"],
+    dependencies=[Depends(require_dashboard_admin)],
+)
 
 
 @router.get("/", response_class=HTMLResponse)
