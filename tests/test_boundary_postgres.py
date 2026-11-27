@@ -515,3 +515,35 @@ def test_publish_waits_for_withdrawal_commit_and_rejects_stale_work(stores,monke
             publication.result(timeout=5)
     assert stores[1].load_result(session['assessment_id']) is None
     assert not any(event['event_type']=='recommendation_generated' for event in stores[1].events_for_assessment(session['assessment_id']))
+
+
+def test_service_answer_revision_and_withdrawal_are_rechecked_at_publication(stores,monkeypatch):
+    from test_assessment_revisions import setup
+    service,aid,answers=setup(store=stores[0])
+    competing=make_service(stores[1])
+    compute=service._recommend_for_session
+    changed=dict(answers); changed[next(key for key,value in answers.items() if type(value) is int)]=4
+    def answer_first(session,state):
+        competing.submit_answers(aid,changed)
+        return compute(session,state)
+    with monkeypatch.context() as patch:
+        patch.setattr(service,'_recommend_for_session',answer_first)
+        with pytest.raises(ValueError,match='changed'):
+            service.generate_recommendation(aid)
+    assert stores[0].load_result(aid) is None
+    result=service.generate_recommendation(aid)
+    assert result['answer_revision']==2
+    def withdraw_first(session,state):
+        documents=stores[1].load_generation(session['boundary_generation_id'])
+        taxonomy=next(doc for doc in documents if doc['contract']=='pf.taxonomy.v1')
+        stores[1].withdraw(withdrawal_for(taxonomy),'administrator')
+        return compute(session,state)
+    with monkeypatch.context() as patch:
+        patch.setattr(service,'_recommend_for_session',withdraw_first)
+        with pytest.raises(ValueError,match='withdrawn'):
+            service.generate_recommendation(aid)
+    assert len(stores[0].results_for_session(aid))==1
+    history=competing.report(aid,result_id=result['result_id'])
+    assert history['result']['answers']==changed
+    assert not history['current_validity']['valid']
+    assert len([e for e in stores[0].events_for_assessment(aid) if e['event_type']=='recommendation_generated'])==1

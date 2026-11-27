@@ -203,6 +203,6 @@ def test_database_outage_matches_documented_503(client, service, monkeypatch):
 
 @pytest.mark.parametrize("path", ["/v1/roadmap", "/v1/roadmap/{node_id}"])
 def test_no_active_generation_matches_documented_503(client, service, monkeypatch, path):
-    monkeypatch.setattr(service, "_boundary_store", SimpleNamespace(active_generation_id=lambda: None))
+    monkeypatch.setattr(service, "_boundary_store", SimpleNamespace(active_generation_id=lambda profile_id="legacy-v1": None))
     response = client.get(path.replace("{node_id}", "missing"), headers=DEMO)
     assert_error(response, path, "get", 503, "SERVER_ERROR")
