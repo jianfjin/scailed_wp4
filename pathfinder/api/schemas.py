@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class ApiError(BaseModel):
     """Machine-readable error carried inside FastAPI's detail envelope."""
 
+    current_validity: CurrentValidityResponse | None = None
     error: str = Field(description="Machine-readable error code")
     detail: str = Field(description="Human-readable message")
 
@@ -62,6 +63,9 @@ class QuestionSchema(BaseModel):
     options: list[str] = []
     min_value: int | None = None
     max_value: int | None = None
+    maturity_dimension: str | None = None
+    state_field: str | None = None
+    capability_id: str | None = None
 
 
 class QuestionnaireResponse(BaseModel):
@@ -70,6 +74,8 @@ class QuestionnaireResponse(BaseModel):
     title: str
     target_scenarios: list[str]
     questions: list[QuestionSchema]
+    profile_id: str = "legacy-v1"
+    capability_vocabulary: list[str] = Field(default_factory=list)
 
 
 class StakeholderTypesResponse(BaseModel):
@@ -85,6 +91,9 @@ class CreateAssessmentRequest(BaseModel):
 
 
 class CreateAssessmentResponse(BaseModel):
+    profile_id: str = "legacy-v1"
+    semantics_version: str = "legacy-v1.0"
+    answer_revision: int = 0
     assessment_id: str
     stakeholder_type: str
     target_scenario: str
@@ -100,6 +109,9 @@ class BatchAnswersRequest(BaseModel):
 
 
 class StakeholderStateResponse(BaseModel):
+    profile_id: str = "legacy-v1"
+    capability_findings: dict[str, CapabilityFindingResponse] = Field(default_factory=dict)
+    confidence_meaning: str | None = None
     stakeholder_type: str
     target_scenario: str
     answers: dict[str, Any]
@@ -121,6 +133,7 @@ class StakeholderStateResponse(BaseModel):
 # ─── Recommendation ─────────────────────────────────────────────────
 
 class TraceRecordResponse(BaseModel):
+    condition_evaluations: list[RuleEvaluationResponse] = Field(default_factory=list)
     answer_ids: list[str]
     roadmap_node_ids: list[str]
     triggered_rule_ids: list[str]
@@ -155,7 +168,17 @@ class RuleResponse(BaseModel):
 
 
 class RecommendationResponse(BaseModel):
-    status: str = Field(description="ready | blocked")
+    status: str = Field(description="ready | blocked | degraded")
+    profile_id: str = "legacy-v1"
+    semantics_version: str | None = None
+    result_id: str | None = None
+    answer_revision: int | None = None
+    content_hash: str | None = None
+    recommendation_kind: str | None = None
+    missing_information: list[str] = Field(default_factory=list)
+    confidence_meaning: str | None = None
+    capability_findings: dict[str, CapabilityFindingResponse] = Field(default_factory=dict)
+    current_validity: CurrentValidityResponse | None = None
     current_node: str
     target_node: str
     next_steps: list[dict[str, Any]]
@@ -175,8 +198,10 @@ class ReportResponse(BaseModel):
     audit_chain_valid: bool
     missing_data_warnings: list[str]
     session: dict[str, Any]
-    readiness_snapshot: StakeholderStateResponse
+    readiness_snapshot: StakeholderStateResponse | None
     recommended_path: RecommendationResponse
+    result: ResultRecordResponse | None = None
+    current_validity: CurrentValidityResponse | None = None
 
 
 # ─── Roadmap ────────────────────────────────────────────────────────
@@ -221,10 +246,18 @@ class AdminReloadResponse(BaseModel):
     active_rule_version: str
 
 
+class ResultHistoryEntryResponse(BaseModel):
+    result_id: str
+    answer_revision: int | None
+    binding_status: str
+    profile_id: str
+
+
 class AssessmentStateResponse(BaseModel):
     """Current state of an assessment session (GET /v1/assessments/{id})."""
 
     model_config = ConfigDict(extra="allow")
+    result_history: list[ResultHistoryEntryResponse] = Field(default_factory=list)
 
     assessment_id: str
     stakeholder_type: str
@@ -276,3 +309,70 @@ class FhirBundle(BaseModel):
     resourceType: str = "Bundle"
     type: str
     entry: list[dict[str, Any]] = []
+
+
+class WithdrawalReceipt(BaseModel):
+    accepted: bool
+    created: bool
+    notice_id: str
+    lifecycle_revision: int
+
+
+class CapabilityFindingResponse(BaseModel):
+    capability_id: str
+    judgment: str
+    source: str
+    answer_ids: list[str] = Field(default_factory=list)
+    evidence_refs: list[str] = Field(default_factory=list)
+    verification_status: str
+
+
+class ConditionEvaluationResponse(BaseModel):
+    truth: str
+    missing_fields: list[str] = Field(default_factory=list)
+    condition: dict[str, Any] = Field(default_factory=dict)
+    actual: Any = None
+    children: list[ConditionEvaluationResponse] = Field(default_factory=list)
+
+
+class RuleEvaluationResponse(ConditionEvaluationResponse):
+    rule_id: str
+    critical: bool
+
+
+class RuntimeInputResponse(BaseModel):
+    contract: str
+    snapshot_id: str
+    producer_wp: str
+    dependency_path: list[str]
+
+
+class AffectedInputResponse(RuntimeInputResponse):
+    notice_id: str
+    reason: str
+
+
+class CurrentValidityResponse(BaseModel):
+    valid: bool
+    status: str
+    lifecycle_revision: int
+    affected_inputs: list[AffectedInputResponse] = Field(default_factory=list)
+
+
+class ResultRecordResponse(BaseModel):
+    result_id: str
+    assessment_id: str
+    answer_revision: int | None
+    answers: dict[str, Any] | None
+    findings: dict[str, CapabilityFindingResponse] | None
+    readiness_snapshot: StakeholderStateResponse | None = None
+    input_set: list[RuntimeInputResponse]
+    profile_id: str
+    semantics_version: str
+    evaluation_date: str | None = None
+    binding_status: str
+    original_output: dict[str, Any]
+    content_hash: str | None = None
+
+for response in (ApiError, ApiErrorEnvelope, StakeholderStateResponse, TraceRecordResponse, RecommendationResponse, ReportResponse, ResultRecordResponse):
+    response.model_rebuild()

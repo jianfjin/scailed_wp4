@@ -73,6 +73,7 @@ def _check_every_operation_typed() -> tuple[bool, list[str]]:
     # POSTs that act as triggers (no JSON body by design):
     bodyless_posts = {
         "/v1/assessments/{assessment_id}/recommendations",  # path + query only
+        "/v2/assessments/{assessment_id}/recommendations",
         "/admin/rules/reload",  # reload trigger
     }
     gaps: list[str] = []
@@ -172,3 +173,16 @@ def test_every_protected_operation_declares_bearer_auth_and_rate_limits():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+def test_v2_boundary_schemas_and_examples_are_explicit():
+    from jsonschema import Draft202012Validator
+    spec=_generated_spec()
+    schemas=spec['components']['schemas']
+    for contract in ('pf.questionnaire.v2','pf.rulebundle.v2','pf.withdrawal.v1'):
+        assert 'PF_'+contract.replace('.','_') in schemas
+    notice=json.loads((ROOT/'contracts/samples/v2/withdrawal.notice.json').read_text())
+    schema=spec['paths']['/v2/admin/withdrawals']['post']['requestBody']['content']['application/json']['schema']
+    Draft202012Validator({**schema,'components':spec['components']}).validate(notice)
+    assert schemas['RecommendationResponse']['properties']['current_validity']
+    assert schemas['StakeholderStateResponse']['properties']['capability_findings']

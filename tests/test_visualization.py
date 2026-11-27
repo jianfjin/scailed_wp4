@@ -213,8 +213,8 @@ class TestAdapterConditionExtraction:
         assert cm.field == "regulatory_flags"
         assert cm.operator == "contains"
         assert cm.expected == "gdpr-review-needed"
-        assert isinstance(cm.actual, list)
-        assert cm.matched is True
+        assert cm.actual is None
+        assert cm.matched is None
 
     def test_eq_operator(self) -> None:
         report = _minimal_report(
@@ -229,8 +229,8 @@ class TestAdapterConditionExtraction:
         cm = rule.condition_matches[0]
         assert cm.operator == "eq"
         assert cm.expected == 2
-        assert cm.actual == 2
-        assert cm.matched is True
+        assert cm.actual is None
+        assert cm.matched is None
 
     def test_compound_and(self, mock_report: dict[str, Any]) -> None:
         vm = build_view_model(mock_report)
@@ -770,3 +770,55 @@ def _rule_dict(
         "source_doc_ref": source_doc_ref,
     }
     return rule
+
+
+class TestAuthoritativeSemantics:
+    def test_legacy_conditions_are_unevaluated_without_authoritative_trace(self, mock_report):
+        vm = build_view_model(mock_report)
+        condition = vm.triggered_rules[0].condition_matches[0]
+        assert condition.matched is None
+        assert condition.actual is None
+
+    def test_html_retains_unknown_self_report_and_result_binding(self):
+        from test_assessment_revisions import setup
+        service, aid, answers = setup()
+        cap_id = next(key for key, value in answers.items() if value == 'yes')
+        answers[cap_id] = 'unknown'
+        service.submit_answers(aid, answers)
+        result = service.generate_recommendation(aid)
+        report = service.report(aid, result_id=result['result_id'])
+        vm = build_view_model(report)
+        html = render_html(vm)
+        assert vm.summary.status_label() == 'CONDITIONAL DIRECTION'
+        assert result['result_id'] in html
+        assert 'Answer completeness' in html
+        assert 'self_reported' in html and 'unverified' in html
+        assert 'secure-processing' in html and 'unknown' in html
+        assert 'All compliance checks passed' not in html
+        assert all(step.status != 'completed' for step in vm.path_steps)
+
+    def test_withdrawn_html_preserves_original_status_separately(self):
+        from test_assessment_revisions import setup, snapshots
+        from test_boundary_lifecycle import notice_for
+        service, aid, _ = setup()
+        result = service.generate_recommendation(aid)
+        service.withdraw_inputs(notice_for(snapshots()[0]), actor='admin')
+        vm = build_view_model(service.report(aid, result_id=result['result_id']))
+        html = render_html(vm)
+        assert vm.summary.status_label() == 'HISTORICAL — INPUTS WITHDRAWN'
+        assert vm.summary.status == result['status']
+        assert 'Current validity' in html and 'Original result' in html
+        assert 'lifecycle' in html.lower()
+        assert 'All compliance checks passed' not in html
+
+
+def test_condition_projection_uses_authoritative_values_instead_of_snapshot(mock_report):
+    mock_report['recommended_path']['trace']['condition_evaluations'] = [{
+        'rule_id': 'WP8-GDPR-REVIEW-001', 'critical': True, 'truth': 'unknown',
+        'condition': {'field': 'regulatory_flags', 'op': 'contains', 'value': 'gdpr-review-needed'},
+        'actual': None, 'missing_fields': ['regulatory_flags'], 'children': [],
+    }]
+    vm = build_view_model(mock_report)
+    assert vm.triggered_rules[0].condition_matches[0].actual is None
+    assert vm.triggered_rules[0].condition_matches[0].matched is None
+    assert vm.condition_evaluations[0].truth == 'unknown'

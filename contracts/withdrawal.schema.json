@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scailed.eu/contracts/withdrawal.schema.json",
+  "title": "pf.withdrawal.v1 — owner-confirmed exact-version notice",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "notice_id",
+    "targets",
+    "reason",
+    "source_confirmation"
+  ],
+  "properties": {
+    "notice_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contract",
+          "snapshot_id",
+          "producer_wp"
+        ],
+        "properties": {
+          "contract": {
+            "type": "string",
+            "enum": [
+              "pf.taxonomy.v1",
+              "pf.roadmap.v1",
+              "pf.questionnaire.v1",
+              "pf.rulebundle.v1",
+              "pf.questionnaire.v2",
+              "pf.rulebundle.v2"
+            ]
+          },
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "producer_wp": {
+            "type": "string",
+            "enum": [
+              "WP2",
+              "WP3",
+              "WP4",
+              "WP8"
+            ]
+          }
+        }
+      }
+    },
+    "source_confirmation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "material_checksum",
+        "target_checksum",
+        "confirmed_by_wp",
+        "admin_attested"
+      ],
+      "properties": {
+        "reference": {
+          "type": "string",
+          "minLength": 1
+        },
+        "material_checksum": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "target_checksum": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "confirmed_by_wp": {
+          "type": "string",
+          "enum": [
+            "WP2",
+            "WP3",
+            "WP4",
+            "WP8"
+          ]
+        },
+        "admin_attested": {
+          "const": true
+        }
+      },
+      "description": "Audited manual intake attestation; does not independently authenticate the source owner."
+    }
+  }
+}

@@ -30,6 +30,10 @@ from pathfinder.core.audit import AuditLog
 from pathfinder.core.graph import InMemoryRoadmapGraph
 from pathfinder.core.imports import import_structured_payload
 from pathfinder.core.models import ImportReport, Questionnaire, RoadmapEdge, RoadmapNode, StakeholderState
+from pathfinder.core.contract_registry import LEGACY_PROFILE, EVIDENCE_PROFILE, PROFILES
+from pathfinder.core.boundary_lifecycle import dependency_closure, identity, runtime_input_set, observe_validity
+from pathfinder.core.boundary_validation import canonical_checksum, validate_withdrawal_notice
+from pathfinder.core.repositories.boundary_store import SessionConflict, InputsWithdrawn, NoticeConflict
 from pathfinder.core.questionnaire import QuestionnaireEngine
 from pathfinder.core.recommend import build_recommendation
 from pathfinder.core.repositories import audit_repo, session_repo
@@ -59,12 +63,17 @@ class AssessmentService:
         nodes, edges = self._active_roadmap
         self.graph = InMemoryRoadmapGraph(nodes, edges)
         self.solver = PathfinderSolver(self.graph)
-        self._active_boundary = None
         self._boundary_store = boundary_store
         self._generation_cache = OrderedDict()
         self._boundary_lock = RLock()
         self._session_boundaries = {}
         self._boundary_snapshot_hashes = {}
+        self._active_boundaries = {}
+        self._boundary_documents = {}
+        self._result_records = {}
+        self._memory_revisions = {}
+        self._withdrawals = {}
+        self._lifecycle_revision = 0
 
     def _generation(self, generation_id, snapshots=None):
         from pathfinder.core.boundary_runtime import build_boundary_generation
@@ -79,10 +88,12 @@ class AssessmentService:
                 self._generation_cache.move_to_end(generation_id)
             return generation
 
-    def _active_generation(self):
+    def _active_generation(self, profile_id=LEGACY_PROFILE.profile_id):
+        if profile_id not in PROFILES:
+            raise ValueError("unsupported evaluation profile")
         if not self._boundary_store:
-            return None, self._active_boundary
-        generation_id = self._boundary_store.active_generation_id()
+            return None, self._active_boundaries.get(profile_id)
+        generation_id = self._boundary_store.active_generation_id(profile_id)
         if not generation_id:
             return None, None
         return generation_id, self._generation(generation_id)
@@ -103,6 +114,7 @@ class AssessmentService:
             else:
                 self.audit_log.append("boundary_snapshots_rejected", {"reason": "validation failed"}, ip=ip, user_agent=user_agent)
             raise
+        self._check_profile_approval(generation.profile_id)
         if self._boundary_store:
             try:
                 generation_id = self._boundary_store.activate(snapshots, generation, ip, user_agent)
@@ -117,6 +129,9 @@ class AssessmentService:
                     "questionnaire_ids": dict(generation.questionnaire_ids), "regulatory_status": generation.regulatory_status,
                     "warnings": list(generation.warnings)}
         with self._boundary_lock:
+            self._require_valid_inputs(dependency_closure(snapshots, [identity(doc) for doc in snapshots]))
+            for doc in snapshots:
+                self._check_memory_target(identity(doc))
             for snapshot_id, digest in generation.snapshot_hashes.items():
                 existing = self._boundary_snapshot_hashes.get(snapshot_id)
                 if existing is not None and existing != digest:
@@ -128,10 +143,44 @@ class AssessmentService:
                 "regulatory_status": generation.regulatory_status,
             }, ip=ip, user_agent=user_agent)
             self._boundary_snapshot_hashes.update(generation.snapshot_hashes)
-            self._active_boundary = generation
+            self._active_boundaries[generation.profile_id] = generation
+            self._boundary_documents[id(generation)] = snapshots
         return {"accepted": True, "snapshot_ids": dict(generation.snapshot_ids),
                 "questionnaire_ids": dict(generation.questionnaire_ids),
                 "regulatory_status": generation.regulatory_status, "warnings": list(generation.warnings)}
+
+    def _check_memory_target(self, target):
+        known = [identity(doc) for docs in self._boundary_documents.values() for doc in docs]
+        known += [item for notice in self._withdrawals.values() for item in notice['payload']['targets']]
+        expected = {key: target[key] for key in ('contract', 'snapshot_id', 'producer_wp')}
+        if any(item['snapshot_id'] == target['snapshot_id'] and item != expected for item in known):
+            raise ValueError('snapshot target identity conflicts with contract or producer')
+
+    def withdraw_inputs(self, notice, actor, ip=None, user_agent=None):
+        errors = validate_withdrawal_notice(notice)
+        if errors:
+            raise ValueError('invalid withdrawal notice: ' + '; '.join(errors))
+        if not isinstance(actor, str) or not actor.strip():
+            raise ValueError('authenticated administrator identity is required')
+        if self._boundary_store:
+            return self._boundary_store.withdraw(notice, actor, ip, user_agent)
+        notice = deepcopy(notice)
+        notice_id = notice['payload']['notice_id']
+        with self._boundary_lock:
+            previous = self._withdrawals.get(notice_id)
+            if previous is not None:
+                if canonical_checksum(previous) != canonical_checksum(notice):
+                    raise NoticeConflict('withdrawal notice identity was already used for different content')
+                return {'accepted': True, 'created': False, 'notice_id': notice_id,
+                        'lifecycle_revision': self._lifecycle_revision}
+            for target in notice['payload']['targets']:
+                self._check_memory_target(target)
+            self.audit_log.append('boundary_inputs_withdrawn', {'notice_id': notice_id, 'actor': actor,
+                'targets': notice['payload']['targets'], 'source_confirmation': notice['payload']['source_confirmation']}, ip=ip, user_agent=user_agent)
+            self._withdrawals[notice_id] = notice
+            self._lifecycle_revision += 1
+            return {'accepted': True, 'created': True, 'notice_id': notice_id,
+                    'lifecycle_revision': self._lifecycle_revision}
 
     def _boundary_for_session(self, session):
         if self._boundary_store and session.get("boundary_generation_id"):
@@ -149,7 +198,8 @@ class AssessmentService:
             return session, revision
         if assessment_id not in self.sessions:
             raise KeyError(f"Assessment not found: {assessment_id}")
-        return self.sessions[assessment_id], None
+        with self._boundary_lock:
+            return deepcopy(self.sessions[assessment_id]), self._memory_revisions.get(assessment_id, 0)
 
     def get_session(self, assessment_id):
         return self._load_session(assessment_id)[0]
@@ -350,55 +400,95 @@ class AssessmentService:
             )
         }
 
-    def stakeholder_types(self) -> list[str]:
-        generation = self.active_boundary
-        if self._boundary_store and generation is None:
+    def stakeholder_types(self, profile_id=LEGACY_PROFILE.profile_id) -> list[str]:
+        generation = self._active_generation(profile_id)[1]
+        if generation is None and (self._boundary_store or profile_id != LEGACY_PROFILE.profile_id):
             return []
         return (generation.questionnaire_engine if generation else self.questionnaire_engine).stakeholder_types()
 
-    def get_questionnaire(self, stakeholder_type: str) -> dict[str, object]:
-        generation = self.active_boundary
-        if self._boundary_store and generation is None:
-            raise ValueError("no validated boundary generation is active")
+    def get_questionnaire(self, stakeholder_type: str, profile_id=LEGACY_PROFILE.profile_id) -> dict[str, object]:
+        generation = self._active_generation(profile_id)[1]
+        if generation is None and (self._boundary_store or profile_id != LEGACY_PROFILE.profile_id):
+            raise ValueError("no validated boundary generation is active for this profile")
         return (generation.questionnaire_engine if generation else self.questionnaire_engine).get(stakeholder_type).to_dict()
 
+    @staticmethod
+    def _check_profile_approval(profile_id):
+        if profile_id == EVIDENCE_PROFILE.profile_id and os.getenv('ENVIRONMENT', 'development').lower() == 'production' and not os.getenv('PATHFINDER_SEMANTIC_V2_APPROVAL_REF', '').strip():
+            raise ValueError('semantic_approval_required: record affected-WP RFC and consumer readiness before production writes')
+    def _check_writes_enabled(self, profile_id):
+        self._check_profile_approval(profile_id)
+        if profile_id == LEGACY_PROFILE.profile_id and os.getenv('PATHFINDER_V1_WRITES_ENABLED', 'true').lower() == 'false':
+            raise ValueError('migration_required: v1 writes are closed; use a new v2 assessment')
+
+    def _input_set(self, session):
+        generation = self._boundary_for_session(session)
+        if generation is None:
+            return []
+        documents = (self._boundary_store.load_generation(session['boundary_generation_id'])
+                     if self._boundary_store else self._boundary_documents[id(generation)])
+        return runtime_input_set(documents, session['stakeholder_type'])
+
+    def current_validity(self, input_set):
+        if self._boundary_store:
+            return self._boundary_store.current_validity(input_set)
+        with self._boundary_lock:
+            return observe_validity(input_set, self._withdrawals.values(), self._lifecycle_revision)
+
+    def _require_valid_inputs(self, input_set):
+        observation = self.current_validity(input_set)
+        if not observation['valid']:
+            raise InputsWithdrawn(observation)
+        return observation
+
     def create_session(
-        self,
-        stakeholder_type: str,
-        target_scenario: str,
-        ip: str | None = None,
-        user_agent: str | None = None,
+        self, stakeholder_type: str, target_scenario: str,
+        ip: str | None = None, user_agent: str | None = None,
+        profile_id=LEGACY_PROFILE.profile_id,
     ) -> dict[str, object]:
-        stakeholder_type = stakeholder_type.strip()
-        target_scenario = target_scenario.strip()
-        generation_id, generation = self._active_generation()
-        if self._boundary_store and generation is None:
-            raise ValueError("no validated boundary generation is active")
+        self._check_writes_enabled(profile_id)
+        stakeholder_type, target_scenario = stakeholder_type.strip(), target_scenario.strip()
+        generation_id, generation = self._active_generation(profile_id)
+        if generation is None and (self._boundary_store or profile_id != LEGACY_PROFILE.profile_id):
+            raise ValueError("no validated boundary generation is active for this profile")
         questionnaire = (generation.questionnaire_engine if generation else self.questionnaire_engine).get(stakeholder_type)
-        if not target_scenario:
-            raise ValueError("target_scenario is required")
-        if target_scenario not in questionnaire.target_scenarios:
+        if not target_scenario or target_scenario not in questionnaire.target_scenarios:
             raise ValueError(f"unknown target scenario for {stakeholder_type}: {target_scenario}")
         session_id = str(uuid4())
-        session = {
-            "assessment_id": session_id,
-            "stakeholder_type": stakeholder_type,
-            "target_scenario": target_scenario,
-            "status": "in_progress",
-            "mock_data_mode": generation is None,
-        }
+        session = {"assessment_id": session_id, "stakeholder_type": stakeholder_type,
+                   "target_scenario": target_scenario, "status": "in_progress",
+                   "mock_data_mode": generation is None, "profile_id": profile_id,
+                   "semantics_version": PROFILES[profile_id].semantics_version, "answer_revision": 0}
         if generation:
             session["snapshot_ids"] = generation.versions_for(stakeholder_type)
             session["evaluation_date"] = datetime.now(timezone.utc).date().isoformat()
             if self._boundary_store:
                 session["boundary_generation_id"] = generation_id
                 self._boundary_store.create_session(session, generation_id, ip, user_agent)
-                return session
-            self._session_boundaries[session_id] = generation
-        self.sessions[session_id] = session
-        self.audit_log.append("assessment_session_created", session, ip=ip, user_agent=user_agent)
+                return deepcopy(session)
+        with self._boundary_lock:
+            if generation:
+                inputs = runtime_input_set(self._boundary_documents[id(generation)], stakeholder_type)
+                self._require_valid_inputs(inputs)
+                self._session_boundaries[session_id] = generation
+            self.audit_log.append("assessment_session_created", session, ip=ip, user_agent=user_agent)
+            self.sessions[session_id] = deepcopy(session)
+            self._memory_revisions[session_id] = 0
         self._pg_write_session(session)
-        return session
+        return deepcopy(session)
+
+    def _save_session(self, session, revision, event_type, event_data, ip=None, user_agent=None):
+        if self._boundary_store:
+            self._boundary_store.save_session(session, revision, event_type, event_data, ip, user_agent)
+            return
+        with self._boundary_lock:
+            aid = session['assessment_id']
+            if self._memory_revisions.get(aid, 0) != revision:
+                raise SessionConflict("assessment session changed concurrently; reload and retry")
+            self.audit_log.append(event_type, event_data, ip=ip, user_agent=user_agent)
+            self.sessions[aid] = deepcopy(session)
+            self._memory_revisions[aid] = revision + 1
+        self._pg_write_session(session)
 
     def submit_answers(
         self,
@@ -408,25 +498,23 @@ class AssessmentService:
         user_agent: str | None = None,
     ) -> dict[str, object]:
         session, revision = self._load_session(assessment_id)
+        self._check_writes_enabled(session.get('profile_id', LEGACY_PROFILE.profile_id))
         generation = self._boundary_for_session(session)
         state = (generation.questionnaire_engine if generation else self.questionnaire_engine).build_state(
             str(session["stakeholder_type"]),
             str(session["target_scenario"]),
             answers,
         )
-        session["answers"] = answers
-        session["stakeholder_state"] = state.to_dict()
-        if self._boundary_store:
-            self._boundary_store.save_session(session, revision, "answers_submitted",
-                {"assessment_id": assessment_id, "answer_ids": sorted(answers)}, ip, user_agent)
-            return state.to_dict()
-        self.audit_log.append(
-            "answers_submitted",
-            {"assessment_id": assessment_id, "answer_ids": sorted(answers)},
-            ip=ip,
-            user_agent=user_agent,
-        )
-        self._pg_write_session(session)
+        if session.get('answers') != answers:
+            session['answer_revision'] = session.get('answer_revision', 0) + 1
+            session.pop('recommendation', None)
+            session.pop('result_id', None)
+            session['status'] = 'in_progress'
+        session['answers'] = deepcopy(answers)
+        session['stakeholder_state'] = state.to_dict()
+        self._save_session(session, revision, 'answers_submitted',
+                           {'assessment_id': assessment_id, 'answer_ids': sorted(answers),
+                            'answer_revision': session.get('answer_revision', 0)}, ip, user_agent)
         return state.to_dict()
 
     def _snapshot_version(self, source: str) -> str:
@@ -438,6 +526,8 @@ class AssessmentService:
         return report.snapshot_version if report else "unknown-snapshot"
 
     def _derive_state_for_session(self, session: dict[str, object]) -> dict[str, object]:
+        if session.get("profile_id") == EVIDENCE_PROFILE.profile_id or os.getenv("ENVIRONMENT", "development").lower() == "production" or os.getenv("PATHFINDER_MODE", "demo") != "demo":
+            raise ValueError("type capabilities are reference only; submit current questionnaire answers")
         stakeholder_type = str(session["stakeholder_type"])
         stakeholder = getattr(self, "wp2_stakeholders", {}).get(stakeholder_type)
         if stakeholder is None:
@@ -503,7 +593,7 @@ class AssessmentService:
         generation = self._boundary_for_session(session)
         if generation and not isinstance(answers, dict):
             raise ValueError("submit questionnaire answers before requesting a boundary recommendation")
-        if isinstance(answers, dict) and answers.get("derivation_mode") != "wp2_wp3":
+        if isinstance(answers, dict) and (generation is not None or answers.get("derivation_mode") != "wp2_wp3"):
             return (generation.questionnaire_engine if generation else self.questionnaire_engine).build_state(
                 str(session["stakeholder_type"]),
                 str(session["target_scenario"]),
@@ -530,7 +620,7 @@ class AssessmentService:
         recommendation["trace"]["evaluation_date"] = evaluation_date.isoformat()
         if session.get("boundary_generation_id"):
             recommendation["trace"]["boundary_generation_id"] = session["boundary_generation_id"]
-        recommendation["trace"]["rule_version"] = generation.snapshot_ids["pf.rulebundle.v1"]
+        recommendation["trace"]["rule_version"] = generation.snapshot_ids[generation.rulebundle_contract]
         recommendation["trace"]["upstream_snapshot_version"] = generation.snapshot_ids["pf.taxonomy.v1"]
         if status == "unverified" and recommendation["status"] == "ready":
             recommendation["status"] = "degraded"
@@ -543,23 +633,68 @@ class AssessmentService:
         user_agent: str | None = None,
     ) -> dict[str, object]:
         session, revision = self._load_session(assessment_id)
+        self._check_writes_enabled(session.get('profile_id', LEGACY_PROFILE.profile_id))
+        inputs = self._input_set(session)
+        self._require_valid_inputs(inputs)
         state = self._state_for_recommendation(session)
         recommendation = self._recommend_for_session(session, state)
-
-        session["recommendation"] = recommendation
-        session["status"] = "complete"
+        state_payload = state.to_dict()
+        readiness = state_payload
+        if session.get('stakeholder_state', {}).get('derivation_mode') == 'wp2_wp3':
+            readiness = deepcopy(session['stakeholder_state'])
+        if session.get('profile_id') == EVIDENCE_PROFILE.profile_id:
+            recommendation['capability_findings'] = deepcopy(state_payload['capability_findings'])
+        record = {
+            'result_id': str(uuid4()), 'assessment_id': assessment_id,
+            'answer_revision': session.get('answer_revision', 0), 'answers': deepcopy(session.get('answers')),
+            'findings': deepcopy(state_payload.get('capability_findings', {})),
+            'readiness_snapshot': readiness, 'input_set': inputs,
+            'profile_id': session.get('profile_id', LEGACY_PROFILE.profile_id),
+            'semantics_version': session.get('semantics_version', LEGACY_PROFILE.semantics_version),
+            'evaluation_date': session.get('evaluation_date', datetime.now(timezone.utc).date().isoformat()),
+            'binding_status': 'bound', 'original_output': deepcopy(recommendation),
+            'content_hash': canonical_checksum(recommendation),
+        }
+        session['recommendation'] = deepcopy(recommendation)
+        session['result_id'] = record['result_id']
+        session['status'] = 'complete'
+        session['stakeholder_state'] = readiness
         if self._boundary_store:
-            self._boundary_store.save_session(session, revision, "recommendation_generated",
-                {"assessment_id": assessment_id, "status": recommendation["status"]}, ip, user_agent)
-            return recommendation
-        self.audit_log.append(
-            "recommendation_generated",
-            {"assessment_id": assessment_id, "status": recommendation["status"]},
-            ip=ip,
-            user_agent=user_agent,
-        )
-        self._pg_write_session(session)
-        return recommendation
+            self._boundary_store.publish_result(session, revision, record, ip, user_agent)
+        else:
+            with self._boundary_lock:
+                current = self.sessions[assessment_id]
+                if self._memory_revisions.get(assessment_id, 0) != revision or current.get('answer_revision', 0) != record['answer_revision']:
+                    raise SessionConflict('assessment answers changed during evaluation')
+                self._require_valid_inputs(inputs)
+                self.audit_log.append('recommendation_generated',
+                    {'assessment_id': assessment_id, 'status': recommendation['status'],
+                     'result_id': record['result_id'], 'answer_revision': record['answer_revision']}, ip=ip, user_agent=user_agent)
+                self._result_records[record['result_id']] = deepcopy(record)
+                self.sessions[assessment_id] = deepcopy(session)
+                self._memory_revisions[assessment_id] = revision + 1
+            self._pg_write_session(session)
+        return self._result_projection(record, self.current_validity(inputs))
+
+    @staticmethod
+    def _result_projection(record, observation):
+        result = deepcopy(record['original_output'])
+        result.update({key: record[key] for key in ('result_id', 'answer_revision', 'profile_id', 'semantics_version', 'content_hash') if key in record})
+        result['current_validity'] = observation
+        return result
+
+    def _result_record(self, session, result_id=None):
+        if self._boundary_store:
+            record = self._boundary_store.load_result(session['assessment_id'], result_id)
+        else:
+            record = self._result_records.get(result_id or session.get('result_id'))
+        if record is not None and record['assessment_id'] != session['assessment_id']:
+            record = None
+        if result_id and record is None:
+            raise KeyError('result not found for assessment')
+        if result_id is None and record is not None and record['answer_revision'] != session.get('answer_revision', 0):
+            record = None
+        return deepcopy(record)
 
     async def generate_recommendation_async(
         self,
@@ -570,36 +705,47 @@ class AssessmentService:
     ) -> dict[str, object]:
         return await asyncio.to_thread(self.generate_recommendation, assessment_id, ip, user_agent)
 
-    def _build_report_payload(self, assessment_id: str) -> dict[str, object]:
+    def result_history(self, assessment_id):
+        self._load_session(assessment_id)
+        if self._boundary_store:
+            records = self._boundary_store.results_for_session(assessment_id)
+        else:
+            with self._boundary_lock:
+                records = [record for record in self._result_records.values() if record['assessment_id'] == assessment_id]
+        return [{key: record.get(key) for key in ('result_id', 'answer_revision', 'binding_status', 'profile_id')} for record in records]
+
+    def _build_report_payload(self, assessment_id: str, result_id=None, allow_implicit=True) -> dict[str, object]:
         session, _ = self._load_session(assessment_id)
-        if not isinstance(session.get("stakeholder_state"), dict) and not self._boundary_for_session(session):
-            self._derive_state_for_session(session)
-        recommendation = session.get("recommendation")
-        if not isinstance(recommendation, dict):
-            recommendation = self.generate_recommendation(assessment_id)
-            if self._boundary_store:
-                session, _ = self._load_session(assessment_id)
+        record = self._result_record(session, result_id)
+        if record is None:
+            if not allow_implicit or session.get('profile_id') == EVIDENCE_PROFILE.profile_id:
+                raise ValueError('recommendation_required: generate a result for the current answers')
+            self.generate_recommendation(assessment_id)
+            session, _ = self._load_session(assessment_id)
+            record = self._result_record(session)
+        observation = self.current_validity(record['input_set'])
+        historical_session = deepcopy(session)
+        historical_session['answers'] = deepcopy(record['answers'])
+        historical_session['answer_revision'] = record['answer_revision']
+        historical_session['result_id'] = record['result_id']
+        historical_session['recommendation'] = deepcopy(record['original_output'])
+        historical_session['stakeholder_state'] = deepcopy(record.get('readiness_snapshot'))
         generation = self._boundary_for_session(session)
         return {
-            "disclaimer": "Guidance is not a legal conclusion." if generation else "Demo/non-production report. Real WP2/WP3/WP8 data may change recommendations.",
-            "session": session,
-            "readiness_snapshot": session.get("stakeholder_state", {}),
-            "recommended_path": recommendation,
-            "audit_chain_valid": self._boundary_store.verify_audit_chain() if self._boundary_store else self.audit_log.verify_chain(),
-            "missing_data_warnings": list(generation.warnings) if generation else ["mock data mode: partner upstream inputs pending"],
+            'disclaimer': 'Guidance is not a legal conclusion.' if generation else 'Demo/non-production report. Real WP2/WP3/WP8 data may change recommendations.',
+            'session': historical_session, 'readiness_snapshot': record.get('readiness_snapshot'),
+            'recommended_path': self._result_projection(record, observation), 'result': record,
+            'current_validity': observation,
+            'audit_chain_valid': self._boundary_store.verify_audit_chain() if self._boundary_store else self.audit_log.verify_chain(),
+            'missing_data_warnings': list(generation.warnings) if generation else ['mock data mode: partner upstream inputs pending'],
         }
 
-    def report(
-        self,
-        assessment_id: str,
-        ip: str | None = None,
-        user_agent: str | None = None,
-    ) -> dict[str, object]:
-        report = self._build_report_payload(assessment_id)
+    def report(self, assessment_id: str, ip: str | None = None, user_agent: str | None = None, result_id=None, allow_implicit=True) -> dict[str, object]:
+        report = self._build_report_payload(assessment_id, result_id, allow_implicit=allow_implicit)
         if self._boundary_store:
-            self._boundary_store.append_event("report_exported", {"assessment_id": assessment_id}, ip, user_agent)
+            self._boundary_store.append_event('report_exported', {'assessment_id': assessment_id}, ip, user_agent)
         else:
-            self.audit_log.append("report_exported", {"assessment_id": assessment_id}, ip=ip, user_agent=user_agent)
+            self.audit_log.append('report_exported', {'assessment_id': assessment_id}, ip=ip, user_agent=user_agent)
         return report
 
     def _audit_events_for_assessment(self, assessment_id: str) -> tuple[Any, ...]:
@@ -616,43 +762,37 @@ class AssessmentService:
         fhir_version: str = "R4",
         ip: str | None = None,
         user_agent: str | None = None,
+        result_id=None,
     ) -> dict[str, object]:
-        session, _ = self._load_session(assessment_id)
-        if not isinstance(session.get("answers"), dict):
-            raise ValueError("answers must be submitted before FHIR export")
-        if not isinstance(session.get("recommendation"), dict):
-            raise ValueError("recommendation must be generated before FHIR export")
-
+        if result_id is None:
+            session, _ = self._load_session(assessment_id)
+            if not isinstance(session.get('answers'), dict):
+                raise ValueError('answers must be submitted before FHIR export')
+            if self._result_record(session) is None:
+                message = 'recommendation_required: generate a result for the current answers' if session.get('profile_id') == EVIDENCE_PROFILE.profile_id else 'recommendation must be generated before FHIR export'
+                raise ValueError(message)
         try:
-            report = self._build_report_payload(assessment_id)
+            report = self._build_report_payload(assessment_id, result_id, allow_implicit=False)
+            session = report['session']
+            if report['result'].get('binding_status') != 'bound':
+                raise ValueError('migration_required: original answers are unavailable for this legacy result')
             generation = self._boundary_for_session(session)
-            questionnaire = (generation.questionnaire_engine.get(str(session["stakeholder_type"])).to_dict()
-                             if generation else self.get_questionnaire(str(session["stakeholder_type"])))
-            bundle = build_assessment_bundle(
-                report=report,
-                questionnaire=questionnaire,
-                audit_events=self._audit_events_for_assessment(assessment_id),
-                fhir_version=fhir_version,
-            )
+            questionnaire = (generation.questionnaire_engine.get(str(session['stakeholder_type'])).to_dict()
+                             if generation else self.get_questionnaire(str(session['stakeholder_type'])))
+            bundle = build_assessment_bundle(report, questionnaire, self._audit_events_for_assessment(assessment_id), fhir_version)
         except Exception as exc:
-            event = {"assessment_id": assessment_id, "error": str(exc), "fhir_version": fhir_version}
+            event = {'assessment_id': assessment_id, 'error': str(exc), 'fhir_version': fhir_version}
             if self._boundary_store:
-                self._boundary_store.append_event("fhir_export_failed", event, ip, user_agent)
+                self._boundary_store.append_event('fhir_export_failed', event, ip, user_agent)
             else:
-                self.audit_log.append("fhir_export_failed", event, ip=ip, user_agent=user_agent)
+                self.audit_log.append('fhir_export_failed', event, ip=ip, user_agent=user_agent)
             raise
-
-        event = {"assessment_id": assessment_id, "bundle_id": bundle["id"], "fhir_version": fhir_version}
+        event = {'assessment_id': assessment_id, 'bundle_id': bundle['id'], 'fhir_version': fhir_version}
         if self._boundary_store:
-            self._boundary_store.append_event("fhir_bundle_exported", event, ip, user_agent)
+            self._boundary_store.append_event('fhir_bundle_exported', event, ip, user_agent)
         else:
-            self.audit_log.append("fhir_bundle_exported", event, ip=ip, user_agent=user_agent)
-        return build_assessment_bundle(
-            report=report,
-            questionnaire=questionnaire,
-            audit_events=self._audit_events_for_assessment(assessment_id),
-            fhir_version=fhir_version,
-        )
+            self.audit_log.append('fhir_bundle_exported', event, ip=ip, user_agent=user_agent)
+        return bundle
 
     def import_wp2(
         self,
@@ -749,7 +889,7 @@ class AssessmentService:
             "mode": "deployed" if self._boundary_store else "demo",
             "graph_backend": "inmemory",
             "stakeholder_types": self.stakeholder_types(),
-            "rule_version": generation.snapshot_ids["pf.rulebundle.v1"] if generation else self.rule_loader.active_version,
+            "rule_version": generation.snapshot_ids[generation.rulebundle_contract] if generation else self.rule_loader.active_version,
             "audit_events": self._boundary_store.audit_count() if self._boundary_store else len(self.audit_log.events()),
             "audit_chain_valid": self._boundary_store.verify_audit_chain() if self._boundary_store else self.audit_log.verify_chain(),
             "import_reports": {key: report.to_dict() for key, report in self.import_reports.items()},

@@ -128,38 +128,42 @@ SAMPLE_SCRIPT = """<script id="contract-samples-script">
 
 
 def sample_anchor(path):
-    return "sample-" + path.name.removesuffix(".snapshot.json")
+    return "sample-" + str(path.relative_to(SAMPLES)).removesuffix(".snapshot.json").replace("/", "-")
 
 
 def render_samples():
     contract_order = {
         "pf.taxonomy.v1": 0, "pf.roadmap.v1": 1, "pf.questionnaire.v1": 2,
         "pf.rulebundle.v1": 3, "pf.feedback.v1": 4,
+        "pf.questionnaire.v2": 5, "pf.rulebundle.v2": 6, "pf.withdrawal.v1": 7,
     }
     titles = {
         "pf.taxonomy.v1": "Stakeholder taxonomy", "pf.roadmap.v1": "Roadmap",
         "pf.questionnaire.v1": "Questionnaire", "pf.rulebundle.v1": "Regulatory rule bundle",
         "pf.feedback.v1": "Aggregated feedback",
+        "pf.questionnaire.v2": "Evidence questionnaire v2 (proposed)",
+        "pf.rulebundle.v2": "Three-valued rules v2 (proposed)",
+        "pf.withdrawal.v1": "Withdrawal control (synthetic attestation)",
     }
     samples = []
-    for path in SAMPLES.glob("*.json"):
+    for path in SAMPLES.rglob("*.json"):
         raw = path.read_bytes().decode("utf-8")
         samples.append((path, raw, json.loads(raw)))
     if not samples:
         raise ValueError(f"No JSON samples found in {SAMPLES}")
-    samples.sort(key=lambda s: (contract_order[s[2]["contract"]], s[2]["payload"].get("recipient", ""), s[0].name))
+    samples.sort(key=lambda s: (contract_order[s[2]["contract"]], s[2]["payload"].get("recipient", ""), str(s[0].relative_to(SAMPLES))))
     index, cards = [], []
     for i, (path, raw, doc) in enumerate(samples):
         contract, manifest = doc["contract"], doc["manifest"]
         recipient = doc["payload"].get("recipient")
         title = titles[contract] + (f" — to {recipient}" if recipient else "")
         anchor = sample_anchor(path)
-        index.append(f'<li><a href="#{anchor}">{html.escape(path.name)}</a></li>')
+        index.append(f'<li><a href="#{anchor}">{html.escape(str(path.relative_to(SAMPLES)))}</a></li>')
         route = manifest["producer_wp"] + (f" → {recipient}" if recipient else "")
         cards.append(
             f'<article class="sample-card" id="{anchor}" data-filename="{html.escape(path.name)}">'
             f'<h3>{html.escape(title)}</h3>'
-            f'<p class="sample-file"><code>{html.escape(path.name)}</code></p>'
+            f'<p class="sample-file"><code>{html.escape(str(path.relative_to(SAMPLES)))}</code></p>'
             f'<p class="sample-meta"><strong>{html.escape(route)}</strong> · <code>{html.escape(contract)}</code></p>'
             f'<p class="sample-meta">Snapshot: <code>{html.escape(manifest["snapshot_id"])}</code></p>'
             '<div class="sample-actions" hidden>'
@@ -174,7 +178,7 @@ def render_samples():
         '<div class="sample-controls" hidden>'
         '<button type="button" class="sample-button" data-samples-expand="true">Expand all JSON</button>'
         '<button type="button" class="sample-button" data-samples-expand="false">Collapse all JSON</button>'
-        f'<span class="sample-count">{len(samples)} complete snapshot files</span></div>'
+        f'<span class="sample-count">{len(samples)} complete JSON files (runtime snapshots and separate control examples)</span></div>'
     )
     return '<ul class="sample-index">' + ''.join(index) + '</ul>' + controls + ''.join(cards)
 

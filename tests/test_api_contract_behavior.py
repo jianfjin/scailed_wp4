@@ -183,6 +183,7 @@ def test_fastapi_request_validation_remains_422(client):
     ("generate_recommendation_async", "/recommendations", {}),
 ])
 def test_session_conflict_matches_documented_409(client, service, monkeypatch, method, suffix, kwargs):
+    service.sessions["example"] = {"assessment_id": "example", "profile_id": "legacy-v1"}
     stub = AsyncMock if method.endswith("_async") else Mock
     monkeypatch.setattr(service, method, stub(side_effect=SessionConflict("session revision changed")))
     response = client.post("/v1/assessments/example" + suffix, headers=DEMO, **kwargs)
@@ -203,6 +204,70 @@ def test_database_outage_matches_documented_503(client, service, monkeypatch):
 
 @pytest.mark.parametrize("path", ["/v1/roadmap", "/v1/roadmap/{node_id}"])
 def test_no_active_generation_matches_documented_503(client, service, monkeypatch, path):
-    monkeypatch.setattr(service, "_boundary_store", SimpleNamespace(active_generation_id=lambda: None))
+    monkeypatch.setattr(service, "_boundary_store", SimpleNamespace(active_generation_id=lambda profile_id="legacy-v1": None))
     response = client.get(path.replace("{node_id}", "missing"), headers=DEMO)
     assert_error(response, path, "get", 503, "SERVER_ERROR")
+
+
+def test_withdrawal_intake_requires_admin_and_attested_scope(client):
+    from test_boundary_lifecycle import notice_for
+    from test_assessment_revisions import snapshots
+    notice=notice_for(snapshots()[0])
+    assert client.post('/v2/admin/withdrawals',json=notice).status_code==401
+    assert client.post('/v2/admin/withdrawals',json=notice,headers=DEMO).status_code==403
+    response=client.post('/v2/admin/withdrawals',json=notice,headers=ADMIN)
+    assert response.status_code==200, response.text
+    assert response.json()['created']
+    assert not client.post('/v2/admin/withdrawals',json=notice,headers=ADMIN).json()['created']
+    broken=copy.deepcopy(notice); broken['payload']['source_confirmation'].pop('reference')
+    assert client.post('/v2/admin/withdrawals',json=broken,headers=ADMIN).status_code==400
+
+
+def test_v2_http_preserves_evidence_and_selects_original_result(client,service):
+    from test_assessment_revisions import snapshots
+    from test_boundary_lifecycle import notice_for
+    docs=snapshots();service.activate_boundary_snapshots(docs)
+    q=docs[1]['payload']
+    response=client.post('/v2/assessments',headers=DEMO,json={'stakeholder_type':q['stakeholder_type'],'target_scenario':q['target_scenarios'][0]})
+    assert response.status_code==200,response.text
+    aid=response.json()['assessment_id'];base=f'/v2/assessments/{aid}'
+    answers={item['question_id']:'unknown' if item.get('capability_id') else 3 for item in q['questions']}
+    state=client.post(base+'/answers/batch',headers=DEMO,json={'answers':answers})
+    assert state.status_code==200,state.text
+    assert state.json()['capability_findings']['secure-processing']['source']=='self_reported'
+    missing=client.get(base+'/report',headers=DEMO)
+    assert missing.status_code==409
+    assert missing.json()['detail']['error']=='RECOMMENDATION_REQUIRED'
+    result=client.post(base+'/recommendations',headers=DEMO)
+    assert result.status_code==200,result.text
+    result=result.json()
+    assert result['recommendation_kind']=='conditional_direction'
+    assert result['missing_information']==['capability:secure-processing']
+    assert result['trace']['condition_evaluations'][0]['truth']=='unknown'
+    assert result['capability_findings']['secure-processing']['verification_status']=='unverified'
+    assert result['answer_revision']==1
+    changed=dict(answers);changed[next(iter(changed))]='yes'
+    assert client.post(base+'/answers/batch',headers=DEMO,json={'answers':changed}).status_code==200
+    assert client.get(base+'/report',headers=DEMO).status_code==409
+    history=client.get(base+'/report',params={'result_id':result['result_id']},headers=DEMO)
+    assert history.status_code==200,history.text
+    assert history.json()['session']['answers']==answers
+    assert history.json()['result']['answer_revision']==1
+    assert client.get(f'/v1/assessments/{aid}/report',headers=DEMO).status_code==409
+    assert client.post('/v2/admin/withdrawals',headers=ADMIN,json=notice_for(docs[0])).status_code==200
+    history=client.get(base+'/report',params={'result_id':result['result_id']},headers=DEMO).json()
+    assert not history['current_validity']['valid']
+    assert history['current_validity']==history['recommended_path']['current_validity']
+    assert client.post(base+'/recommendations',headers=DEMO).status_code==409
+
+
+def test_v1_cutover_and_v2_lifecycle_outage_are_explicit(client,service,monkeypatch):
+    monkeypatch.setenv('PATHFINDER_V1_WRITES_ENABLED','false')
+    response=client.post('/v1/assessments',headers=DEMO,json={'stakeholder_type':'biotech-sme','target_scenario':'secondary-use-readiness'})
+    assert response.status_code==409
+    assert response.json()['detail']['error']=='MIGRATION_REQUIRED'
+    from test_assessment_revisions import setup
+    ready,aid,_=setup()
+    monkeypatch.setattr(main,'_service',ready)
+    monkeypatch.setattr(ready,'current_validity',Mock(side_effect=psycopg.OperationalError('offline')))
+    assert client.post(f'/v2/assessments/{aid}/recommendations',headers=DEMO).status_code==503

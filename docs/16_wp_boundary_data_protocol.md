@@ -406,3 +406,36 @@ Expand a sample to read its JSON, or copy or download the complete file. All sam
 ---
 
 *End of protocol. Deviations, errata and extensions: RFC against `contracts/`, per Section 10.*
+
+## 17. Proposed semantic v2 profile and withdrawal control
+
+Status: internally implemented with synthetic examples; affected-WP approval and production cutover remain pending in [the RFC](rfcs/pathfinder-semantic-v2.md). The versioning obligations in section 10 still apply.
+
+| Profile / message | Contracts | Consumer behavior |
+| --- | --- | --- |
+| `legacy-v1` | taxonomy v1, roadmap v1, questionnaire v1, rulebundle v1 | Original interpretation during the agreed overlap. |
+| `evidence-v2` | taxonomy v1, roadmap v1, questionnaire v2, rulebundle v2 | Three-valued conditions and per-capability evidence. Mixed or unsupported majors are rejected. |
+| `pf.withdrawal.v1` | Separate control envelope with exact targets and source confirmation | Not a runtime input and never eligible for activation. |
+
+A v2 capability question uses `capability_id`, `single_choice` and the options `yes`, `no`, `unknown`. Positive multichoice omission remains unknown; explicit negative answers alone create absent findings. Each finding retains its answer IDs, evidence references, source and verification status. Self-report remains unverified when completeness is 1.
+
+Rule AND/OR/NOT preserve unknown. A blocking unknown yields `degraded` plus `conditional_direction` and `missing_information`; known blockers take precedence. Missing information does not execute an action, and irrelevant unknown branches do not become required tasks. Paired import tests and live evaluation use the same profile.
+
+Runtime deliveries live under `contracts/samples/v2/*.snapshot.json`; `contracts/samples/v2/withdrawal.notice.json` is the separate synthetic control example. The embedded samples below retain their relative paths so old and new majors remain distinguishable. These examples do not constitute source-owner confirmation.
+
+The same complete runtime batch can be submitted to `/v2/admin/import`; the existing technical import endpoint also understands registered profiles. `POST /v2/admin/withdrawals` requires administrator authorization and an attestation that the source owner's confirmation material was checked. The notice records a material checksum/reference and a checksum of exact targets. Producer labels and checksums alone do not authenticate the source.
+
+Results bind `result_id`, `answer_revision`, original answers/findings, actual `input_set`, profile, semantics version and evaluation date. `content_hash` describes deterministic output; result identity and `current_validity.lifecycle_revision` are separate metadata. Changing answers invalidates the current result reference, while explicit historical reads keep original evidence. v2 report reads never implicitly recompute, including for legacy sessions. The v2 assessment response exposes `result_history` IDs. A migrated unbound result returns its original output with `readiness_snapshot: null` and unavailable original answer evidence, labelled as historical.
+
+| Condition | Response |
+| --- | --- |
+| Valid conditional or blocked evaluation | 200, with distinct recommendation kind and evidence |
+| Input withdrawal | 409 `INPUTS_WITHDRAWN`, including a typed `current_validity` observation with exact affected versions and reasons |
+| Concurrent answer update | 409 `ANSWER_REVISION_CONFLICT` on v2 |
+| Notice identity reused with different content | 409 `NOTICE_IDENTITY_CONFLICT` |
+| No result for current answers | 409 `RECOMMENDATION_REQUIRED` |
+| Closed v1 writes or unsafe legacy projection | 409 `MIGRATION_REQUIRED` |
+| Production v2 writes before recorded approval | 409 `SEMANTIC_APPROVAL_REQUIRED` |
+| Lifecycle database unavailable | 503; no cached validity success |
+
+JSON, HTML, React and FHIR use one selected result and one validity observation. FHIR resources bind the result and answer revision; historical QuestionnaireResponse answers are not replaced by current answers. See the [runbook](runbooks/pathfinder-semantic-cutover.md) for the exact R4 status policy, migration rehearsal, local acceptance evidence and release gates. The existing feedback contract must not count unknown as false; additional v2 aggregation semantics require a separate agreement.

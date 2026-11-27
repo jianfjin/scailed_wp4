@@ -6,6 +6,8 @@ run in tests and demos before FastAPI/Pydantic dependencies are installed.
 
 from __future__ import annotations
 
+from pathfinder.core.contract_registry import EVIDENCE_PROFILE, LEGACY_PROFILE
+
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from enum import StrEnum
@@ -21,6 +23,37 @@ class QuestionType(StrEnum):
     MULTI_CHOICE = "multi_choice"
     NUMERIC = "numeric"
     TEXT = "text"
+
+
+class TruthValue(StrEnum):
+    TRUE = "true"
+    FALSE = "false"
+    UNKNOWN = "unknown"
+
+    def __bool__(self) -> bool:
+        raise TypeError("truth values require an explicit comparison")
+
+
+@dataclass(frozen=True)
+class CapabilityFinding:
+    capability_id: str
+    judgment: str = "unknown"
+    source: str = "unanswered"
+    answer_ids: tuple[str, ...] = ()
+    evidence_refs: tuple[str, ...] = ()
+    verification_status: str = "unverified"
+
+
+@dataclass(frozen=True)
+class ConditionEvaluation:
+    truth: TruthValue
+    missing_fields: tuple[str, ...] = ()
+    condition: dict[str, Any] = field(default_factory=dict)
+    actual: Any = None
+    children: tuple[ConditionEvaluation, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 class RuleType(StrEnum):
@@ -41,9 +74,13 @@ class Question:
     max_value: int | None = None
     maturity_dimension: str | None = None
     state_field: str | None = None
+    capability_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        if self.capability_id is None:
+            data.pop("capability_id")
+        return data
 
 
 @dataclass(frozen=True)
@@ -53,10 +90,15 @@ class Questionnaire:
     title: str
     target_scenarios: tuple[str, ...]
     questions: tuple[Question, ...]
+    profile_id: str = LEGACY_PROFILE.profile_id
+    capability_vocabulary: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["questions"] = [question.to_dict() for question in self.questions]
+        if self.profile_id == LEGACY_PROFILE.profile_id:
+            data.pop("profile_id")
+            data.pop("capability_vocabulary")
         return data
 
 
@@ -74,9 +116,15 @@ class StakeholderState:
     questionnaire_version: str
     schema_version: str = SCHEMA_VERSION
     upstream_snapshot_version: str = DEMO_UPSTREAM_SNAPSHOT
+    capability_findings: dict[str, CapabilityFinding] = field(default_factory=dict)
+    profile_id: str = LEGACY_PROFILE.profile_id
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        if self.profile_id == LEGACY_PROFILE.profile_id:
+            data.pop("capability_findings")
+            data.pop("profile_id")
+        return data
 
 
 @dataclass(frozen=True)
@@ -164,9 +212,13 @@ class TraceRecord:
     schema_version: str
     rule_version: str
     confidence: float
+    condition_evaluations: tuple[dict[str, Any], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        if not self.condition_evaluations:
+            data.pop("condition_evaluations")
+        return data
 
 
 @dataclass(frozen=True)
@@ -181,6 +233,9 @@ class PathResult:
     trace: TraceRecord
     effort_estimate: str = "medium"
     path_backend: str = "python"  # "python" | "cypher" | "n/a (blocked)"
+    missing_information: tuple[str, ...] = ()
+    profile_id: str = LEGACY_PROFILE.profile_id
+    regulatory_status: str = "verified"
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)

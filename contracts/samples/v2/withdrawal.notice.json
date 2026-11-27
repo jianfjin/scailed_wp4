@@ -1,0 +1,42 @@
+{
+  "contract": "pf.withdrawal.v1",
+  "manifest": {
+    "contract_version": "1.0.0",
+    "snapshot_id": "ea85328c-4e20-52ee-813c-20c4fccd74ef",
+    "producer_wp": "WP2",
+    "generated_at": "2026-11-10T00:00:00Z",
+    "generator": {
+      "name": "contracts-builder",
+      "version": "1.0.0",
+      "seed": null
+    },
+    "supersedes": null,
+    "items_checksum": "sha256:a7aa813e1f9b32dc8c94ee2c6fec35808e376c73edd101b47044df6dc46d9e46",
+    "derived_from": [
+      {
+        "source": "D2.1",
+        "section": "s.2 stakeholder mapping",
+        "status": "approved"
+      }
+    ],
+    "dependencies": {}
+  },
+  "payload": {
+    "notice_id": "ea85328c-4e20-52ee-813c-20c4fccd74ef",
+    "targets": [
+      {
+        "contract": "pf.taxonomy.v1",
+        "snapshot_id": "136c7555-45e3-40dc-a9ac-6749cc516ef3",
+        "producer_wp": "WP2"
+      }
+    ],
+    "reason": "Synthetic withdrawal example; not a real source-owner instruction.",
+    "source_confirmation": {
+      "reference": "synthetic-fixture-confirmation",
+      "material_checksum": "sha256:a6a203fa95284e28f924b8567336445f65627190f508a5673aacf6f42d7cf135",
+      "target_checksum": "sha256:5fb9ee15e800ff5367ef5b390de989f25e54071335e573bac1c56657799c82df",
+      "confirmed_by_wp": "WP2",
+      "admin_attested": true
+    }
+  }
+}

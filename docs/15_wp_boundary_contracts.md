@@ -195,3 +195,15 @@ Timeline fit (Part B dates): contract drafts circulated at kick-off; schema base
 Note on milestone references: Part B numbers milestones per work package and the numbers collide (WP1/MS3.1 "Project Completed" vs WP3/MS3.1 "Initial Strategic Roadmap"; likewise MS2.1). Therefore every `derived_from` milestone carries its WP qualifier (`WP3/MS3.1`), enforced by the envelope schema pattern.
 
 Governance in consortium terms: RFC sign-off = the "cross-WP workshops" WP1 organises for the Analyse-Implement-Test-Scale loop (Part B, section 'Enabling cross-WP alignment'); the contract test suite replaces ad-hoc format negotiations in those workshops.
+
+## 13. Proposed evidence semantics and lifecycle control
+
+The internally implemented [semantic v2 RFC](rfcs/pathfinder-semantic-v2.md) remains **proposed**, pending the affected source and consumer confirmations required by section 5. It adds `pf.questionnaire.v2` and `pf.rulebundle.v2`, while taxonomy and roadmap retain v1. The existing v1 schemas and golden samples are unchanged.
+
+`legacy-v1` and `evidence-v2` are explicit server-owned evaluation profiles with independent active-generation pointers. The latter preserves present/absent/unknown capability judgments, self-report provenance and unverified status. Completeness does not establish truth. A potentially blocking unknown condition yields a conditional direction and missing information.
+
+`pf.withdrawal.v1` is a separate, append-only control message accepted at `POST /v2/admin/withdrawals`. It names exact producer/contract/snapshot identities and reviewed source-confirmation material. Administrator authorization permits technical intake; it does not transfer source-owner content authority. Checksums bind the attested targets and material reference but do not independently authenticate a source WP.
+
+Withdrawal affects actual declared runtime dependencies, including the selected questionnaire and its closure. Other questionnaires in the batch and `supersedes` lineage are not dependency edges. New results are checked at final commit under the same PostgreSQL transaction lock as withdrawal. History keeps its original answer revision, evidence, input set, profile and output, with a separate current-validity observation.
+
+The `/v2` service API exposes these fields. Unsafe old projections return an explicit migration conflict. Follow the [controlled cutover runbook](runbooks/pathfinder-semantic-cutover.md) for schema v2, grants, dual-version operation and production gates. No ordinary content delivery acquires a new requirement for repeated bilateral RFC approval.

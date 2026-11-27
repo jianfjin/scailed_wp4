@@ -1,0 +1,337 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scailed.eu/contracts/wp8-rulebundle.v2.schema.json",
+  "title": "pf.rulebundle.v2 — three-valued conditions and paired tests",
+  "description": "Machine-readable projection of T8.2/T8.3 outputs ('road legal' per T4.1). Legal instruments per T8.3.2: EHDSR and the interplay with AI Act, IVDR/MDR, HTA Regulation, GDPR, and key forthcoming pieces (e.g. Biotech Act). Provisional status mirrors the phased T8.3 sub-task drafts: unverified regulatory state, never a legal conclusion.",
+  "type": "object",
+  "required": [
+    "references",
+    "rules",
+    "tests"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "references": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "ref_id",
+          "instrument",
+          "status"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "ref_id": {
+            "$ref": "#/$defs/id"
+          },
+          "instrument": {
+            "type": "string",
+            "enum": [
+              "EHDSR",
+              "GDPR",
+              "AI-Act",
+              "IVDR",
+              "MDR",
+              "HTAR",
+              "Data-Act",
+              "Biotech-Act",
+              "national",
+              "other"
+            ]
+          },
+          "locator": {
+            "type": "string",
+            "description": "Article/annex/recital or section, e.g. 'Art.9(2)' or 'Annex I'."
+          },
+          "eur_lex_uri": {
+            "type": "string",
+            "format": "uri"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "in-force",
+              "provisional",
+              "forthcoming"
+            ]
+          },
+          "source_doc_ref": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    },
+    "tests": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Paired rule tests, executed at import and in CI (docs/13 import protocol).",
+      "items": {
+        "type": "object",
+        "required": [
+          "test_id",
+          "rule_id",
+          "given",
+          "expect"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "test_id": {
+            "type": "string"
+          },
+          "rule_id": {
+            "$ref": "#/$defs/rid"
+          },
+          "given": {
+            "type": "object",
+            "description": "StakeholderState field assertions, keyed by state path, e.g. 'capabilities: [legal-basis]', 'maturity.data: 2', 'flags: [x]'.",
+            "additionalProperties": true
+          },
+          "expect": {
+            "type": "object",
+            "required": [
+              "outcome"
+            ],
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "triggered",
+                  "not-triggered",
+                  "blocked",
+                  "unknown"
+                ]
+              },
+              "action_contains": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^pf:wp8:reg:[a-z0-9-]{1,64}$"
+    },
+    "rid": {
+      "type": "string",
+      "pattern": "^pf:wp8:rule:[a-z0-9-]{1,64}$"
+    },
+    "condition": {
+      "type": "object",
+      "description": "Explicit three-valued AND/OR/NOT; absent capability evidence is unknown. Empty object is unconditional.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "and"
+          ],
+          "properties": {
+            "and": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "or"
+          ],
+          "properties": {
+            "or": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "not"
+          ],
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/condition"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "field",
+            "op"
+          ],
+          "properties": {
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "op": {
+              "type": "string",
+              "enum": [
+                "eq",
+                "ne",
+                "gt",
+                "gte",
+                "lt",
+                "lte",
+                "in",
+                "not_in",
+                "contains",
+                "exists"
+              ]
+            },
+            "value": {}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "maxProperties": 0
+        }
+      ]
+    },
+    "rule": {
+      "type": "object",
+      "required": [
+        "rule_id",
+        "rule_type",
+        "priority",
+        "applies_to",
+        "condition",
+        "action",
+        "compliance_refs",
+        "source_doc_ref",
+        "rule_version",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "rule_id": {
+          "$ref": "#/$defs/rid"
+        },
+        "parent_rule_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rule_type": {
+          "type": "string",
+          "enum": [
+            "eligibility",
+            "exclusion",
+            "preference",
+            "override"
+          ]
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "applies_to": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "verified",
+            "provisional"
+          ],
+          "description": "provisional -> Pathfinder renders unverified regulatory state (RFQ 3.4)."
+        },
+        "condition": {
+          "$ref": "#/$defs/condition"
+        },
+        "action": {
+          "type": "object",
+          "required": [
+            "title",
+            "text"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "node_id": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Roadmap node ID this action advances."
+            },
+            "block": {
+              "type": "boolean",
+              "default": false
+            },
+            "warning": {
+              "type": "string"
+            }
+          }
+        },
+        "compliance_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "source_doc_ref": {
+          "type": "string"
+        },
+        "rule_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effective_from": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "effective_until": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        }
+      }
+    }
+  }
+}

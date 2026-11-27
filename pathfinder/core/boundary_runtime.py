@@ -10,9 +10,11 @@ from typing import Mapping
 from pathfinder.adapters.boundary import questionnaire_from_snapshots
 from pathfinder.core.boundary_validation import canonical_checksum, validate_documents
 from pathfinder.core.graph import InMemoryRoadmapGraph
+from pathfinder.core.compliance import ComplianceEvaluator
 from pathfinder.core.models import RoadmapEdge, RoadmapNode, Rule, RuleAction, RuleType
 from pathfinder.core.questionnaire import QuestionnaireEngine
 from pathfinder.core.solver import PathfinderSolver
+from pathfinder.core.contract_registry import LEGACY_PROFILE, profile_for_contracts
 
 
 @dataclass(frozen=True)
@@ -26,9 +28,13 @@ class BoundaryGeneration:
     rules: tuple[Rule, ...]
     regulatory_status: str
     warnings: tuple[str, ...]
+    profile_id: str = LEGACY_PROFILE.profile_id
+    semantics_version: str = LEGACY_PROFILE.semantics_version
+    questionnaire_contract: str = LEGACY_PROFILE.questionnaire_contract
+    rulebundle_contract: str = LEGACY_PROFILE.rulebundle_contract
 
     def versions_for(self, stakeholder_type: str) -> dict[str, str]:
-        return {**self.snapshot_ids, "pf.questionnaire.v1": self.questionnaire_ids[stakeholder_type]}
+        return {**self.snapshot_ids, self.questionnaire_contract: self.questionnaire_ids[stakeholder_type]}
 
     def rules_for(self, evaluation_date: date) -> tuple[list[Rule], bool]:
         active = [rule for rule in self.rules if
@@ -46,14 +52,15 @@ def build_boundary_generation(snapshots: list[dict]) -> BoundaryGeneration:
     groups: dict[str, list[dict]] = {}
     for snapshot in snapshots:
         groups.setdefault(snapshot["contract"], []).append(snapshot)
-    for name in ("pf.taxonomy.v1", "pf.roadmap.v1", "pf.rulebundle.v1"):
+    profile = profile_for_contracts(groups)
+    for name in ("pf.taxonomy.v1", "pf.roadmap.v1", profile.rulebundle_contract):
         if len(groups.get(name, [])) != 1:
             raise ValueError(f"activation requires exactly one {name} snapshot")
-    if not groups.get("pf.questionnaire.v1") or set(groups) - {"pf.taxonomy.v1", "pf.roadmap.v1", "pf.rulebundle.v1", "pf.questionnaire.v1"}:
+    if not groups.get(profile.questionnaire_contract) or set(groups) - profile.runtime_contracts:
         raise ValueError("activation requires questionnaires and only runtime input contracts")
-    tax, road, bundle = (groups[k][0] for k in ("pf.taxonomy.v1", "pf.roadmap.v1", "pf.rulebundle.v1"))
-    questionnaires = [questionnaire_from_snapshots(tax, q) for q in groups["pf.questionnaire.v1"]]
-    ids = {q["payload"]["stakeholder_type"]: q["manifest"]["snapshot_id"] for q in groups["pf.questionnaire.v1"]}
+    tax, road, bundle = (groups[k][0] for k in ("pf.taxonomy.v1", "pf.roadmap.v1", profile.rulebundle_contract))
+    questionnaires = [questionnaire_from_snapshots(tax, q) for q in groups[profile.questionnaire_contract]]
+    ids = {q["payload"]["stakeholder_type"]: q["manifest"]["snapshot_id"] for q in groups[profile.questionnaire_contract]}
     if len(ids) != len(questionnaires):
         raise ValueError("activation requires one questionnaire per stakeholder type")
     nodes = [RoadmapNode(node_id=n["node_id"], label=n["label"], description=n.get("description", ""),
@@ -100,4 +107,5 @@ def build_boundary_generation(snapshots: list[dict]) -> BoundaryGeneration:
     versions = {d["contract"]: d["manifest"]["snapshot_id"] for d in (tax, road, bundle)}
     hashes = {d["manifest"]["snapshot_id"]: canonical_checksum(d) for d in snapshots}
     return BoundaryGeneration(MappingProxyType(versions), MappingProxyType(ids), MappingProxyType(hashes), QuestionnaireEngine(questionnaires),
-        graph, PathfinderSolver(graph), tuple(rules), "unverified" if unverified else "verified", tuple(warnings))
+        graph, PathfinderSolver(graph, ComplianceEvaluator(profile.profile_id)), tuple(rules), "unverified" if unverified else "verified", tuple(warnings),
+        profile.profile_id, profile.semantics_version, profile.questionnaire_contract, profile.rulebundle_contract)

@@ -18,6 +18,8 @@ import uuid
 from pathlib import Path
 from datetime import datetime
 
+from pathfinder.core.contract_registry import CONTRACTS, EVIDENCE_PROFILE, LEGACY_PROFILE, contract_definition
+
 try:
     from jsonschema import Draft202012Validator, FormatChecker
 except ImportError:
@@ -28,21 +30,8 @@ ROOT = Path(__file__).resolve().parents[2]
 CD = ROOT / "contracts"
 SAMPLES = CD / "samples"
 
-CONTRACT_PRODUCER = {
-    "pf.taxonomy.v1": "WP2",
-    "pf.questionnaire.v1": "WP4",
-    "pf.roadmap.v1": "WP3",
-    "pf.rulebundle.v1": "WP8",
-    "pf.feedback.v1": "WP4",
-}
-
-DEPENDENCIES = {
-    "pf.taxonomy.v1": (),
-    "pf.questionnaire.v1": ("pf.taxonomy.v1",),
-    "pf.roadmap.v1": ("pf.taxonomy.v1",),
-    "pf.rulebundle.v1": ("pf.taxonomy.v1", "pf.roadmap.v1"),
-    "pf.feedback.v1": ("pf.taxonomy.v1", "pf.questionnaire.v1", "pf.roadmap.v1", "pf.rulebundle.v1"),
-}
+CONTRACT_PRODUCER = {name: definition.producer for name, definition in CONTRACTS.items() if definition.producer}
+DEPENDENCIES = {name: definition.dependencies for name, definition in CONTRACTS.items()}
 
 
 def load(path: Path):
@@ -69,12 +58,12 @@ def _retarget_refs(node, old_prefix, new_prefix):
             _retarget_refs(item, old_prefix, new_prefix)
 
 
-def inline_external_refs(schema_dir: Path):
+def inline_external_refs(schema_dir: Path, envelope: str = "envelope.schema.json"):
     """Load envelope.schema.json and inline the per-contract payload schemas,
     retargeting their internal '#/...' refs to the embed location, so validation
     is deterministic and offline (no cross-file resolver). Branches without a
     payload $ref (e.g. producer_wp bindings) pass through untouched."""
-    env = load(schema_dir / "envelope.schema.json")
+    env = load(schema_dir / envelope)
     for i, branch in enumerate(env["allOf"]):
         props = branch.get("then", {}).get("properties", {})
         slot = props.get("payload")
@@ -101,6 +90,7 @@ def referential_checks(by_contract: dict, errors: list, warnings: list | None = 
     if warnings is None:
         warnings = []
     by_contract = {c: (ds if isinstance(ds, list) else [ds]) for c, ds in by_contract.items()}
+    by_contract = {c.replace(".v2", ".v1"): ds for c, ds in by_contract.items()}
     by_contract = {c: [d["payload"] if "payload" in d else d for d in ds] for c, ds in by_contract.items()}
     by_contract = {c: [{"payload": p} for p in ds] for c, ds in by_contract.items()}
     tax_docs = [d["payload"] for d in by_contract.get("pf.taxonomy.v1", [])]
@@ -222,7 +212,10 @@ def referential_checks(by_contract: dict, errors: list, warnings: list | None = 
                 errors.append(
                     f"questionnaire: unsupported combination stakeholder '{qs['stakeholder_type']}' x scenario '{s}' (RFQ 3.2 supported combinations)"
                 )
+        vocabulary = set(tax_docs[0].get("capability_vocabulary", [])) if tax_docs else set()
         for q in qs.get("questions", []):
+            if q.get("capability_id") and tax_docs and q["capability_id"] not in vocabulary:
+                errors.append(f"questionnaire {q['question_id']}: capability_id not in taxonomy vocabulary")
             d = q.get("maturity_dimension")
             if d and dim_ids and d not in dim_ids:
                 errors.append(f"questionnaire {q['question_id']}: maturity_dimension '{d}' not in taxonomy dimensions")
@@ -235,7 +228,6 @@ def referential_checks(by_contract: dict, errors: list, warnings: list | None = 
             if q.get("state_field") and q["question_type"] != "multi_choice":
                 errors.append(f"questionnaire {q['question_id']}: state_field requires multi_choice")
             if q.get("state_field") in {"capabilities", "missing_capabilities"} and tax_docs:
-                vocabulary = set(tax_docs[0].get("capability_vocabulary", []))
                 if not set(q.get("options", [])) <= vocabulary:
                     errors.append(f"questionnaire {q['question_id']}: capability options not in taxonomy vocabulary")
 
@@ -273,8 +265,11 @@ def manifest_hard_checks(docs, errors):
             errors.append(f"{fname}: contract {doc.get('contract')} must have producer_wp {want}, got {m.get('producer_wp')}")
         if m.get("supersedes") == m.get("snapshot_id"):
             errors.append(f"{fname}: supersedes references itself")
-        if doc.get("contract", "").endswith(".v1") and not m.get("contract_version", "").startswith("1."):
+        definition = contract_definition(doc["contract"])
+        if m.get("contract_version", "").split(".", 1)[0] != str(definition.major):
             errors.append(f"{fname}: contract_version major must match contract")
+        if definition.major > 1 and not m.get("migration_notes"):
+            errors.append(f"{fname}: new major requires migration_notes")
         try:
             timestamp = datetime.fromisoformat(m.get("generated_at", "").replace("Z", "+00:00"))
             if timestamp.utcoffset() is None or timestamp.utcoffset().total_seconds() != 0:
@@ -286,7 +281,7 @@ def manifest_hard_checks(docs, errors):
 def behavioral_checks(doc, errors):
     """Validate IDs, executable conditions and disclosure-sensitive counts."""
     from pathfinder.core.compliance import ComplianceEvaluator
-    from pathfinder.core.models import StakeholderState
+    from pathfinder.core.models import CapabilityFinding, StakeholderState, TruthValue
 
     payload = doc["payload"]
     contract = doc["contract"]
@@ -296,7 +291,7 @@ def behavioral_checks(doc, errors):
         "pf.roadmap.v1": (("nodes", "node_id"), ("edges", "edge_id"), ("datasets", "dataset_id")),
         "pf.rulebundle.v1": (("rules", "rule_id"), ("references", "ref_id"), ("tests", "test_id")),
     }
-    for collection, field in id_fields.get(contract, ()):
+    for collection, field in id_fields.get(contract.replace(".v2", ".v1"), ()):
         seen = set()
         for item in payload.get(collection, []):
             value = item[field]
@@ -316,12 +311,18 @@ def behavioral_checks(doc, errors):
                     if key.endswith("rate"):
                         errors.append(f"feedback {section}.{key}: rates require a separate disclosure review")
 
-    if contract != "pf.rulebundle.v1":
+    if contract not in ("pf.rulebundle.v1", "pf.rulebundle.v2"):
         return
+    evidence = contract == "pf.rulebundle.v2"
+    profile = EVIDENCE_PROFILE if evidence else LEGACY_PROFILE
 
     def check_condition(condition, context):
+        if evidence and not condition:
+            return
         for branch in ("and", "or"):
             if branch in condition:
+                if evidence and not condition[branch]:
+                    errors.append(f"{context}: compound conditions must be nonempty")
                 for child in condition[branch]:
                     check_condition(child, context)
                 return
@@ -336,7 +337,7 @@ def behavioral_checks(doc, errors):
             errors.append(f"{context}: unknown state field '{field}'")
         elif numeric and (op not in {"eq", "ne", "gt", "gte", "lt", "lte", "exists"} or (op != "exists" and type(condition.get("value")) is not int)):
             errors.append(f"{context}: invalid numeric condition on {field}")
-        elif collection and (op not in {"contains", "exists"} or (op == "contains" and not isinstance(condition.get("value"), str))):
+        elif collection and (op not in ({"contains"} if evidence and field != "regulatory_flags" else {"contains", "exists"}) or (op == "contains" and not isinstance(condition.get("value"), str))):
             errors.append(f"{context}: invalid collection condition on {field}")
         elif scalar and (op not in {"eq", "ne", "in", "not_in", "exists"} or (op in {"eq", "ne"} and not isinstance(condition.get("value"), str)) or (op in {"in", "not_in"} and (not isinstance(condition.get("value"), list) or not all(isinstance(v, str) for v in condition["value"])))):
             errors.append(f"{context}: invalid scalar condition on {field}")
@@ -349,7 +350,7 @@ def behavioral_checks(doc, errors):
             errors.append(f"rule {rule['rule_id']}: effective_from is after effective_until")
     if len(errors) != before:
         return
-    evaluator = ComplianceEvaluator()
+    evaluator = ComplianceEvaluator(profile.profile_id)
     for test in payload["tests"]:
         rule = rules.get(test["rule_id"])
         if rule is None:
@@ -362,12 +363,24 @@ def behavioral_checks(doc, errors):
         if any(not isinstance(given.get(k, []), list) or not all(isinstance(v, str) for v in given.get(k, [])) for k in ("capabilities", "missing_capabilities", "regulatory_flags")) or any(type(v) is not int or not 1 <= v <= 5 for k, v in given.items() if k.startswith("maturity.")):
             errors.append(f"rule test {test['test_id']}: invalid given field type or maturity")
             continue
+        positives, negatives = set(given.get("capabilities", [])), set(given.get("missing_capabilities", []))
+        if evidence and positives & negatives:
+            errors.append(f"rule test {test['test_id']}: contradictory capability assertions")
+            continue
+        findings = {cap: CapabilityFinding(cap, "present" if cap in positives else "absent", "self_reported") for cap in positives | negatives}
         state = StakeholderState(given.get("stakeholder_type", rule["applies_to"][0]), given.get("target_scenario", ""), {},
             {k.removeprefix("maturity."): v for k, v in given.items() if k.startswith("maturity.")},
-            tuple(given.get("capabilities", [])), tuple(given.get("missing_capabilities", [])), tuple(given.get("regulatory_flags", [])), 1.0, (), "test")
+            tuple(given.get("capabilities", [])), tuple(given.get("missing_capabilities", [])), tuple(given.get("regulatory_flags", [])), 1.0, (), "test",
+            capability_findings=findings, profile_id=profile.profile_id)
         try:
-            triggered = ("all" in rule["applies_to"] or state.stakeholder_type in rule["applies_to"]) and evaluator.evaluate(rule["condition"], state)
-            actual = "blocked" if triggered and rule["action"].get("block", False) else "triggered" if triggered else "not-triggered"
+            truth = evaluator.evaluate(rule["condition"], state) if "all" in rule["applies_to"] or state.stakeholder_type in rule["applies_to"] else False
+            triggered = evaluator.is_triggered(truth)
+            if truth is TruthValue.UNKNOWN:
+                actual = "unknown"
+            elif triggered and rule["action"].get("block", False):
+                actual = "blocked"
+            else:
+                actual = "triggered" if triggered else "not-triggered"
             if actual != test["expect"]["outcome"] or ("action_contains" in test["expect"] and test["expect"]["action_contains"] not in rule["action"]["text"]):
                 errors.append(f"rule test {test['test_id']}: expected {test['expect']}, got {actual}")
         except (TypeError, ValueError) as exc:
@@ -380,9 +393,20 @@ def validate_documents(snapshots):
     warnings: list[str] = []
     docs: list = []
     by_contract: dict[str, list] = {}
-    ev = Draft202012Validator(inline_external_refs(CD), format_checker=FormatChecker())
+    validators = {}
     for index, doc in enumerate(snapshots):
         name = f"snapshot[{index}]"
+        try:
+            definition = contract_definition(doc.get("contract") if isinstance(doc, dict) else None)
+        except ValueError as exc:
+            errors.append(f"{name}: {exc}")
+            continue
+        if definition.contract == "pf.withdrawal.v1":
+            errors.append(f"{name}: withdrawal is a control message, not a runtime input")
+            continue
+        if definition.envelope not in validators:
+            validators[definition.envelope] = Draft202012Validator(inline_external_refs(CD, definition.envelope), format_checker=FormatChecker())
+        ev = validators[definition.envelope]
         errs = sorted(ev.iter_errors(doc), key=lambda e: tuple(str(part) for part in e.absolute_path))
         for e in errs[:5]:
             errors.append(f"{name}: schema at {'/'.join(map(str, e.absolute_path)) or '$'}: {e.message[:160]}")
@@ -421,6 +445,42 @@ def validate_documents(snapshots):
         behavioral_checks(doc, errors)
 
     return errors, warnings
+
+
+def validate_withdrawal_notice(notice):
+    """Check a control message and its attested scope, not upstream identity.
+
+    Authentication and the administrator's review of source-owner confirmation
+    are intake responsibilities; a checksum never proves producer identity.
+    """
+    validator = Draft202012Validator(inline_external_refs(CD, "envelope.v2.schema.json"), format_checker=FormatChecker())
+    errors = [f"notice schema: {error.message}" for error in validator.iter_errors(notice)]
+    if errors:
+        return errors
+    if notice["contract"] != "pf.withdrawal.v1":
+        return ["expected withdrawal control message"]
+    manifest_hard_checks([("notice", notice)], errors)
+    payload = notice["payload"]
+    if canonical_checksum(payload) != notice["manifest"]["items_checksum"]:
+        errors.append("notice items_checksum mismatch")
+    if payload["notice_id"] != notice["manifest"]["snapshot_id"]:
+        errors.append("notice identity must match manifest snapshot_id")
+    confirmation = payload["source_confirmation"]
+    producer = notice["manifest"]["producer_wp"]
+    if confirmation["confirmed_by_wp"] != producer:
+        errors.append("source confirmation must name the producing WP")
+    if confirmation["target_checksum"] != canonical_checksum(payload["targets"]):
+        errors.append("source confirmation target_checksum mismatch")
+    targets = set()
+    for target in payload["targets"]:
+        definition = contract_definition(target["contract"])
+        if not definition.runtime_input or definition.producer != producer or target["producer_wp"] != producer:
+            errors.append("withdrawal target producer/contract ownership mismatch")
+        identity = (target["contract"], target["snapshot_id"])
+        if identity in targets:
+            errors.append("duplicate withdrawal target")
+        targets.add(identity)
+    return errors
 
 
 def main():

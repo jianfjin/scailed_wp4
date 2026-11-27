@@ -14,6 +14,8 @@ from pathfinder.fhir.mappers import (
     questionnaire_response_from_session,
     questionnaire_to_fhir,
     readiness_observation_from_report,
+    recommendation_output_from_report,
+    result_projection_extensions,
 )
 from pathfinder.fhir.resources import create_bundle, fhir_id, require_r4
 
@@ -30,9 +32,10 @@ def build_assessment_bundle(
     if not isinstance(session, dict):
         session = {}
     assessment_id = str(session.get("assessment_id", "assessment"))
+    result_id = session.get("result_id")
 
     resources = [
-        questionnaire_to_fhir(questionnaire),
+        questionnaire_to_fhir(questionnaire, result_id),
         questionnaire_response_from_session(session, questionnaire),
         organization_from_session(session),
         assessment_group_from_session(session),
@@ -40,10 +43,18 @@ def build_assessment_bundle(
         guidance_response_from_report(report),
         care_plan_from_report(report),
         provenance_from_report(report),
+        recommendation_output_from_report(report),
     ]
+    resources = [resource for resource in resources if resource is not None]
     resources.extend(
-        audit_event_to_fhir(event, assessment_id)
+        audit_event_to_fhir(event, assessment_id, result_id)
         for event in audit_events
     )
-
-    return create_bundle(fhir_id("bundle", assessment_id), resources)
+    extensions = result_projection_extensions(report)
+    for resource in resources:
+        if extensions:
+            resource.setdefault("meta", {}).setdefault("extension", []).extend(extensions)
+    bundle = create_bundle(fhir_id("bundle", result_id or assessment_id), resources)
+    if extensions:
+        bundle["meta"] = {"extension": extensions}
+    return bundle

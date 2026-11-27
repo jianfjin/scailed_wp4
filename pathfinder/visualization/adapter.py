@@ -6,11 +6,15 @@ Templates never see raw dicts.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timezone
 from typing import Any
 
 from pathfinder.visualization.schemas import (
     BlockerEvidence,
+    CapabilityFindingView,
+    InputValidityView,
+    RuleEvaluationView,
     ConditionMatch,
     PathStepView,
     ReadinessSummary,
@@ -32,6 +36,10 @@ def build_view_model(raw_report: dict[str, Any]) -> ReportViewModel:
 
     path = raw_report["recommended_path"]
     session = raw_report.get("session", {})
+    validity = raw_report.get("current_validity") or path.get("current_validity") or {}
+    evaluations = path.get("trace", {}).get("condition_evaluations", ())
+    evaluation_by_rule = {item["rule_id"]: item for item in evaluations}
+
 
     # ── Summary ──────────────────────────────────────────────────────
     summary = ReadinessSummary(
@@ -44,6 +52,14 @@ def build_view_model(raw_report: dict[str, Any]) -> ReportViewModel:
         total_rules_triggered=len(path.get("triggered_rules") or []),
         total_blockers=len(path.get("blockers", [])),
         total_steps=len(path.get("next_steps", [])),
+        recommendation_kind=path.get("recommendation_kind", ""),
+        profile_id=path.get("profile_id", session.get("profile_id", "legacy-v1")),
+        inputs_valid=validity.get("valid"),
+        validity_status=validity.get("status", "not_observed"),
+        result_id=path.get("result_id", session.get("result_id", "")),
+        answer_revision=path.get("answer_revision", session.get("answer_revision")),
+        lifecycle_revision=validity.get("lifecycle_revision"),
+        binding_status=(raw_report.get("result") or {}).get("binding_status", "not_recorded"),
     )
 
     # ── Rule evidence (triggered rules → RuleCards) ──────────────────
@@ -57,7 +73,7 @@ def build_view_model(raw_report: dict[str, Any]) -> ReportViewModel:
             rule_type=str(rule_dict.get("rule_type", "preference")),
             priority=int(rule_dict.get("priority", 0)),
             condition_matches=_build_condition_matches(
-                condition, raw_report.get("readiness_snapshot", {})
+                condition, evaluation_by_rule.get(rule_dict.get("rule_id"))
             ),
             action_title=str(action.get("title", "")),
             action_text=str(action.get("text", "")),
@@ -67,6 +83,7 @@ def build_view_model(raw_report: dict[str, Any]) -> ReportViewModel:
                 str(r) for r in rule_dict.get("compliance_refs", [])
             ),
             source_doc_ref=str(rule_dict.get("source_doc_ref", "")),
+            truth=evaluation_by_rule.get(rule_dict.get("rule_id"), {}).get("truth", "not_evaluated"),
             is_blocker=(
                 rule_dict.get("rule_type") == "exclusion"
                 or bool(action.get("block", False))
@@ -109,6 +126,9 @@ def build_view_model(raw_report: dict[str, Any]) -> ReportViewModel:
         str(path.get("current_node", "")),
     )
 
+    if summary.profile_id == "evidence-v2":
+        path_steps = [replace(step, status="current" if step.node_id == path.get("current_node") and summary.inputs_valid is not False else "unreached") for step in path_steps]
+
     # ── Trace ────────────────────────────────────────────────────────
     trace = path.get("trace", {})
 
@@ -125,6 +145,20 @@ def build_view_model(raw_report: dict[str, Any]) -> ReportViewModel:
         disclaimer=(str(raw_report.get("disclaimer", "")) +
                     (" Regulatory status is unverified." if path.get("regulatory_status") == "unverified" else "")),
         generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        missing_information=tuple(path.get("missing_information", ())),
+        capability_findings=tuple(CapabilityFindingView(
+            capability_id=key, judgment=item.get("judgment", "unknown"),
+            source=item.get("source", "unanswered"), verification_status=item.get("verification_status", "unverified"),
+            answer_ids=tuple(item.get("answer_ids", ())), evidence_refs=tuple(item.get("evidence_refs", ())),
+        ) for key, item in sorted(((raw_report.get("readiness_snapshot") or {}).get("capability_findings") or path.get("capability_findings") or {}).items())),
+        affected_inputs=tuple(InputValidityView(
+            contract=item["contract"], snapshot_id=item["snapshot_id"], producer_wp=item["producer_wp"],
+            notice_id=item["notice_id"], reason=item["reason"], dependency_path=tuple(item.get("dependency_path", ())),
+        ) for item in validity.get("affected_inputs", ())),
+        condition_evaluations=tuple(RuleEvaluationView(
+            rule_id=item["rule_id"], truth=item["truth"], critical=item.get("critical", False),
+            condition_matches=_build_condition_matches(item.get("condition", {}), item),
+        ) for item in evaluations),
     )
 
 
@@ -143,72 +177,23 @@ def _validate_report_shape(raw: dict[str, Any]) -> None:
 
 
 def _build_condition_matches(
-    condition: dict[str, Any], snapshot: dict[str, Any]
+    condition: dict[str, Any], evaluation: dict[str, Any] | None = None,
 ) -> tuple[ConditionMatch, ...]:
-    """Extract flat condition matches from a rule condition dict."""
+    """Project the core trace; older results retain an unevaluated condition."""
     if not condition:
         return ()
-
-    # Flat condition: {"field": "regulatory_flags", "operator": "contains", "value": "gdpr"}
-    field = condition.get("field")
-    operator = condition.get("operator", condition.get("op", "eq"))
-    expected = condition.get("value")
-
-    if field:
-        # Resolve actual value from readiness snapshot
-        answers = snapshot.get("answers", {})
-        actual = (snapshot.get("maturity_scores", {}).get(field.removeprefix("maturity."))
-                  if field.startswith("maturity.") else answers.get(field))
-        if actual is None and isinstance(snapshot, dict):
-            actual = snapshot.get(field)
-        matched = _compare(actual, operator, expected)
+    if condition.get("field"):
+        truth = evaluation.get("truth") if evaluation else None
         return (ConditionMatch(
-            field=str(field),
-            operator=str(operator),
-            expected=expected,
-            actual=actual,
-            matched=matched,
+            field=str(condition["field"]), operator=str(condition.get("operator", condition.get("op", "eq"))),
+            expected=condition.get("value"), actual=evaluation.get("actual") if evaluation else None,
+            matched=True if truth == "true" else False if truth == "false" else None,
         ),)
-
-    # Compound: "and" / "or" → recurse (flatten one level)
-    sub_key = None
-    if "and" in condition:
-        sub_key = "and"
-    elif "or" in condition:
-        sub_key = "or"
-    if sub_key and isinstance(condition[sub_key], list):
-        matches: list[ConditionMatch] = []
-        for sub in condition[sub_key]:
-            if isinstance(sub, dict):
-                matches.extend(_build_condition_matches(sub, snapshot))
-        return tuple(matches)
-
-    return ()
-
-
-def _compare(actual: Any, operator: str, expected: Any) -> bool:
-    """Same logic as ComplianceEvaluator._compare."""
-    if operator == "eq":
-        return actual == expected
-    if operator == "ne":
-        return actual != expected
-    if operator == "gt":
-        return actual is not None and actual > expected
-    if operator == "gte":
-        return actual is not None and actual >= expected
-    if operator == "lt":
-        return actual is not None and actual < expected
-    if operator == "lte":
-        return actual is not None and actual <= expected
-    if operator == "in":
-        return actual in expected
-    if operator == "not_in":
-        return actual not in expected
-    if operator == "contains":
-        return expected in (actual or ())
-    if operator == "exists":
-        return actual not in (None, "", [])
-    return False
+    if evaluation:
+        return tuple(match for child in evaluation.get("children", ())
+                     for match in _build_condition_matches(child.get("condition", {}), child))
+    children = condition.get("and", condition.get("or", [condition["not"]] if "not" in condition else []))
+    return tuple(match for child in children for match in _build_condition_matches(child))
 
 
 def _find_rule_by_action_text(

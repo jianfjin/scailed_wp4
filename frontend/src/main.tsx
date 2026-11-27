@@ -6,9 +6,10 @@ import {
   formatStakeholderLoadedCopy,
   type StakeholderOption,
 } from "./stakeholderCatalog";
+import { projectAssessmentSemantics, type SemanticsReport } from "./assessmentSemantics";
 import "./styles.css";
 
-type PathfinderReport = {
+type PathfinderReport = SemanticsReport & {
   disclaimer?: string;
   audit_chain_valid?: boolean;
   missing_data_warnings?: string[];
@@ -25,7 +26,7 @@ type PathfinderReport = {
     source_wp2_stakeholder_id?: string;
     source_wp2_snapshot_version?: string;
     source_wp3_snapshot_version?: string;
-  };
+  } | null;
   recommended_path?: {
     status?: string;
     regulatory_status?: string;
@@ -55,6 +56,8 @@ type BoundaryQuestion = {
   options: string[];
   min_value: number | null;
   max_value: number | null;
+  capability_id?: string;
+  state_field?: string;
 };
 type BoundaryQuestionnaire = {
   stakeholder_type: string;
@@ -65,6 +68,9 @@ type BoundaryQuestionnaire = {
 type Answer = string | number | string[];
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+const API_VERSION = import.meta.env.VITE_PATHFINDER_API_VERSION || "v1";
+if (!["v1", "v2"].includes(API_VERSION)) throw new Error("VITE_PATHFINDER_API_VERSION must be v1 or v2");
+const API_PREFIX = `/${API_VERSION}`;
 let accessToken = import.meta.env.DEV ? "demo-token" : "";
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -116,7 +122,7 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
   const path = report.recommended_path;
   const snapshot = report.readiness_snapshot;
   const trace = path?.trace;
-  const blocked = path?.status === "blocked";
+  const semantics = projectAssessmentSemantics(report);
   const [viewError, setViewError] = useState("");
 
   async function openVisualization() {
@@ -125,7 +131,7 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
     if (!tab) { setViewError("Allow pop-ups to open the visualization."); return; }
     tab.opener = null;
     try {
-      const response = await fetch(`${API_BASE}/v1/assessments/${encodeURIComponent(assessmentId)}/report?format=html`, {
+      const response = await fetch(`${API_BASE}${API_PREFIX}/assessments/${encodeURIComponent(assessmentId)}/report?format=html${semantics.resultId ? `&result_id=${encodeURIComponent(semantics.resultId)}` : ""}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!response.ok) throw new Error(`Report request failed (${response.status})`);
@@ -147,7 +153,7 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
   return (
     <div className="report-summary">
       <div className="status-row">
-        <strong>{blocked ? "Blocked" : path?.status === "degraded" ? "Unverified" : "Ready"}</strong>
+        <strong>{semantics.heading}</strong>
         <span>{report.audit_chain_valid ? "Audit chain valid" : "Audit chain needs review"}</span>
       </div>
 
@@ -162,7 +168,7 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
             <dd>{report.session?.stakeholder_type || "unknown"}</dd>
             <dt>Scenario</dt>
             <dd>{report.session?.target_scenario || "unknown"}</dd>
-            <dt>Confidence</dt>
+            <dt>{semantics.confidenceLabel}</dt>
             <dd>{snapshot?.confidence ?? "n/a"}</dd>
           </dl>
         </div>
@@ -190,16 +196,41 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
           "WP3 snapshot": snapshot?.source_wp3_snapshot_version,
         }}
       />}
-      <EvidenceList title="WP2 capabilities" items={snapshot?.capabilities} />
-      <EvidenceList title="WP2 pain points" items={snapshot?.pain_points} />
-      <EvidenceList title="Derived missing capabilities" items={snapshot?.missing_capabilities} />
-      <EvidenceList title="Derived regulatory flags" items={snapshot?.regulatory_flags} />
+      {semantics.profile === "legacy-v1" && <>
+        <p className="notice">Legacy semantics: type-derived information is reference/demo guidance.</p>
+        <EvidenceList title="WP2 type reference capabilities" items={snapshot?.capabilities} />
+        <EvidenceList title="WP2 pain points" items={snapshot?.pain_points} />
+        <EvidenceList title="Derived reference gaps" items={snapshot?.missing_capabilities} />
+        <EvidenceList title="Derived regulatory flags" items={snapshot?.regulatory_flags} />
+      </>}
+      <KeyValueList title="Result evidence and current validity" values={{
+        "Result ID": semantics.resultId,
+        "Answer revision": semantics.answerRevision,
+        "Original result": semantics.originalStatus,
+        "Evidence binding": semantics.bindingStatus,
+        "Current validity": semantics.validityStatus,
+        "Lifecycle revision": semantics.lifecycleRevision,
+        "Semantic profile": semantics.profile,
+      }} />
+      {semantics.historical && <p className="notice" role="status">{semantics.historyNote}</p>}
+      <EvidenceList title="Missing information" items={semantics.missingInformation} />
+      {semantics.findings.length > 0 && <div className="evidence-block">
+        <h3>Capability findings</h3>
+        <p>Answer completeness does not verify a self-report.</p>
+        {semantics.findings.map((finding) => <dl key={finding.capabilityId}>
+          <dt>{finding.capabilityId}</dt>
+          <dd>{finding.judgmentLabel} · {finding.sourceLabel} · {finding.verificationLabel}</dd>
+          <dt>Answer evidence</dt><dd>{finding.answer_ids.join(", ") || "No current answer"}</dd>
+          <dt>Evidence references</dt><dd>{finding.evidence_refs.join(", ") || "None recorded"}</dd>
+        </dl>)}
+      </div>}
+      <EvidenceList title="Affected input versions" items={semantics.affectedInputs.map((item) => `${item.contract} / ${item.snapshot_id} (${item.producer_wp}): ${item.reason}; notice ${item.notice_id}; dependency ${item.dependency_path.join(" → ")}`)} />
 
       <EvidenceList title="Blockers" items={path?.blockers} />
 
       {path?.next_steps?.length ? (
         <div className="evidence-block">
-          <h3>Recommended path</h3>
+          <h3>{semantics.pathHeading}</h3>
           <ol>
             {path.next_steps.map((step, index) => (
               <li key={step.node_id || index}>
@@ -372,10 +403,25 @@ function App() {
     setInvalidQuestions([]);
   }
 
+  function invalidateDraftResult() {
+    assessmentRunRef.current += 1;
+    setReport(null);
+    setLastAssessmentId("");
+    setLoading(false);
+    setError("");
+  }
+
+  function handleAnswersChange(nextAnswers: Record<string, Answer>) {
+    invalidateDraftResult();
+    setAnswers(nextAnswers);
+  }
+
   useEffect(() => {
     if (!token) return;
-    api<{ stakeholder_types: string[]; mock_data_mode: boolean }>("/v1/questionnaires")
+    let cancelled = false;
+    api<{ stakeholder_types: string[]; mock_data_mode: boolean }>(`${API_PREFIX}/questionnaires`)
       .then((data) => {
+        if (cancelled) return;
         setTypes(data.stakeholder_types);
         setBoundaryMode(!data.mock_data_mode);
         setStakeholderType((current) => (
@@ -384,10 +430,13 @@ function App() {
             : (data.stakeholder_types[0] || "")
         ));
       })
-      .catch((err) => setError(String(err)));
+      .catch((err) => { if (!cancelled) setError(String(err)); });
     api<{ mode: string; active_snapshot_ids?: Record<string, string>; import_reports?: Record<string, { activated_records?: number }> }>("/health")
       .then((h) => {
-        if (h.active_snapshot_ids && Object.keys(h.active_snapshot_ids).length) {
+        if (cancelled) return;
+        if (API_VERSION === "v2") {
+          setBannerText("Evidence v2: current answers and validated partner snapshots are required.");
+        } else if (h.active_snapshot_ids && Object.keys(h.active_snapshot_ids).length) {
           setBannerText("Validated partner snapshots active.");
         } else if (h.mode === "deployed" && h.import_reports?.upstream) {
           const records = h.import_reports.upstream.activated_records;
@@ -399,7 +448,8 @@ function App() {
           setBannerText("Demo mode. WP2/WP3/WP8 inputs pending.");
         }
       })
-      .catch(() => setBannerText("Demo mode. WP2/WP3/WP8 inputs pending."));
+      .catch(() => { if (!cancelled) setBannerText("Demo mode. WP2/WP3/WP8 inputs pending."); });
+    return () => { cancelled = true; };
   }, [token]);
 
   useEffect(() => {
@@ -408,7 +458,7 @@ function App() {
     setQuestionnaire(null);
     setAnswers({});
     setInvalidQuestions([]);
-    api<BoundaryQuestionnaire>(`/v1/questionnaires/${encodeURIComponent(stakeholderType)}`)
+    api<BoundaryQuestionnaire>(`${API_PREFIX}/questionnaires/${encodeURIComponent(stakeholderType)}`)
       .then((data) => {
         if (cancelled) return;
         setQuestionnaire(data);
@@ -445,23 +495,23 @@ function App() {
     setLoading(true);
     setReport(null);
     try {
-      const session = await api<{ assessment_id: string }>("/v1/assessments", {
+      const session = await api<{ assessment_id: string }>(`${API_PREFIX}/assessments`, {
         method: "POST",
         body: JSON.stringify({ stakeholder_type: stakeholderType, target_scenario: boundaryMode ? targetScenario : "secondary-use-readiness" }),
       });
       if (assessmentRunRef.current !== runId) return;
       setLastAssessmentId(session.assessment_id);
       if (boundaryMode) {
-        await api(`/v1/assessments/${session.assessment_id}/answers/batch`, {
+        await api(`${API_PREFIX}/assessments/${session.assessment_id}/answers/batch`, {
           method: "POST", body: JSON.stringify({ answers }),
         });
         if (assessmentRunRef.current !== runId) return;
       }
-      await api(`/v1/assessments/${session.assessment_id}/recommendations?path_backend=${pathBackend}`, {
+      await api(`${API_PREFIX}/assessments/${session.assessment_id}/recommendations?path_backend=${pathBackend}`, {
         method: "POST",
       });
       if (assessmentRunRef.current !== runId) return;
-      const r = await api<PathfinderReport>(`/v1/assessments/${session.assessment_id}/report`);
+      const r = await api<PathfinderReport>(`${API_PREFIX}/assessments/${session.assessment_id}/report`);
       if (assessmentRunRef.current !== runId) return;
       setReport(r);
     } catch (err) {
@@ -480,6 +530,7 @@ function App() {
       <section className="toolbar">
         <div>
           <h1>SCAILED Pathfinder</h1>
+          <p>{API_VERSION === "v2" ? "Evidence v2 assessment" : "Legacy assessment semantics"}</p>
           <p>EHDS readiness path planner. Select a stakeholder to build a roadmap path with full trace.</p>
         </div>
         <div className="toolbar-actions">
@@ -496,6 +547,7 @@ function App() {
             event.preventDefault();
             const next = tokenInput.trim();
             if (next === token) return;
+            invalidateDraftResult();
             accessToken = next;
             setToken(next);
             setTypes([]);
@@ -529,22 +581,22 @@ function App() {
               <ul>{questionnaire.questions.filter((q) => invalidQuestions.includes(q.question_id)).map((q) => <li key={q.question_id}><a href={`#${q.question_id}`}>{q.label}</a></li>)}</ul>
             </div>}
             <label htmlFor="target-scenario">Target scenario</label>
-            <select id="target-scenario" value={targetScenario} onChange={(event) => setTargetScenario(event.target.value)}>
+            <select id="target-scenario" value={targetScenario} onChange={(event) => { invalidateDraftResult(); setTargetScenario(event.target.value); }}>
               {questionnaire.target_scenarios.map((scenario) => <option key={scenario} value={scenario}>{scenario.split(":").at(-1)?.replaceAll("-", " ")}</option>)}
             </select>
             {questionnaire.questions.map((q) => <div className="question" key={q.question_id}>
               {q.question_type === "multi_choice" ? <fieldset id={q.question_id}>
                 <legend>{q.label}{q.required ? " *" : ""}</legend>
-                <small>Select all that apply, or leave empty if none apply.</small>
+                <small>{API_VERSION === "v2" ? q.state_field === "missing_capabilities" ? "Select only capabilities you explicitly lack. Unselected items remain unknown." : "Select capabilities you can assert. Unselected items remain unknown." : "Select all that apply, or leave empty if none apply."}</small>
                 {q.options.map((option) => <label className="check-label" key={option}><input type="checkbox" checked={(answers[q.question_id] as string[] || []).includes(option)} onChange={(event) => {
                   const current = answers[q.question_id] as string[] || [];
-                  setAnswers({ ...answers, [q.question_id]: event.target.checked ? [...current, option] : current.filter((item) => item !== option) });
+                  handleAnswersChange({ ...answers, [q.question_id]: event.target.checked ? [...current, option] : current.filter((item) => item !== option) });
                 }} />{option}</label>)}
               </fieldset> : <>
                 <label htmlFor={q.question_id}>{q.label}{q.required ? " *" : ""}</label>
-                {q.question_type === "single_choice" ? <select id={q.question_id} value={String(answers[q.question_id] ?? "")} aria-required={q.required} aria-invalid={invalidQuestions.includes(q.question_id)} aria-describedby={invalidQuestions.includes(q.question_id) ? `${q.question_id}-error` : undefined} onChange={(event) => setAnswers({ ...answers, [q.question_id]: event.target.value })}>
+                {q.question_type === "single_choice" ? <select id={q.question_id} value={String(answers[q.question_id] ?? "")} aria-required={q.required} aria-invalid={invalidQuestions.includes(q.question_id)} aria-describedby={invalidQuestions.includes(q.question_id) ? `${q.question_id}-error` : undefined} onChange={(event) => handleAnswersChange({ ...answers, [q.question_id]: event.target.value })}>
                   <option value="">Select an answer</option>{q.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                </select> : <input id={q.question_id} type={q.question_type === "numeric" ? "number" : "text"} min={q.min_value ?? undefined} max={q.max_value ?? undefined} step={q.question_type === "numeric" ? 1 : undefined} value={answers[q.question_id] as string | number ?? ""} aria-required={q.required} aria-invalid={invalidQuestions.includes(q.question_id)} aria-describedby={invalidQuestions.includes(q.question_id) ? `${q.question_id}-error` : undefined} onChange={(event) => setAnswers({ ...answers, [q.question_id]: q.question_type === "numeric" && event.target.value !== "" ? Number(event.target.value) : event.target.value })} />}
+                </select> : <input id={q.question_id} type={q.question_type === "numeric" ? "number" : "text"} min={q.min_value ?? undefined} max={q.max_value ?? undefined} step={q.question_type === "numeric" ? 1 : undefined} value={answers[q.question_id] as string | number ?? ""} aria-required={q.required} aria-invalid={invalidQuestions.includes(q.question_id)} aria-describedby={invalidQuestions.includes(q.question_id) ? `${q.question_id}-error` : undefined} onChange={(event) => handleAnswersChange({ ...answers, [q.question_id]: q.question_type === "numeric" && event.target.value !== "" ? Number(event.target.value) : event.target.value })} />}
                 {invalidQuestions.includes(q.question_id) && <span id={`${q.question_id}-error`} className="error">Enter a valid answer{q.question_type === "numeric" ? ` (${q.min_value}–${q.max_value})` : ""}.</span>}
               </>}
             </div>)}

@@ -3,7 +3,9 @@ import unittest
 import pathfinder.api.main as api_main
 from fastapi.testclient import TestClient
 
-from pathfinder.adapters.demo_data import demo_questionnaires
+from pathfinder.adapters.demo_data import STAKEHOLDER_TYPES, demo_questionnaires, demo_roadmap, demo_rule_bundle
+from pathfinder.adapters.upstream import UpstreamClient
+from pathfinder.core.rules.loader import RuleLoader
 from pathfinder.api.main import app
 from pathfinder.fhir.resources import (
     PATHFINDER_SYSTEM,
@@ -26,6 +28,14 @@ BASE_ANSWERS = {
     "missing_capabilities": ["data-catalog"],
     "regulatory_flags": ["gdpr-review-needed"],
 }
+
+
+def demo_service() -> AssessmentService:
+    client = UpstreamClient()
+    client.stakeholders = [{"stakeholder_type": stakeholder, "description": stakeholder} for stakeholder in STAKEHOLDER_TYPES]
+    client.roadmap_nodes, client.roadmap_edges = demo_roadmap()
+    client.rules = RuleLoader(demo_questionnaires()).load_bundle(demo_rule_bundle())
+    return AssessmentService(client)
 
 
 class FhirResourceHelperTests(unittest.TestCase):
@@ -334,7 +344,7 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
     def _completed_assessment(
         self,
     ) -> tuple[AssessmentService, str, dict[str, object], dict[str, object]]:
-        service = AssessmentService()
+        service = demo_service()
         session = service.create_session(
             "biotech-sme",
             "secondary-use-readiness",
@@ -369,15 +379,15 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
         resource = guidance_response_from_report(report)
 
         self.assertEqual(resource["resourceType"], "GuidanceResponse")
-        self.assertEqual(resource["id"], f"guidance-response-{assessment_id}")
+        self.assertEqual(resource["id"], f"guidance-response-{report['result']['result_id']}")
         self.assertEqual(resource["status"], "success")
         self.assertEqual(
             resource["subject"],
-            {"reference": f"Group/group-{assessment_id}"},
+            {"reference": f"Group/group-{report['result']['result_id']}"},
         )
         self.assertEqual(
             resource["result"],
-            {"reference": f"CarePlan/care-plan-{assessment_id}"},
+            {"reference": f"CarePlan/care-plan-{report['result']['result_id']}"},
         )
 
     def test_care_plan_from_report_maps_next_steps_as_activities(self) -> None:
@@ -388,12 +398,12 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
         resource = care_plan_from_report(report)
 
         self.assertEqual(resource["resourceType"], "CarePlan")
-        self.assertEqual(resource["id"], f"care-plan-{assessment_id}")
+        self.assertEqual(resource["id"], f"care-plan-{report['result']['result_id']}")
         self.assertEqual(resource["status"], "active")
         self.assertEqual(resource["intent"], "plan")
         self.assertEqual(
             resource["subject"],
-            {"reference": f"Group/group-{assessment_id}"},
+            {"reference": f"Group/group-{report['result']['result_id']}"},
         )
         self.assertGreaterEqual(len(resource["activity"]), 1)
         self.assertIn("detail", resource["activity"][0])
@@ -406,9 +416,9 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
         resource = provenance_from_report(report)
 
         self.assertEqual(resource["resourceType"], "Provenance")
-        self.assertEqual(resource["id"], f"provenance-{assessment_id}")
+        self.assertEqual(resource["id"], f"provenance-{report['result']['result_id']}")
         self.assertIn(
-            {"reference": f"CarePlan/care-plan-{assessment_id}"},
+            {"reference": f"CarePlan/care-plan-{report['result']['result_id']}"},
             resource["target"],
         )
         provenance_text = str(resource["entity"])
@@ -527,7 +537,7 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
         )
 
         self.assertEqual(bundle["resourceType"], "Bundle")
-        self.assertEqual(bundle["id"], f"bundle-{assessment_id}")
+        self.assertEqual(bundle["id"], f"bundle-{report['result']['result_id']}")
         resource_types = {
             entry["resource"]["resourceType"]
             for entry in bundle["entry"]
@@ -562,7 +572,7 @@ class FhirRecommendationAndBundleTests(unittest.TestCase):
 
 class AssessmentServiceFhirExportTests(unittest.TestCase):
     def _service_with_answers(self) -> tuple[AssessmentService, str]:
-        service = AssessmentService()
+        service = demo_service()
         session = service.create_session(
             "biotech-sme",
             "secondary-use-readiness",
@@ -598,7 +608,7 @@ class AssessmentServiceFhirExportTests(unittest.TestCase):
         )
 
         self.assertEqual(bundle["resourceType"], "Bundle")
-        self.assertEqual(bundle["id"], f"bundle-{assessment_id}")
+        self.assertEqual(bundle["id"], f"bundle-{service.get_session(assessment_id)['result_id']}")
         events = service.audit_log.events()
         self.assertEqual(len(events), audit_count + 1)
         event = events[-1]
@@ -611,7 +621,7 @@ class AssessmentServiceFhirExportTests(unittest.TestCase):
             for entry in bundle["entry"]
             if entry["resource"]["resourceType"] == "AuditEvent"
         ]
-        self.assertTrue(
+        self.assertFalse(
             any(resource["type"]["code"] == "fhir_bundle_exported" for resource in audit_resources)
         )
 
@@ -678,7 +688,7 @@ class AssessmentServiceFhirExportTests(unittest.TestCase):
         self.assertIn("unsupported FHIR version", event.event_data["error"])
 
     def test_export_fhir_bundle_rejects_unknown_assessment_id(self) -> None:
-        service = AssessmentService()
+        service = demo_service()
 
         with self.assertRaisesRegex(KeyError, "Assessment not found"):
             service.export_fhir_bundle("missing-assessment")
@@ -690,7 +700,7 @@ class AssessmentServiceFhirExportTests(unittest.TestCase):
             service.export_fhir_bundle(assessment_id)
 
     def test_export_fhir_bundle_requires_submitted_answers(self) -> None:
-        service = AssessmentService()
+        service = demo_service()
         session = service.create_session(
             "biotech-sme",
             "secondary-use-readiness",
@@ -702,7 +712,7 @@ class AssessmentServiceFhirExportTests(unittest.TestCase):
 
 class FhirApiEndpointTests(unittest.TestCase):
     def setUp(self) -> None:
-        api_main._service = AssessmentService()
+        api_main._service = demo_service()
 
     def _client(self) -> TestClient:
         return TestClient(app)
@@ -814,3 +824,158 @@ class FhirApiEndpointTests(unittest.TestCase):
         self.assertEqual(response.json()["detail"]["error"], "SERVER_ERROR")
         self.assertNotIn("secret internal detail", response.text)
 
+
+
+def versioned_report(*, kind='executable_path', status='ready', valid=True):
+    result_id='c6c346aa-efb2-4c3f-bd2b-f9d7c8f40d77'
+    finding={'capability_id':'secure-processing','judgment':'present' if kind!='conditional_direction' else 'unknown',
+             'source':'self_reported','answer_ids':['processing'],'evidence_refs':[], 'verification_status':'unverified'}
+    validity={'valid':valid,'status':'valid' if valid else 'withdrawn','lifecycle_revision':7,
+              'affected_inputs':[] if valid else [{'contract':'pf.taxonomy.v1','snapshot_id':'taxonomy-original','producer_wp':'WP2',
+              'dependency_path':['taxonomy-original'],'notice_id':'withdrawal-1','reason':'Source owner withdrew this version'}]}
+    session={'assessment_id':'assessment-original','stakeholder_type':'biotech-sme','target_scenario':'secondary-use-readiness',
+             'status':'complete','result_id':result_id,'answer_revision':3,'answers':{'processing':'unknown' if kind=='conditional_direction' else 'yes'}}
+    snapshot={'answers':session['answers'],'maturity_scores':{},'capabilities':[],'missing_capabilities':[],
+              'regulatory_flags':[],'confidence':1,'confidence_warnings':[],'capability_findings':{'secure-processing':finding}}
+    recommendation={'status':status,'recommendation_kind':kind,'missing_information':['capability:secure-processing'] if kind=='conditional_direction' else [],
+                    'blockers':['A required capability is explicitly absent'] if status=='blocked' else [],
+                    'warnings':['Regulatory source remains unverified'] if status=='degraded' and kind!='conditional_direction' else [],
+                    'next_steps':[{'node_id':'review','label':'Review evidence'}], 'trace':{'answer_ids':['processing'],'confidence':1},
+                    'profile_id':'evidence-v2','result_id':result_id,'answer_revision':3,'current_validity':validity}
+    result={'result_id':result_id,'assessment_id':session['assessment_id'],'answer_revision':3,'answers':session['answers'],
+            'findings':snapshot['capability_findings'],'input_set':[{'contract':'pf.taxonomy.v1','snapshot_id':'taxonomy-original','producer_wp':'WP2','dependency_path':['taxonomy-original']}],
+            'profile_id':'evidence-v2','semantics_version':'evidence-v2.0','evaluation_date':'2026-11-27',
+            'binding_status':'bound','original_output':recommendation,'content_hash':'sha256:'+'a'*64}
+    return {'session':session,'readiness_snapshot':snapshot,'recommended_path':recommendation,'current_validity':validity,'result':result,
+            'disclaimer':'Guidance is not a legal conclusion.'}
+
+
+def versioned_questionnaire():
+    return {'stakeholder_type':'biotech-sme','version':'2.0.0','title':'Readiness',
+            'questions':[{'question_id':'processing','label':'Secure processing?','question_type':'single_choice','options':['yes','no','unknown']}]}
+
+
+def resource_map(bundle):
+    return {entry['resource']['resourceType']:entry['resource'] for entry in bundle['entry']}
+
+
+def extension_value(resource, name):
+    import json
+    extensions=resource.get('extension',[])+resource.get('meta',{}).get('extension',[])
+    values=[item['valueString'] for item in extensions if item['url'].endswith('/'+name)]
+    assert len(values)==1, (resource['resourceType'],name,resource)
+    return json.loads(values[0])
+
+
+def test_conditional_fhir_requires_data_and_retains_self_report_findings():
+    from pathfinder.fhir.export_service import build_assessment_bundle
+    report=versioned_report(kind='conditional_direction',status='degraded')
+    resources=resource_map(build_assessment_bundle(report,versioned_questionnaire(),[]))
+    guidance=resources['GuidanceResponse']; observation=resources['Observation']
+    assert guidance['status']=='data-required'
+    assert guidance['dataRequirement'][0]['codeFilter'][0]['code'][0]['code']=='secure-processing'
+    assert resources['CarePlan']['status']=='draft'
+    assert observation['status']=='final'
+    assert extension_value(observation,'capability_findings')==report['readiness_snapshot']['capability_findings']
+    assert extension_value(observation,'confidence_meaning')=='answer_completeness'
+
+
+def test_successful_blocked_evaluation_does_not_propose_executable_care_plan():
+    from pathfinder.fhir.export_service import build_assessment_bundle
+    resources=resource_map(build_assessment_bundle(versioned_report(kind='blocked',status='blocked'),versioned_questionnaire(),[]))
+    assert resources['GuidanceResponse']['status']=='success'
+    assert 'CarePlan' not in resources
+    assert 'result' not in resources['GuidanceResponse']
+    assert resources['Parameters']['parameter'][0]['name']=='blocker'
+    assert resources['Parameters']['parameter'][0]['valueString']=='A required capability is explicitly absent'
+
+
+def test_regulatory_only_degraded_is_success_with_draft_and_warning():
+    from pathfinder.fhir.export_service import build_assessment_bundle
+    resources=resource_map(build_assessment_bundle(versioned_report(status='degraded'),versioned_questionnaire(),[]))
+    assert resources['GuidanceResponse']['status']=='success'
+    assert 'dataRequirement' not in resources['GuidanceResponse']
+    assert resources['CarePlan']['status']=='draft'
+    assert any(p.get('valueString')=='Regulatory source remains unverified' for p in resources['Parameters']['parameter'])
+
+
+def test_withdrawn_history_keeps_original_processing_and_revokes_unexecuted_plan():
+    from pathfinder.fhir.export_service import build_assessment_bundle
+    report=versioned_report(valid=False)
+    resources=resource_map(build_assessment_bundle(report,versioned_questionnaire(),[]))
+    assert resources['GuidanceResponse']['status']=='success'
+    assert resources['CarePlan']['status']=='revoked'
+    assert extension_value(resources['CarePlan'],'current_validity')==report['current_validity']
+    assert extension_value(resources['Provenance'],'input_set')==report['result']['input_set']
+    assert extension_value(resources['Provenance'],'original_output')['status']=='ready'
+    assert resources['QuestionnaireResponse']['item'][0]['answer'][0]['valueCoding']['code']=='yes'
+    # Completing recommendation generation is not evidence of plan execution.
+    assert report['session']['status']=='complete'
+    assert resources['CarePlan']['status']!='completed'
+
+
+def test_every_bundle_reference_and_metadata_bind_selected_result():
+    import json
+    from pathfinder.fhir.export_service import build_assessment_bundle
+    report=versioned_report()
+    audits=[{'event_type':'answers_submitted','timestamp':'2026-11-27T12:00:00Z','event_data':{'assessment_id':'assessment-original'}}]
+    bundle=build_assessment_bundle(report,versioned_questionnaire(),audits)
+    known={f"{entry['resource']['resourceType']}/{entry['resource']['id']}" for entry in bundle['entry']}
+    known.add(f"Bundle/{bundle['id']}")
+    def check_refs(node):
+        if isinstance(node,dict):
+            for key,value in node.items():
+                if key in ('reference','questionnaire') and isinstance(value,str) and '/' in value and not value.startswith('https://'):
+                    assert value in known, value
+                check_refs(value)
+        elif isinstance(node,list):
+            for value in node: check_refs(value)
+    check_refs(bundle)
+    for entry in bundle['entry']:
+        resource=entry['resource']
+        assert len(resource['id'])<=64
+        assert extension_value(resource,'result_id')==report['result']['result_id']
+        assert extension_value(resource,'answer_revision')==3
+        assert extension_value(resource,'current_validity')==report['current_validity']
+    assert extension_value(bundle,'result_id')==report['result']['result_id']
+    assert 'extension' not in bundle
+    assert 'extension' not in resource_map(bundle)['Parameters']
+    other=versioned_report(); other['session']['result_id']=other['result']['result_id']='e1125500-0521-428c-8e89-46fabf4c94b0'
+    other['recommended_path']['result_id']=other['result']['result_id']
+    second=build_assessment_bundle(other,versioned_questionnaire(),audits)
+    assert {entry['fullUrl'] for entry in bundle['entry']}.isdisjoint({entry['fullUrl'] for entry in second['entry']})
+
+
+def test_real_historical_bundle_uses_selected_answers_findings_and_one_validity():
+    from test_assessment_revisions import setup, snapshots
+    from test_boundary_lifecycle import notice_for
+    service,assessment_id,answers=setup()
+    question_id=next(key for key,value in answers.items() if value=='yes')
+    answers[question_id]='unknown'
+    service.submit_answers(assessment_id,answers)
+    first=service.generate_recommendation(assessment_id)
+    answers[question_id]='yes'
+    service.submit_answers(assessment_id,answers)
+    service.generate_recommendation(assessment_id)
+    service.withdraw_inputs(notice_for(snapshots()[0]),actor='authenticated_admin')
+    bundle=service.export_fhir_bundle(assessment_id,result_id=first['result_id'])
+    resources=resource_map(bundle)
+    assert resources['GuidanceResponse']['status']=='data-required'
+    assert resources['CarePlan']['status']=='revoked'
+    items={item['linkId']:item['answer'] for item in resources['QuestionnaireResponse']['item']}
+    assert items[question_id][0]['valueCoding']['code']=='unknown'
+    assert extension_value(resources['Observation'],'capability_findings')['secure-processing']['judgment']=='unknown'
+    for entry in bundle['entry']:
+        assert extension_value(entry['resource'],'result_id')==first['result_id']
+        assert extension_value(entry['resource'],'answer_revision')==first['answer_revision']
+        assert extension_value(entry['resource'],'current_validity')==extension_value(bundle,'current_validity')
+
+
+def test_known_blocker_takes_priority_over_other_unresolved_conditions():
+    from pathfinder.fhir.export_service import build_assessment_bundle
+    report=versioned_report(status='blocked',kind='blocked')
+    report['recommended_path']['missing_information']=['capability:other']
+    resources=resource_map(build_assessment_bundle(report,versioned_questionnaire(),[]))
+    assert resources['GuidanceResponse']['status']=='success'
+    assert 'dataRequirement' not in resources['GuidanceResponse']
+    assert 'CarePlan' not in resources

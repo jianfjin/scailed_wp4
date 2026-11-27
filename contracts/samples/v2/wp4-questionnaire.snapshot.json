@@ -1,0 +1,93 @@
+{
+  "contract": "pf.questionnaire.v2",
+  "manifest": {
+    "contract_version": "2.0.0",
+    "snapshot_id": "f49313a8-1bb8-51c5-9dab-747c848d670a",
+    "producer_wp": "WP4",
+    "generated_at": "2026-11-10T00:00:00Z",
+    "generator": {
+      "name": "contracts-builder",
+      "version": "1.0.0",
+      "seed": null
+    },
+    "supersedes": null,
+    "items_checksum": "sha256:ec685da38bf3db04e40b5e17b0fb458b096a1851c475d9f8a66cf5dda602606a",
+    "derived_from": [
+      {
+        "source": "T4.1",
+        "status": "approved"
+      }
+    ],
+    "dependencies": {
+      "pf.taxonomy.v1": "136c7555-45e3-40dc-a9ac-6749cc516ef3"
+    },
+    "migration_notes": [
+      {
+        "from_version": "1.0.0",
+        "to_version": "2.0.0",
+        "change": "Explicit capability claims, unknown and provenance; synthetic example pending owner approval."
+      }
+    ]
+  },
+  "payload": {
+    "stakeholder_type": "pf:wp2:stakeholder:biotech-sme",
+    "version": "2.0.0",
+    "title": "Biotech SME readiness self-assessment",
+    "target_scenarios": [
+      "pf:wp2:scenario:secondary-use-readiness",
+      "pf:wp2:scenario:ai-model-training"
+    ],
+    "review_status": "for-review",
+    "questions": [
+      {
+        "question_id": "pf:wp4:question:biotech-sme-1",
+        "label": "Does this assessment report a secure processing capability?",
+        "question_type": "single_choice",
+        "required": true,
+        "options": [
+          "yes",
+          "no",
+          "unknown"
+        ],
+        "min_value": null,
+        "max_value": null,
+        "maturity_dimension": null,
+        "visible_if": null,
+        "capability_id": "secure-processing"
+      },
+      {
+        "question_id": "pf:wp4:question:biotech-sme-2",
+        "label": "Question 2",
+        "question_type": "numeric",
+        "required": true,
+        "options": [],
+        "min_value": 1,
+        "max_value": 5,
+        "maturity_dimension": "pf:wp2:dimension:maturity-governance",
+        "visible_if": null
+      },
+      {
+        "question_id": "pf:wp4:question:biotech-sme-3",
+        "label": "Question 3",
+        "question_type": "numeric",
+        "required": true,
+        "options": [],
+        "min_value": 1,
+        "max_value": 5,
+        "maturity_dimension": "pf:wp2:dimension:maturity-data",
+        "visible_if": null
+      },
+      {
+        "question_id": "pf:wp4:question:biotech-sme-4",
+        "label": "Question 4",
+        "question_type": "numeric",
+        "required": true,
+        "options": [],
+        "min_value": 1,
+        "max_value": 5,
+        "maturity_dimension": "pf:wp2:dimension:maturity-compliance",
+        "visible_if": null
+      }
+    ]
+  }
+}
