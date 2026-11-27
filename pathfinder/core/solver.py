@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathfinder.core.contract_registry import EVIDENCE_PROFILE, LEGACY_PROFILE
+
 from pathfinder.core.compliance import ComplianceEvaluator
 from pathfinder.core.exceptions import NoFeasiblePathError
 from pathfinder.core.graph import InMemoryRoadmapGraph
@@ -25,7 +27,7 @@ class PathfinderSolver:
         triggered = self.evaluator.triggered_rules(state, rules)
         evaluations = []
         missing = set()
-        if self.evaluator.profile_id == "evidence-v2":
+        if self.evaluator.profile_id == EVIDENCE_PROFILE.profile_id:
             for rule in rules:
                 if not rule.applies_to_stakeholder(state.stakeholder_type):
                     continue

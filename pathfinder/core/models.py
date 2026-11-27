@@ -6,6 +6,8 @@ run in tests and demos before FastAPI/Pydantic dependencies are installed.
 
 from __future__ import annotations
 
+from pathfinder.core.contract_registry import EVIDENCE_PROFILE, LEGACY_PROFILE
+
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from enum import StrEnum
@@ -88,13 +90,13 @@ class Questionnaire:
     title: str
     target_scenarios: tuple[str, ...]
     questions: tuple[Question, ...]
-    profile_id: str = "legacy-v1"
+    profile_id: str = LEGACY_PROFILE.profile_id
     capability_vocabulary: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["questions"] = [question.to_dict() for question in self.questions]
-        if self.profile_id == "legacy-v1":
+        if self.profile_id == LEGACY_PROFILE.profile_id:
             data.pop("profile_id")
             data.pop("capability_vocabulary")
         return data
@@ -115,11 +117,11 @@ class StakeholderState:
     schema_version: str = SCHEMA_VERSION
     upstream_snapshot_version: str = DEMO_UPSTREAM_SNAPSHOT
     capability_findings: dict[str, CapabilityFinding] = field(default_factory=dict)
-    profile_id: str = "legacy-v1"
+    profile_id: str = LEGACY_PROFILE.profile_id
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
-        if self.profile_id == "legacy-v1":
+        if self.profile_id == LEGACY_PROFILE.profile_id:
             data.pop("capability_findings")
             data.pop("profile_id")
         return data
@@ -232,7 +234,7 @@ class PathResult:
     effort_estimate: str = "medium"
     path_backend: str = "python"  # "python" | "cypher" | "n/a (blocked)"
     missing_information: tuple[str, ...] = ()
-    profile_id: str = "legacy-v1"
+    profile_id: str = LEGACY_PROFILE.profile_id
     regulatory_status: str = "verified"
 
     def to_dict(self) -> dict[str, Any]:

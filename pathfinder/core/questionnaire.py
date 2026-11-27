@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathfinder.core.contract_registry import EVIDENCE_PROFILE, LEGACY_PROFILE
+
 from typing import Any
 
 from pathfinder.core.exceptions import UnknownStakeholderTypeError, ValidationError
@@ -29,7 +31,7 @@ class QuestionnaireEngine:
     def validate_answers(self, stakeholder_type: str, answers: dict[str, Any]) -> tuple[str, ...]:
         questionnaire = self.get(stakeholder_type)
         warnings: list[str] = []
-        if questionnaire.profile_id == "evidence-v2":
+        if questionnaire.profile_id == EVIDENCE_PROFILE.profile_id:
             unknown = set(answers) - {q.question_id for q in questionnaire.questions}
             if unknown:
                 raise ValidationError(f"unknown answer IDs: {sorted(unknown)}")
@@ -45,7 +47,7 @@ class QuestionnaireEngine:
                 continue
 
             if question.question_type == QuestionType.NUMERIC:
-                if not isinstance(value, int) or (questionnaire.profile_id == "evidence-v2" and isinstance(value, bool)):
+                if not isinstance(value, int) or (questionnaire.profile_id == EVIDENCE_PROFILE.profile_id and isinstance(value, bool)):
                     raise ValidationError(f"numeric answer required: {question.question_id}")
                 if question.min_value is not None and value < question.min_value:
                     raise ValidationError(f"answer below minimum: {question.question_id}")
@@ -82,15 +84,15 @@ class QuestionnaireEngine:
             if question.maturity_dimension and isinstance(value, int):
                 maturity_scores[question.maturity_dimension] = value
             state_field = question.state_field or question.question_id
-            if state_field == "capabilities" and isinstance(value, list):
+            if questionnaire.profile_id == LEGACY_PROFILE.profile_id and state_field == "capabilities" and isinstance(value, list):
                 capabilities.extend(value)
-            if state_field == "missing_capabilities" and isinstance(value, list):
+            if questionnaire.profile_id == LEGACY_PROFILE.profile_id and state_field == "missing_capabilities" and isinstance(value, list):
                 missing_capabilities.extend(value)
             if state_field == "regulatory_flags" and isinstance(value, list):
                 regulatory_flags.extend(value)
 
         findings: dict[str, CapabilityFinding] = {}
-        if questionnaire.profile_id == "evidence-v2":
+        if questionnaire.profile_id == EVIDENCE_PROFILE.profile_id:
             findings = {cap: CapabilityFinding(cap) for cap in questionnaire.capability_vocabulary}
 
             def assert_finding(cap: str, judgment: str, answer_id: str) -> None:

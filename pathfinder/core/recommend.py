@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from pathfinder.core.contract_registry import EVIDENCE_PROFILE, LEGACY_PROFILE
+
 from pathfinder.core.models import PathResult
 
 
 def build_recommendation(path: PathResult) -> dict[str, object]:
     status = "blocked" if path.blockers else "ready"
-    if path.profile_id == "evidence-v2" and not path.blockers and (path.missing_information or path.regulatory_status != "verified"):
+    if path.profile_id == EVIDENCE_PROFILE.profile_id and not path.blockers and (path.missing_information or path.regulatory_status != "verified"):
         status = "degraded"
     next_steps = [
         {
@@ -32,7 +34,7 @@ def build_recommendation(path: PathResult) -> dict[str, object]:
         "trace": path.trace.to_dict(),
         "path_backend": path.path_backend,
     }
-    if path.profile_id == "evidence-v2":
+    if path.profile_id == EVIDENCE_PROFILE.profile_id:
         result.update(recommendation_kind="blocked" if path.blockers else "conditional_direction" if path.missing_information else "executable_path",
                       missing_information=list(path.missing_information), profile_id=path.profile_id,
                       confidence_meaning="answer_completeness")

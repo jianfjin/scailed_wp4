@@ -18,7 +18,7 @@ import uuid
 from pathlib import Path
 from datetime import datetime
 
-from pathfinder.core.contract_registry import CONTRACTS, contract_definition
+from pathfinder.core.contract_registry import CONTRACTS, EVIDENCE_PROFILE, LEGACY_PROFILE, contract_definition
 
 try:
     from jsonschema import Draft202012Validator, FormatChecker
@@ -212,8 +212,9 @@ def referential_checks(by_contract: dict, errors: list, warnings: list | None = 
                 errors.append(
                     f"questionnaire: unsupported combination stakeholder '{qs['stakeholder_type']}' x scenario '{s}' (RFQ 3.2 supported combinations)"
                 )
+        vocabulary = set(tax_docs[0].get("capability_vocabulary", [])) if tax_docs else set()
         for q in qs.get("questions", []):
-            if q.get("capability_id") and tax_docs and q["capability_id"] not in set(tax_docs[0].get("capability_vocabulary", [])):
+            if q.get("capability_id") and tax_docs and q["capability_id"] not in vocabulary:
                 errors.append(f"questionnaire {q['question_id']}: capability_id not in taxonomy vocabulary")
             d = q.get("maturity_dimension")
             if d and dim_ids and d not in dim_ids:
@@ -227,7 +228,6 @@ def referential_checks(by_contract: dict, errors: list, warnings: list | None = 
             if q.get("state_field") and q["question_type"] != "multi_choice":
                 errors.append(f"questionnaire {q['question_id']}: state_field requires multi_choice")
             if q.get("state_field") in {"capabilities", "missing_capabilities"} and tax_docs:
-                vocabulary = set(tax_docs[0].get("capability_vocabulary", []))
                 if not set(q.get("options", [])) <= vocabulary:
                     errors.append(f"questionnaire {q['question_id']}: capability options not in taxonomy vocabulary")
 
@@ -314,6 +314,7 @@ def behavioral_checks(doc, errors):
     if contract not in ("pf.rulebundle.v1", "pf.rulebundle.v2"):
         return
     evidence = contract == "pf.rulebundle.v2"
+    profile = EVIDENCE_PROFILE if evidence else LEGACY_PROFILE
 
     def check_condition(condition, context):
         if evidence and not condition:
@@ -349,7 +350,7 @@ def behavioral_checks(doc, errors):
             errors.append(f"rule {rule['rule_id']}: effective_from is after effective_until")
     if len(errors) != before:
         return
-    evaluator = ComplianceEvaluator("evidence-v2" if evidence else "legacy-v1")
+    evaluator = ComplianceEvaluator(profile.profile_id)
     for test in payload["tests"]:
         rule = rules.get(test["rule_id"])
         if rule is None:
@@ -370,11 +371,16 @@ def behavioral_checks(doc, errors):
         state = StakeholderState(given.get("stakeholder_type", rule["applies_to"][0]), given.get("target_scenario", ""), {},
             {k.removeprefix("maturity."): v for k, v in given.items() if k.startswith("maturity.")},
             tuple(given.get("capabilities", [])), tuple(given.get("missing_capabilities", [])), tuple(given.get("regulatory_flags", [])), 1.0, (), "test",
-            capability_findings=findings, profile_id="evidence-v2" if evidence else "legacy-v1")
+            capability_findings=findings, profile_id=profile.profile_id)
         try:
             truth = evaluator.evaluate(rule["condition"], state) if "all" in rule["applies_to"] or state.stakeholder_type in rule["applies_to"] else False
             triggered = evaluator.is_triggered(truth)
-            actual = "unknown" if truth is TruthValue.UNKNOWN else "blocked" if triggered and rule["action"].get("block", False) else "triggered" if triggered else "not-triggered"
+            if truth is TruthValue.UNKNOWN:
+                actual = "unknown"
+            elif triggered and rule["action"].get("block", False):
+                actual = "blocked"
+            else:
+                actual = "triggered" if triggered else "not-triggered"
             if actual != test["expect"]["outcome"] or ("action_contains" in test["expect"] and test["expect"]["action_contains"] not in rule["action"]["text"]):
                 errors.append(f"rule test {test['test_id']}: expected {test['expect']}, got {actual}")
         except (TypeError, ValueError) as exc:

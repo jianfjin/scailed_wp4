@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+from pathfinder.core.contract_registry import EVIDENCE_PROFILE, LEGACY_PROFILE
+
 from typing import Any
 
 from pathfinder.core.models import ConditionEvaluation, Rule, StakeholderState, TruthValue
 
 
 class ComplianceEvaluator:
-    def __init__(self, profile_id: str = "legacy-v1") -> None:
-        if profile_id not in ("legacy-v1", "evidence-v2"):
+    def __init__(self, profile_id: str = LEGACY_PROFILE.profile_id) -> None:
+        if profile_id not in (LEGACY_PROFILE.profile_id, EVIDENCE_PROFILE.profile_id):
             raise ValueError(f"unsupported evaluation profile: {profile_id}")
         self.profile_id = profile_id
 
@@ -27,7 +29,7 @@ class ComplianceEvaluator:
         return value is True or value is TruthValue.TRUE
 
     def evaluate(self, condition: dict[str, Any], state: StakeholderState) -> bool | TruthValue:
-        if self.profile_id == "evidence-v2":
+        if self.profile_id == EVIDENCE_PROFILE.profile_id:
             return self.evaluate_details(condition, state).truth
         if not condition:
             return True
