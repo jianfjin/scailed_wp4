@@ -49,3 +49,18 @@ test('present self-report remains unverified even when guidance is available', (
   assert.equal(view.findings[0].judgmentLabel, 'Present');
   assert.equal(view.findings[0].verificationLabel, 'Unverified');
 });
+
+test('legacy unbound history keeps missing evidence explicit without presenting current readiness', () => {
+  const view = projectAssessmentSemantics({
+    result: { binding_status: 'legacy_unbound' }, readiness_snapshot: null,
+    recommended_path: { status: 'ready', profile_id: 'legacy-v1', answer_revision: null,
+      current_validity: { valid: true, status: 'valid', lifecycle_revision: 0, affected_inputs: [] } },
+  });
+  assert.equal(view.heading, 'Historical result — original evidence unavailable');
+  assert.equal(view.pathHeading, 'Historical candidate path — original evidence unavailable');
+  assert.equal(view.bindingStatus, 'legacy_unbound');
+  assert.equal(view.answerRevision, 'Unknown (legacy evidence)');
+  assert.equal(view.historical, true);
+  assert.deepEqual(view.findings, []);
+  assert.equal(view.validityStatus, 'valid');
+});

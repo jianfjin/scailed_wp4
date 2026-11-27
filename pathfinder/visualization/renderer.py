@@ -111,6 +111,8 @@ def _render_semantics(vm: ReportViewModel) -> str:
     )
     if s.inputs_valid is False:
         path_note = 'Historical candidate path — unavailable for new guidance. Original result is preserved.'
+    elif s.binding_status == 'legacy_unbound':
+        path_note = 'Historical candidate path — original evidence unavailable. Original answers cannot be recovered; use a new assessment for current guidance.'
     elif s.recommendation_kind == 'conditional_direction':
         path_note = 'Candidate direction — more information required. Path execution is not confirmed.'
     elif s.status == 'blocked':
@@ -125,6 +127,7 @@ def _render_semantics(vm: ReportViewModel) -> str:
         <dt>Result ID</dt><dd>{_esc(s.result_id)}</dd>
         <dt>Answer revision</dt><dd>{s.answer_revision if s.answer_revision is not None else "unknown"}</dd>
         <dt>Semantic profile</dt><dd>{_esc(s.profile_id)}</dd>
+        <dt>Evidence binding</dt><dd>{_esc(s.binding_status)}</dd>
         <dt>Original result</dt><dd>{_esc(s.status)}</dd>
         <dt>Current validity</dt><dd>{_esc(s.validity_status)}</dd>
         <dt>Lifecycle revision</dt><dd>{s.lifecycle_revision if s.lifecycle_revision is not None else "not observed"}</dd>

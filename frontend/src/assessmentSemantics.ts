@@ -24,9 +24,10 @@ export type CurrentValidity = {
 };
 
 export type SemanticsReport = {
-  session?: { result_id?: string; answer_revision?: number; profile_id?: string };
+  session?: { result_id?: string; answer_revision?: number | null; profile_id?: string };
   current_validity?: CurrentValidity;
-  readiness_snapshot?: { capability_findings?: Record<string, CapabilityFinding> };
+  readiness_snapshot?: { capability_findings?: Record<string, CapabilityFinding> } | null;
+  result?: { binding_status?: string } | null;
   recommended_path?: {
     status?: string;
     profile_id?: string;
@@ -34,7 +35,7 @@ export type SemanticsReport = {
     missing_information?: string[];
     capability_findings?: Record<string, CapabilityFinding>;
     result_id?: string;
-    answer_revision?: number;
+    answer_revision?: number | null;
     current_validity?: CurrentValidity;
   };
 };
@@ -43,18 +44,23 @@ export function projectAssessmentSemantics(report: SemanticsReport) {
   const path = report.recommended_path;
   const validity = report.current_validity ?? path?.current_validity;
   const profile = path?.profile_id ?? report.session?.profile_id ?? "legacy-v1";
-  const historical = validity?.valid === false;
+  const withdrawn = validity?.valid === false;
+  const bindingStatus = report.result?.binding_status ?? "not recorded";
+  const unbound = bindingStatus === "legacy_unbound";
+  const historical = withdrawn || unbound;
   const conditional = path?.recommendation_kind === "conditional_direction";
   const blocked = path?.status === "blocked";
   const originalStatus = path?.status ?? "unknown";
   let heading = "Result unavailable";
-  if (historical) heading = "Historical result — inputs withdrawn";
+  if (withdrawn) heading = "Historical result — inputs withdrawn";
+  else if (unbound) heading = "Historical result — original evidence unavailable";
   else if (blocked) heading = "Blocked";
   else if (conditional) heading = "Conditional direction";
   else if (originalStatus === "degraded") heading = "Unverified regulatory basis";
   else if (profile === "evidence-v2") heading = "Guidance available";
   else if (originalStatus === "ready") heading = "Ready";
-  const pathHeading = historical ? "Historical candidate path — unavailable for new guidance" :
+  const pathHeading = withdrawn ? "Historical candidate path — unavailable for new guidance" :
+    unbound ? "Historical candidate path — original evidence unavailable" :
     blocked ? "Blocked candidate path" : conditional ? "Candidate direction — more information required" :
     "Proposed guidance path";
   const findings = Object.entries(report.readiness_snapshot?.capability_findings ?? path?.capability_findings ?? {})
@@ -67,10 +73,11 @@ export function projectAssessmentSemantics(report: SemanticsReport) {
       verificationLabel: finding.verification_status === "verified" ? "Verified" : "Unverified",
     }));
   return {
-    heading, pathHeading, historical, originalStatus, profile,
+    heading, pathHeading, historical, originalStatus, profile, bindingStatus,
+    historyNote: withdrawn ? "This result is historical. Its original output is preserved; withdrawn inputs cannot support new guidance." : "This result is historical. Original answers are unavailable; use a new assessment for current guidance.",
     confidenceLabel: profile === "evidence-v2" ? "Answer completeness" : "Confidence",
     resultId: path?.result_id ?? report.session?.result_id,
-    answerRevision: path?.answer_revision ?? report.session?.answer_revision,
+    answerRevision: unbound ? "Unknown (legacy evidence)" : path?.answer_revision ?? report.session?.answer_revision ?? undefined,
     lifecycleRevision: validity?.lifecycle_revision,
     validityStatus: validity?.status ?? "not observed",
     missingInformation: path?.missing_information ?? [],

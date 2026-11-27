@@ -59,9 +59,14 @@ class QuestionnaireEngine:
             elif question.question_type == QuestionType.MULTI_CHOICE:
                 if not isinstance(value, list):
                     raise ValidationError(f"list answer required: {question.question_id}")
+                if not all(isinstance(item, str) for item in value):
+                    raise ValidationError(f"string options required: {question.question_id}")
                 invalid = sorted(set(value).difference(question.options))
                 if invalid:
                     raise ValidationError(f"invalid options for {question.question_id}: {invalid}")
+
+            elif question.question_type == QuestionType.TEXT and questionnaire.profile_id == EVIDENCE_PROFILE.profile_id and not isinstance(value, str):
+                raise ValidationError(f"text answer required: {question.question_id}")
 
         return tuple(warnings)
 
@@ -109,7 +114,7 @@ class QuestionnaireEngine:
 
             for question in questionnaire.questions:
                 value = answers.get(question.question_id)
-                if question.capability_id and value is not None:
+                if question.capability_id and value not in (None, "", []):
                     assert_finding(question.capability_id, {"yes": "present", "no": "absent", "unknown": "unknown"}[value], question.question_id)
                 state_field = question.state_field or question.question_id
                 if state_field in ("capabilities", "missing_capabilities") and isinstance(value, list):

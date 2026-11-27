@@ -26,7 +26,7 @@ type PathfinderReport = SemanticsReport & {
     source_wp2_stakeholder_id?: string;
     source_wp2_snapshot_version?: string;
     source_wp3_snapshot_version?: string;
-  };
+  } | null;
   recommended_path?: {
     status?: string;
     regulatory_status?: string;
@@ -207,11 +207,12 @@ function ReportSummary({ report, assessmentId }: { report: PathfinderReport; ass
         "Result ID": semantics.resultId,
         "Answer revision": semantics.answerRevision,
         "Original result": semantics.originalStatus,
+        "Evidence binding": semantics.bindingStatus,
         "Current validity": semantics.validityStatus,
         "Lifecycle revision": semantics.lifecycleRevision,
         "Semantic profile": semantics.profile,
       }} />
-      {semantics.historical && <p className="notice" role="status">This result is historical. Its original output is preserved; withdrawn inputs cannot support new guidance.</p>}
+      {semantics.historical && <p className="notice" role="status">{semantics.historyNote}</p>}
       <EvidenceList title="Missing information" items={semantics.missingInformation} />
       {semantics.findings.length > 0 && <div className="evidence-block">
         <h3>Capability findings</h3>
@@ -417,8 +418,10 @@ function App() {
 
   useEffect(() => {
     if (!token) return;
+    let cancelled = false;
     api<{ stakeholder_types: string[]; mock_data_mode: boolean }>(`${API_PREFIX}/questionnaires`)
       .then((data) => {
+        if (cancelled) return;
         setTypes(data.stakeholder_types);
         setBoundaryMode(!data.mock_data_mode);
         setStakeholderType((current) => (
@@ -427,9 +430,10 @@ function App() {
             : (data.stakeholder_types[0] || "")
         ));
       })
-      .catch((err) => setError(String(err)));
+      .catch((err) => { if (!cancelled) setError(String(err)); });
     api<{ mode: string; active_snapshot_ids?: Record<string, string>; import_reports?: Record<string, { activated_records?: number }> }>("/health")
       .then((h) => {
+        if (cancelled) return;
         if (API_VERSION === "v2") {
           setBannerText("Evidence v2: current answers and validated partner snapshots are required.");
         } else if (h.active_snapshot_ids && Object.keys(h.active_snapshot_ids).length) {
@@ -444,7 +448,8 @@ function App() {
           setBannerText("Demo mode. WP2/WP3/WP8 inputs pending.");
         }
       })
-      .catch(() => setBannerText("Demo mode. WP2/WP3/WP8 inputs pending."));
+      .catch(() => { if (!cancelled) setBannerText("Demo mode. WP2/WP3/WP8 inputs pending."); });
+    return () => { cancelled = true; };
   }, [token]);
 
   useEffect(() => {
@@ -542,6 +547,7 @@ function App() {
             event.preventDefault();
             const next = tokenInput.trim();
             if (next === token) return;
+            invalidateDraftResult();
             accessToken = next;
             setToken(next);
             setTypes([]);

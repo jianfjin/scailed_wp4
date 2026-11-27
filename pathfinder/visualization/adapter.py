@@ -59,6 +59,7 @@ def build_view_model(raw_report: dict[str, Any]) -> ReportViewModel:
         result_id=path.get("result_id", session.get("result_id", "")),
         answer_revision=path.get("answer_revision", session.get("answer_revision")),
         lifecycle_revision=validity.get("lifecycle_revision"),
+        binding_status=(raw_report.get("result") or {}).get("binding_status", "not_recorded"),
     )
 
     # ── Rule evidence (triggered rules → RuleCards) ──────────────────
@@ -149,7 +150,7 @@ def build_view_model(raw_report: dict[str, Any]) -> ReportViewModel:
             capability_id=key, judgment=item.get("judgment", "unknown"),
             source=item.get("source", "unanswered"), verification_status=item.get("verification_status", "unverified"),
             answer_ids=tuple(item.get("answer_ids", ())), evidence_refs=tuple(item.get("evidence_refs", ())),
-        ) for key, item in sorted((raw_report.get("readiness_snapshot", {}).get("capability_findings") or path.get("capability_findings") or {}).items())),
+        ) for key, item in sorted(((raw_report.get("readiness_snapshot") or {}).get("capability_findings") or path.get("capability_findings") or {}).items())),
         affected_inputs=tuple(InputValidityView(
             contract=item["contract"], snapshot_id=item["snapshot_id"], producer_wp=item["producer_wp"],
             notice_id=item["notice_id"], reason=item["reason"], dependency_path=tuple(item.get("dependency_path", ())),

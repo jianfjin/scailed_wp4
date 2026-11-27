@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class ApiError(BaseModel):
     """Machine-readable error carried inside FastAPI's detail envelope."""
 
+    current_validity: CurrentValidityResponse | None = None
     error: str = Field(description="Machine-readable error code")
     detail: str = Field(description="Human-readable message")
 
@@ -197,7 +198,7 @@ class ReportResponse(BaseModel):
     audit_chain_valid: bool
     missing_data_warnings: list[str]
     session: dict[str, Any]
-    readiness_snapshot: StakeholderStateResponse
+    readiness_snapshot: StakeholderStateResponse | None
     recommended_path: RecommendationResponse
     result: ResultRecordResponse | None = None
     current_validity: CurrentValidityResponse | None = None
@@ -245,10 +246,18 @@ class AdminReloadResponse(BaseModel):
     active_rule_version: str
 
 
+class ResultHistoryEntryResponse(BaseModel):
+    result_id: str
+    answer_revision: int | None
+    binding_status: str
+    profile_id: str
+
+
 class AssessmentStateResponse(BaseModel):
     """Current state of an assessment session (GET /v1/assessments/{id})."""
 
     model_config = ConfigDict(extra="allow")
+    result_history: list[ResultHistoryEntryResponse] = Field(default_factory=list)
 
     assessment_id: str
     stakeholder_type: str
@@ -365,5 +374,5 @@ class ResultRecordResponse(BaseModel):
     original_output: dict[str, Any]
     content_hash: str | None = None
 
-for response in (StakeholderStateResponse, TraceRecordResponse, RecommendationResponse, ReportResponse, ResultRecordResponse):
+for response in (ApiError, ApiErrorEnvelope, StakeholderStateResponse, TraceRecordResponse, RecommendationResponse, ReportResponse, ResultRecordResponse):
     response.model_rebuild()

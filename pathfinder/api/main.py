@@ -55,7 +55,7 @@ from pathfinder.api.schemas import (
     WithdrawalReceipt,
 )
 from pathfinder.adapters.upstream import UpstreamClient
-from pathfinder.core.exceptions import ValidationError as PathfinderValidationError
+from pathfinder.core.exceptions import UnknownStakeholderTypeError, ValidationError as PathfinderValidationError
 from pathfinder.core.contract_registry import LEGACY_PROFILE, EVIDENCE_PROFILE
 from pathfinder.services.assessment_service import AssessmentService
 from pathfinder.visualization.adapter import build_view_model
@@ -170,27 +170,33 @@ app.add_middleware(RequestLoggingMiddleware)
 
 
 def _auth_error(detail: str) -> HTTPException:
-    return HTTPException(status_code=401, detail=ApiError(error="AUTH_REQUIRED", detail=detail).model_dump())
+    return HTTPException(status_code=401, detail=ApiError(error="AUTH_REQUIRED", detail=detail).model_dump(exclude_none=True))
 
 
 def _forbidden_error(detail: str) -> HTTPException:
-    return HTTPException(status_code=403, detail=ApiError(error="FORBIDDEN", detail=detail).model_dump())
+    return HTTPException(status_code=403, detail=ApiError(error="FORBIDDEN", detail=detail).model_dump(exclude_none=True))
 
 
 def _not_found(detail: str) -> HTTPException:
-    return HTTPException(status_code=404, detail=ApiError(error="NOT_FOUND", detail=detail).model_dump())
+    return HTTPException(status_code=404, detail=ApiError(error="NOT_FOUND", detail=detail).model_dump(exclude_none=True))
 
 
 def _validation_error(detail: str) -> HTTPException:
     for prefix, code in (('migration_required', 'MIGRATION_REQUIRED'), ('recommendation_required', 'RECOMMENDATION_REQUIRED'), ('semantic_approval_required', 'SEMANTIC_APPROVAL_REQUIRED')):
         if detail.startswith(prefix):
-            return HTTPException(status_code=409, detail=ApiError(error=code, detail=detail).model_dump())
-    return HTTPException(status_code=400, detail=ApiError(error="VALIDATION_ERROR", detail=detail).model_dump())
+            return HTTPException(status_code=409, detail=ApiError(error=code, detail=detail).model_dump(exclude_none=True))
+    return HTTPException(status_code=400, detail=ApiError(error="VALIDATION_ERROR", detail=detail).model_dump(exclude_none=True))
 
 
 def _lifecycle_conflict(exc):
     code = 'INPUTS_WITHDRAWN' if isinstance(exc, InputsWithdrawn) else 'NOTICE_IDENTITY_CONFLICT'
-    return HTTPException(status_code=409, detail=ApiError(error=code, detail=str(exc)).model_dump())
+    detail = str(exc)
+    if isinstance(exc, InputsWithdrawn):
+        detail += ': ' + '; '.join(
+            f"{item['contract']} / {item['snapshot_id']} ({item['producer_wp']}): {item['reason']}"
+            for item in exc.observation['affected_inputs'])
+    return HTTPException(status_code=409, detail=ApiError(error=code, detail=detail,
+        current_validity=exc.observation if isinstance(exc, InputsWithdrawn) else None).model_dump(exclude_none=True))
 
 
 @app.post('/v2/admin/withdrawals', response_model=WithdrawalReceipt,
@@ -208,7 +214,7 @@ def withdraw_inputs(request: Request, body: dict, authorization: str | None = De
 def _rate_limited(detail: str) -> JSONResponse:
     return JSONResponse(
         status_code=429,
-        content={"detail": ApiError(error="RATE_LIMITED", detail=detail).model_dump()},
+        content={"detail": ApiError(error="RATE_LIMITED", detail=detail).model_dump(exclude_none=True)},
     )
 
 
@@ -266,6 +272,8 @@ async def create_assessment(
             target_scenario=body.target_scenario,
             **_audit_context(request),
         )
+    except (InputsWithdrawn, NoticeConflict) as exc:
+        raise _lifecycle_conflict(exc) from exc
     except (PathfinderValidationError, ValueError) as exc:
         raise _validation_error(str(exc)) from exc
 
@@ -278,7 +286,7 @@ def get_assessment(assessment_id: str, authorization: str | None = Depends(beare
         _require_legacy_session(assessment_id)
         session = svc.get_session(assessment_id)
         record = svc._result_record(session)
-        if record is not None and not svc.current_validity(record['input_set'])['valid']:
+        if session.get('recommendation') and (record is None or not svc.current_validity(record['input_set'])['valid']):
             raise _validation_error('migration_required: use the v2 historical report for current source validity')
         return session
     except HTTPException:
@@ -310,7 +318,7 @@ async def submit_answers(
     except KeyError as exc:
         raise _not_found("assessment not found") from exc
     except SessionConflict as exc:
-        raise HTTPException(status_code=409, detail=ApiError(error="VALIDATION_ERROR", detail=str(exc)).model_dump()) from exc
+        raise HTTPException(status_code=409, detail=ApiError(error="VALIDATION_ERROR", detail=str(exc)).model_dump(exclude_none=True)) from exc
     except Exception as exc:
         raise _validation_error(str(exc)) from exc
 
@@ -338,7 +346,7 @@ async def recommendations(
     except KeyError as exc:
         raise _not_found("assessment not found") from exc
     except SessionConflict as exc:
-        raise HTTPException(status_code=409, detail=ApiError(error="VALIDATION_ERROR", detail=str(exc)).model_dump()) from exc
+        raise HTTPException(status_code=409, detail=ApiError(error="VALIDATION_ERROR", detail=str(exc)).model_dump(exclude_none=True)) from exc
     except Exception as exc:
         raise _validation_error(str(exc)) from exc
 
@@ -443,7 +451,7 @@ def fhir_assessment_bundle(
     except Exception as exc:
         return JSONResponse(
             status_code=500,
-            content={"detail": ApiError(error="SERVER_ERROR", detail="internal server error").model_dump()},
+            content={"detail": ApiError(error="SERVER_ERROR", detail="internal server error").model_dump(exclude_none=True)},
         )
     return FhirResponse(content=bundle)
 
@@ -467,10 +475,10 @@ def _v2_call(operation, *args, **kwargs):
     except (InputsWithdrawn, NoticeConflict) as exc:
         raise _lifecycle_conflict(exc) from exc
     except SessionConflict as exc:
-        raise HTTPException(status_code=409, detail=ApiError(error='ANSWER_REVISION_CONFLICT', detail=str(exc)).model_dump()) from exc
-    except KeyError as exc:
+        raise HTTPException(status_code=409, detail=ApiError(error='ANSWER_REVISION_CONFLICT', detail=str(exc)).model_dump(exclude_none=True)) from exc
+    except (KeyError, UnknownStakeholderTypeError) as exc:
         raise _not_found('assessment, questionnaire or result not found') from exc
-    except ValueError as exc:
+    except (ValueError, PathfinderValidationError) as exc:
         raise _validation_error(str(exc)) from exc
 
 
@@ -504,8 +512,12 @@ def get_assessment_v2(assessment_id: str, authorization: str | None = Depends(be
     require_demo_token(authorization)
     session = _v2_call(_get_service().get_session, assessment_id)
     record = _v2_call(_get_service()._result_record, session)
+    session['result_history'] = _v2_call(_get_service().result_history, assessment_id)
     if record is not None:
         session['recommendation'] = _get_service()._result_projection(record, _v2_call(_get_service().current_validity, record['input_set']))
+    else:
+        session.pop('recommendation', None)
+        session.pop('result_id', None)
     return session
 
 
@@ -531,7 +543,7 @@ def report_v2(assessment_id: str, request: Request, result_id: str | None = None
     if not authorization and token and ENVIRONMENT != 'production':
         authorization = 'Bearer ' + token
     require_demo_token(authorization)
-    raw = _v2_call(_get_service().report, assessment_id, result_id=result_id, **_audit_context(request))
+    raw = _v2_call(_get_service().report, assessment_id, result_id=result_id, allow_implicit=False, **_audit_context(request))
     if format == 'html':
         return HTMLResponse(render_html(build_view_model(raw)))
     return ReportResponse.model_validate(raw).model_dump(mode='json')
@@ -552,7 +564,7 @@ def roadmap_v2(authorization: str | None = Depends(bearer_authorization)):
     require_demo_token(authorization)
     generation = _v2_call(_get_service()._active_generation, EVIDENCE_PROFILE.profile_id)[1]
     if generation is None:
-        raise HTTPException(status_code=503, detail=ApiError(error='SERVER_ERROR', detail='no validated v2 generation is active').model_dump())
+        raise HTTPException(status_code=503, detail=ApiError(error='SERVER_ERROR', detail='no validated v2 generation is active').model_dump(exclude_none=True))
     return generation.graph.to_dict()
 
 
@@ -564,7 +576,7 @@ def roadmap(authorization: str | None = Depends(bearer_authorization)) -> dict[s
     svc = _get_service()
     generation = svc.active_boundary
     if svc._boundary_store and generation is None:
-        raise HTTPException(status_code=503, detail=ApiError(error="SERVER_ERROR", detail="no validated boundary generation is active").model_dump())
+        raise HTTPException(status_code=503, detail=ApiError(error="SERVER_ERROR", detail="no validated boundary generation is active").model_dump(exclude_none=True))
     return (generation.graph if generation else svc.graph).to_dict()
 
 
@@ -575,7 +587,7 @@ def roadmap_node(node_id: str, authorization: str | None = Depends(bearer_author
     try:
         generation = svc.active_boundary
         if svc._boundary_store and generation is None:
-            raise HTTPException(status_code=503, detail=ApiError(error="SERVER_ERROR", detail="no validated boundary generation is active").model_dump())
+            raise HTTPException(status_code=503, detail=ApiError(error="SERVER_ERROR", detail="no validated boundary generation is active").model_dump(exclude_none=True))
         return (generation.graph if generation else svc.graph).nodes[node_id].to_dict()
     except KeyError:
         raise _not_found("roadmap node not found")

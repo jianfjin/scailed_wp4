@@ -5726,6 +5726,16 @@
       },
       "ApiError": {
         "properties": {
+          "current_validity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CurrentValidityResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "error": {
             "type": "string",
             "title": "Error",
@@ -5760,6 +5770,13 @@
       },
       "AssessmentStateResponse": {
         "properties": {
+          "result_history": {
+            "items": {
+              "$ref": "#/components/schemas/ResultHistoryEntryResponse"
+            },
+            "type": "array",
+            "title": "Result History"
+          },
           "assessment_id": {
             "type": "string",
             "title": "Assessment Id"
@@ -6512,7 +6529,14 @@
             "title": "Session"
           },
           "readiness_snapshot": {
-            "$ref": "#/components/schemas/StakeholderStateResponse"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StakeholderStateResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "recommended_path": {
             "$ref": "#/components/schemas/RecommendationResponse"
@@ -6660,6 +6684,41 @@
           "top_endpoints"
         ],
         "title": "RequestStatsResponse"
+      },
+      "ResultHistoryEntryResponse": {
+        "properties": {
+          "result_id": {
+            "type": "string",
+            "title": "Result Id"
+          },
+          "answer_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Revision"
+          },
+          "binding_status": {
+            "type": "string",
+            "title": "Binding Status"
+          },
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "result_id",
+          "answer_revision",
+          "binding_status",
+          "profile_id"
+        ],
+        "title": "ResultHistoryEntryResponse"
       },
       "ResultRecordResponse": {
         "properties": {

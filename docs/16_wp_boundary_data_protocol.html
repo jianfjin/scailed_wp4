@@ -2546,7 +2546,7 @@ docs/reviews/16_…                    xiaolong review + P0 fix log (lineage)
 <p>Rule AND/OR/NOT preserve unknown. A blocking unknown yields <code>degraded</code> plus <code>conditional_direction</code> and <code>missing_information</code>; known blockers take precedence. Missing information does not execute an action, and irrelevant unknown branches do not become required tasks. Paired import tests and live evaluation use the same profile.</p>
 <p>Runtime deliveries live under <code>contracts/samples/v2/*.snapshot.json</code>; <code>contracts/samples/v2/withdrawal.notice.json</code> is the separate synthetic control example. The embedded samples below retain their relative paths so old and new majors remain distinguishable. These examples do not constitute source-owner confirmation.</p>
 <p>The same complete runtime batch can be submitted to <code>/v2/admin/import</code>; the existing technical import endpoint also understands registered profiles. <code>POST /v2/admin/withdrawals</code> requires administrator authorization and an attestation that the source owner's confirmation material was checked. The notice records a material checksum/reference and a checksum of exact targets. Producer labels and checksums alone do not authenticate the source.</p>
-<p>Results bind <code>result_id</code>, <code>answer_revision</code>, original answers/findings, actual <code>input_set</code>, profile, semantics version and evaluation date. <code>content_hash</code> describes deterministic output; result identity and <code>current_validity.lifecycle_revision</code> are separate metadata. Changing answers invalidates the current result reference, while explicit historical reads keep original evidence. v2 report reads never implicitly recompute.</p>
+<p>Results bind <code>result_id</code>, <code>answer_revision</code>, original answers/findings, actual <code>input_set</code>, profile, semantics version and evaluation date. <code>content_hash</code> describes deterministic output; result identity and <code>current_validity.lifecycle_revision</code> are separate metadata. Changing answers invalidates the current result reference, while explicit historical reads keep original evidence. v2 report reads never implicitly recompute, including for legacy sessions. The v2 assessment response exposes <code>result_history</code> IDs. A migrated unbound result returns its original output with <code>readiness_snapshot: null</code> and unavailable original answer evidence, labelled as historical.</p>
 <div class="protocol-table" tabindex="0" role="region" aria-label="Protocol table; scroll horizontally if needed"><table>
 <thead>
 <tr>
@@ -2561,7 +2561,7 @@ docs/reviews/16_…                    xiaolong review + P0 fix log (lineage)
 </tr>
 <tr>
 <td>Input withdrawal</td>
-<td>409 <code>INPUTS_WITHDRAWN</code></td>
+<td>409 <code>INPUTS_WITHDRAWN</code>, including a typed <code>current_validity</code> observation with exact affected versions and reasons</td>
 </tr>
 <tr>
 <td>Concurrent answer update</td>
@@ -2578,6 +2578,10 @@ docs/reviews/16_…                    xiaolong review + P0 fix log (lineage)
 <tr>
 <td>Closed v1 writes or unsafe legacy projection</td>
 <td>409 <code>MIGRATION_REQUIRED</code></td>
+</tr>
+<tr>
+<td>Production v2 writes before recorded approval</td>
+<td>409 <code>SEMANTIC_APPROVAL_REQUIRED</code></td>
 </tr>
 <tr>
 <td>Lifecycle database unavailable</td>

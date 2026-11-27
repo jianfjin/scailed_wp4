@@ -102,10 +102,13 @@ class ReadinessSummary:
     result_id: str = ""
     answer_revision: int | None = None
     lifecycle_revision: int | None = None
+    binding_status: str = "not_recorded"
 
     def status_label(self) -> str:
         if self.inputs_valid is False:
             return "HISTORICAL — INPUTS WITHDRAWN"
+        if self.binding_status == "legacy_unbound":
+            return "HISTORICAL — ORIGINAL EVIDENCE UNAVAILABLE"
         if self.status == "blocked":
             return "NOT READY"
         if self.recommendation_kind == "conditional_direction":
@@ -119,14 +122,14 @@ class ReadinessSummary:
     def status_color(self) -> str:
         if self.status == "blocked" or self.inputs_valid is False:
             return "#9B2C2C"
-        if self.status == "degraded":
+        if self.status == "degraded" or self.binding_status == "legacy_unbound":
             return "#92400E"
         return "#166534"
 
     def status_bg(self) -> str:
         if self.status == "blocked" or self.inputs_valid is False:
             return "#FED7D7"
-        if self.status == "degraded":
+        if self.status == "degraded" or self.binding_status == "legacy_unbound":
             return "#FEF3C7"
         return "#DCFCE7"
 

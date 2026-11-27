@@ -1,7 +1,7 @@
 {
   "output": "docs/19_scailed_ddd_design.html",
-  "bytes": 1004933,
-  "sha256": "529d1883d1266c0405145a3d6f96a117f57de258ae07fb8e32ff11a073051ff4",
+  "bytes": 1006166,
+  "sha256": "b91fdef59c8c6a55ecc1254d14cb7f95bf1a37b2d16748f4f96fd9962f552d3e",
   "terms": 25,
   "adrs": 4,
   "sources": [
@@ -47,7 +47,7 @@
     },
     {
       "path": "docs/runbooks/pathfinder-semantic-cutover.md",
-      "sha256": "13322b96322534f9d2555f43202b38625676cc4ac644d45d0a423fbe0d6d142c"
+      "sha256": "b2fba715c3b864deaf54a297648b599be45c678e38f575e095282815fa22cbf5"
     }
   ]
 }

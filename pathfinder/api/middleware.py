@@ -30,21 +30,21 @@ logger = logging.getLogger("pathfinder.middleware")
 def _auth_error(detail: str) -> HTTPException:
     return HTTPException(
         status_code=401,
-        detail=ApiError(error="AUTH_REQUIRED", detail=detail).model_dump(),
+        detail=ApiError(error="AUTH_REQUIRED", detail=detail).model_dump(exclude_none=True),
     )
 
 
 def _forbidden_error(detail: str) -> HTTPException:
     return HTTPException(
         status_code=403,
-        detail=ApiError(error="FORBIDDEN", detail=detail).model_dump(),
+        detail=ApiError(error="FORBIDDEN", detail=detail).model_dump(exclude_none=True),
     )
 
 
 def _rate_limited(detail: str) -> JSONResponse:
     return JSONResponse(
         status_code=429,
-        content={"detail": ApiError(error="RATE_LIMITED", detail=detail).model_dump()},
+        content={"detail": ApiError(error="RATE_LIMITED", detail=detail).model_dump(exclude_none=True)},
     )
 
 
@@ -260,13 +260,13 @@ class DefaultDenyAuthMiddleware:
                 return
             # Demo token tried to access a non-demo route.
             await self._send_error(
-                send, 403, ApiError(error="FORBIDDEN", detail="admin token required").model_dump()
+                send, 403, ApiError(error="FORBIDDEN", detail="admin token required").model_dump(exclude_none=True)
             )
             return
 
         # No valid token → 401 default-deny.
         await self._send_error(
-            send, 401, ApiError(error="AUTH_REQUIRED", detail="authentication required").model_dump()
+            send, 401, ApiError(error="AUTH_REQUIRED", detail="authentication required").model_dump(exclude_none=True)
         )
 
     async def _send_error(self, send, status_code: int, detail: dict) -> None:
@@ -357,7 +357,7 @@ class RateLimitMiddleware:
         body = json.dumps({
             "detail": ApiError(
                 error="RATE_LIMITED", detail="too many requests"
-            ).model_dump()
+            ).model_dump(exclude_none=True)
         }).encode("utf-8")
         await send({
             "type": "http.response.start",

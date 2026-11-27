@@ -114,8 +114,7 @@ class AssessmentService:
             else:
                 self.audit_log.append("boundary_snapshots_rejected", {"reason": "validation failed"}, ip=ip, user_agent=user_agent)
             raise
-        if generation.profile_id == EVIDENCE_PROFILE.profile_id and os.getenv('ENVIRONMENT', 'development').lower() == 'production' and not os.getenv('PATHFINDER_SEMANTIC_V2_APPROVAL_REF', '').strip():
-            raise ValueError('semantic_approval_required: record affected-WP RFC and consumer readiness before production activation')
+        self._check_profile_approval(generation.profile_id)
         if self._boundary_store:
             try:
                 generation_id = self._boundary_store.activate(snapshots, generation, ip, user_agent)
@@ -414,7 +413,11 @@ class AssessmentService:
         return (generation.questionnaire_engine if generation else self.questionnaire_engine).get(stakeholder_type).to_dict()
 
     @staticmethod
-    def _check_writes_enabled(profile_id):
+    def _check_profile_approval(profile_id):
+        if profile_id == EVIDENCE_PROFILE.profile_id and os.getenv('ENVIRONMENT', 'development').lower() == 'production' and not os.getenv('PATHFINDER_SEMANTIC_V2_APPROVAL_REF', '').strip():
+            raise ValueError('semantic_approval_required: record affected-WP RFC and consumer readiness before production writes')
+    def _check_writes_enabled(self, profile_id):
+        self._check_profile_approval(profile_id)
         if profile_id == LEGACY_PROFILE.profile_id and os.getenv('PATHFINDER_V1_WRITES_ENABLED', 'true').lower() == 'false':
             raise ValueError('migration_required: v1 writes are closed; use a new v2 assessment')
 
@@ -523,7 +526,7 @@ class AssessmentService:
         return report.snapshot_version if report else "unknown-snapshot"
 
     def _derive_state_for_session(self, session: dict[str, object]) -> dict[str, object]:
-        if session.get("profile_id") == EVIDENCE_PROFILE.profile_id or os.getenv("PATHFINDER_MODE", "demo") != "demo":
+        if session.get("profile_id") == EVIDENCE_PROFILE.profile_id or os.getenv("ENVIRONMENT", "development").lower() == "production" or os.getenv("PATHFINDER_MODE", "demo") != "demo":
             raise ValueError("type capabilities are reference only; submit current questionnaire answers")
         stakeholder_type = str(session["stakeholder_type"])
         stakeholder = getattr(self, "wp2_stakeholders", {}).get(stakeholder_type)
@@ -590,7 +593,7 @@ class AssessmentService:
         generation = self._boundary_for_session(session)
         if generation and not isinstance(answers, dict):
             raise ValueError("submit questionnaire answers before requesting a boundary recommendation")
-        if isinstance(answers, dict) and answers.get("derivation_mode") != "wp2_wp3":
+        if isinstance(answers, dict) and (generation is not None or answers.get("derivation_mode") != "wp2_wp3"):
             return (generation.questionnaire_engine if generation else self.questionnaire_engine).build_state(
                 str(session["stakeholder_type"]),
                 str(session["target_scenario"]),
@@ -702,11 +705,20 @@ class AssessmentService:
     ) -> dict[str, object]:
         return await asyncio.to_thread(self.generate_recommendation, assessment_id, ip, user_agent)
 
-    def _build_report_payload(self, assessment_id: str, result_id=None) -> dict[str, object]:
+    def result_history(self, assessment_id):
+        self._load_session(assessment_id)
+        if self._boundary_store:
+            records = self._boundary_store.results_for_session(assessment_id)
+        else:
+            with self._boundary_lock:
+                records = [record for record in self._result_records.values() if record['assessment_id'] == assessment_id]
+        return [{key: record.get(key) for key in ('result_id', 'answer_revision', 'binding_status', 'profile_id')} for record in records]
+
+    def _build_report_payload(self, assessment_id: str, result_id=None, allow_implicit=True) -> dict[str, object]:
         session, _ = self._load_session(assessment_id)
         record = self._result_record(session, result_id)
         if record is None:
-            if session.get('profile_id') == EVIDENCE_PROFILE.profile_id:
+            if not allow_implicit or session.get('profile_id') == EVIDENCE_PROFILE.profile_id:
                 raise ValueError('recommendation_required: generate a result for the current answers')
             self.generate_recommendation(assessment_id)
             session, _ = self._load_session(assessment_id)
@@ -717,19 +729,19 @@ class AssessmentService:
         historical_session['answer_revision'] = record['answer_revision']
         historical_session['result_id'] = record['result_id']
         historical_session['recommendation'] = deepcopy(record['original_output'])
-        historical_session['stakeholder_state'] = deepcopy(record.get('readiness_snapshot', {}))
+        historical_session['stakeholder_state'] = deepcopy(record.get('readiness_snapshot'))
         generation = self._boundary_for_session(session)
         return {
             'disclaimer': 'Guidance is not a legal conclusion.' if generation else 'Demo/non-production report. Real WP2/WP3/WP8 data may change recommendations.',
-            'session': historical_session, 'readiness_snapshot': record.get('readiness_snapshot', {}),
+            'session': historical_session, 'readiness_snapshot': record.get('readiness_snapshot'),
             'recommended_path': self._result_projection(record, observation), 'result': record,
             'current_validity': observation,
             'audit_chain_valid': self._boundary_store.verify_audit_chain() if self._boundary_store else self.audit_log.verify_chain(),
             'missing_data_warnings': list(generation.warnings) if generation else ['mock data mode: partner upstream inputs pending'],
         }
 
-    def report(self, assessment_id: str, ip: str | None = None, user_agent: str | None = None, result_id=None) -> dict[str, object]:
-        report = self._build_report_payload(assessment_id, result_id)
+    def report(self, assessment_id: str, ip: str | None = None, user_agent: str | None = None, result_id=None, allow_implicit=True) -> dict[str, object]:
+        report = self._build_report_payload(assessment_id, result_id, allow_implicit=allow_implicit)
         if self._boundary_store:
             self._boundary_store.append_event('report_exported', {'assessment_id': assessment_id}, ip, user_agent)
         else:
@@ -760,7 +772,7 @@ class AssessmentService:
                 message = 'recommendation_required: generate a result for the current answers' if session.get('profile_id') == EVIDENCE_PROFILE.profile_id else 'recommendation must be generated before FHIR export'
                 raise ValueError(message)
         try:
-            report = self._build_report_payload(assessment_id, result_id)
+            report = self._build_report_payload(assessment_id, result_id, allow_implicit=False)
             session = report['session']
             if report['result'].get('binding_status') != 'bound':
                 raise ValueError('migration_required: original answers are unavailable for this legacy result')

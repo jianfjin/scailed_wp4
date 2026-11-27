@@ -425,16 +425,17 @@ Runtime deliveries live under `contracts/samples/v2/*.snapshot.json`; `contracts
 
 The same complete runtime batch can be submitted to `/v2/admin/import`; the existing technical import endpoint also understands registered profiles. `POST /v2/admin/withdrawals` requires administrator authorization and an attestation that the source owner's confirmation material was checked. The notice records a material checksum/reference and a checksum of exact targets. Producer labels and checksums alone do not authenticate the source.
 
-Results bind `result_id`, `answer_revision`, original answers/findings, actual `input_set`, profile, semantics version and evaluation date. `content_hash` describes deterministic output; result identity and `current_validity.lifecycle_revision` are separate metadata. Changing answers invalidates the current result reference, while explicit historical reads keep original evidence. v2 report reads never implicitly recompute.
+Results bind `result_id`, `answer_revision`, original answers/findings, actual `input_set`, profile, semantics version and evaluation date. `content_hash` describes deterministic output; result identity and `current_validity.lifecycle_revision` are separate metadata. Changing answers invalidates the current result reference, while explicit historical reads keep original evidence. v2 report reads never implicitly recompute, including for legacy sessions. The v2 assessment response exposes `result_history` IDs. A migrated unbound result returns its original output with `readiness_snapshot: null` and unavailable original answer evidence, labelled as historical.
 
 | Condition | Response |
 | --- | --- |
 | Valid conditional or blocked evaluation | 200, with distinct recommendation kind and evidence |
-| Input withdrawal | 409 `INPUTS_WITHDRAWN` |
+| Input withdrawal | 409 `INPUTS_WITHDRAWN`, including a typed `current_validity` observation with exact affected versions and reasons |
 | Concurrent answer update | 409 `ANSWER_REVISION_CONFLICT` on v2 |
 | Notice identity reused with different content | 409 `NOTICE_IDENTITY_CONFLICT` |
 | No result for current answers | 409 `RECOMMENDATION_REQUIRED` |
 | Closed v1 writes or unsafe legacy projection | 409 `MIGRATION_REQUIRED` |
+| Production v2 writes before recorded approval | 409 `SEMANTIC_APPROVAL_REQUIRED` |
 | Lifecycle database unavailable | 503; no cached validity success |
 
 JSON, HTML, React and FHIR use one selected result and one validity observation. FHIR resources bind the result and answer revision; historical QuestionnaireResponse answers are not replaced by current answers. See the [runbook](runbooks/pathfinder-semantic-cutover.md) for the exact R4 status policy, migration rehearsal, local acceptance evidence and release gates. The existing feedback contract must not count unknown as false; additional v2 aggregation semantics require a separate agreement.
