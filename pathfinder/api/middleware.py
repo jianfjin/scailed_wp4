@@ -113,6 +113,7 @@ class AuditWhitelistMiddleware:
 
 # Endpoint path prefixes that are allowed with demo token.
 _DEMO_ALLOWED_PREFIXES = (
+    "/v2/",
     "/v1/",
     "/health",
     "/docs",

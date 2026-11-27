@@ -23,7 +23,7 @@ def render_html(vm: ReportViewModel) -> str:
     """Produce complete, self-contained HTML page string."""
     return _HTML_TEMPLATE.format(
         title="SCAILED Pathfinder — Compliance Report",
-        readiness_section=_render_readiness(vm.summary),
+        readiness_section=_render_readiness(vm.summary) + _render_semantics(vm),
         blockers_section=_render_blockers(vm),
         path_section=_render_path(vm.path_steps),
         path_graph_section=render_path_svg(vm.path_steps),
@@ -45,7 +45,7 @@ def _render_readiness(s: ReadinessSummary) -> str:
         bar_color = s.status_color()
         confidence_bar = f"""
         <div style="margin-top:16px;">
-          <div style="font-size:12px; color:var(--g500); margin-bottom:4px;">Confidence</div>
+          <div style="font-size:12px; color:var(--g500); margin-bottom:4px;">{"Answer completeness" if s.profile_id == "evidence-v2" else "Confidence"}</div>
           <div style="background:var(--g200); border-radius:6px; height:8px; overflow:hidden;">
             <div style="background:{bar_color}; width:{pct}%; height:100%; border-radius:6px;"></div>
           </div>
@@ -88,23 +88,73 @@ def _render_readiness(s: ReadinessSummary) -> str:
     </div>"""
 
 
+def _render_semantics(vm: ReportViewModel) -> str:
+    s = vm.summary
+    if not s.result_id and not vm.capability_findings:
+        return ""
+    missing = ''.join(f'<li>{_esc(item)}</li>' for item in vm.missing_information)
+    findings = ''.join(
+        f'<tr><td>{_esc(item.capability_id)}</td><td>{_esc(item.judgment)}</td>'
+        f'<td>{_esc(item.source)}</td><td>{_esc(item.verification_status)}</td>'
+        f'<td>{_esc(", ".join(item.answer_ids))}</td><td>{_esc(", ".join(item.evidence_refs)) or "none"}</td></tr>'
+        for item in vm.capability_findings
+    )
+    affected = ''.join(
+        f'<li>{_esc(item.contract)} / {_esc(item.snapshot_id)} ({_esc(item.producer_wp)}): '
+        f'{_esc(item.reason)}; notice {_esc(item.notice_id)}; dependency {_esc(" → ".join(item.dependency_path))}</li>'
+        for item in vm.affected_inputs
+    )
+    evaluations = ''.join(
+        f'<li>{_esc(item.rule_id)}: {_esc(item.truth)}'
+        f'{" (required condition)" if item.critical else ""}</li>'
+        for item in vm.condition_evaluations
+    )
+    if s.inputs_valid is False:
+        path_note = 'Historical candidate path — unavailable for new guidance. Original result is preserved.'
+    elif s.recommendation_kind == 'conditional_direction':
+        path_note = 'Candidate direction — more information required. Path execution is not confirmed.'
+    elif s.status == 'blocked':
+        path_note = 'Blocked candidate path. The recorded reasons prevent proceeding.'
+    else:
+        path_note = 'Proposed guidance based on the recorded evidence. Self-reports remain unverified.'
+    return f'''
+    <section aria-label="Assessment evidence" style="margin-bottom:32px; overflow-wrap:anywhere;">
+      <h2>Assessment evidence and current validity</h2>
+      <p>{_esc(path_note)}</p>
+      <dl>
+        <dt>Result ID</dt><dd>{_esc(s.result_id)}</dd>
+        <dt>Answer revision</dt><dd>{s.answer_revision if s.answer_revision is not None else "unknown"}</dd>
+        <dt>Semantic profile</dt><dd>{_esc(s.profile_id)}</dd>
+        <dt>Original result</dt><dd>{_esc(s.status)}</dd>
+        <dt>Current validity</dt><dd>{_esc(s.validity_status)}</dd>
+        <dt>Lifecycle revision</dt><dd>{s.lifecycle_revision if s.lifecycle_revision is not None else "not observed"}</dd>
+      </dl>
+      {"<h3>Missing information</h3><ul>" + missing + "</ul>" if missing else ""}
+      {"<h3>Affected inputs</h3><ul>" + affected + "</ul>" if affected else ""}
+      {"<h3>Capability findings</h3><p>Answer completeness is not verification.</p><div style='overflow-x:auto'><table><thead><tr><th>Capability</th><th>Judgment</th><th>Source</th><th>Verification</th><th>Answers</th><th>Evidence references</th></tr></thead><tbody>" + findings + "</tbody></table></div>" if findings else ""}
+      {"<details><summary>Authoritative condition outcomes</summary><ul>" + evaluations + "</ul></details>" if evaluations else ""}
+    </section>'''
+
+
 def _render_blockers(vm: ReportViewModel) -> str:
     if not vm.blockers:
+        if vm.summary.profile_id == "evidence-v2" or vm.summary.inputs_valid is False:
+            return '<p>No known blockers recorded. This does not verify the evidence or confirm execution readiness.</p>'
         return """
     <div style="padding:20px 0;">
       <div style="font-size:18px; color:#166534; font-weight:500;">No blockers found.</div>
-      <div style="font-size:14px; color:var(--g500); margin-top:4px;">All compliance checks passed.</div>
+      <div style="font-size:14px; color:var(--g500); margin-top:4px;">No known blockers were recorded in this original result.</div>
     </div>"""
 
     cards = ""
     for i, blocker in enumerate(vm.blockers, 1):
         condition_rows = ""
         for cm in blocker.condition_matches:
-            match_icon = "✓" if cm.matched else "✗"
-            match_color = "#166534" if cm.matched else "#9B2C2C"
+            match_icon = "?" if cm.matched is None else "✓" if cm.matched else "✗"
+            match_color = "#92400E" if cm.matched is None else "#166534" if cm.matched else "#9B2C2C"
             condition_rows += f"""
             <tr>
-              <td style="font-family:var(--mono); font-size:12px; color:{match_color};">{match_icon}</td>
+              <td style="font-family:var(--mono); font-size:12px; color:{match_color};">{match_icon} {_esc(cm.outcome_label())}</td>
               <td style="font-family:var(--mono); font-size:12px; color:var(--g700);">{_esc(str(cm.field))}</td>
               <td style="font-family:var(--mono); font-size:12px; color:var(--g500);">{_esc(str(cm.display_operator()))}</td>
               <td style="font-family:var(--mono); font-size:12px; color:var(--slate);">{_esc(str(cm.expected))}</td>
@@ -176,11 +226,11 @@ def _render_evidence(vm: ReportViewModel) -> str:
     for rule in vm.triggered_rules:
         condition_rows = ""
         for cm in rule.condition_matches:
-            match_icon = "✓" if cm.matched else "✗"
-            match_color = "#166534" if cm.matched else "#9B2C2C"
+            match_icon = "?" if cm.matched is None else "✓" if cm.matched else "✗"
+            match_color = "#92400E" if cm.matched is None else "#166534" if cm.matched else "#9B2C2C"
             condition_rows += f"""
             <tr>
-              <td style="font-family:var(--mono); font-size:12px; color:{match_color};">{match_icon}</td>
+              <td style="font-family:var(--mono); font-size:12px; color:{match_color};">{match_icon} {_esc(cm.outcome_label())}</td>
               <td style="font-family:var(--mono); font-size:12px; color:var(--g700);">{_esc(str(cm.field))}</td>
               <td style="font-family:var(--mono); font-size:12px; color:var(--g500);">{_esc(str(cm.display_operator()))}</td>
               <td style="font-family:var(--mono); font-size:12px; color:var(--slate);">{_esc(str(cm.expected))}</td>

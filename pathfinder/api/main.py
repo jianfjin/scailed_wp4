@@ -56,6 +56,7 @@ from pathfinder.api.schemas import (
 )
 from pathfinder.adapters.upstream import UpstreamClient
 from pathfinder.core.exceptions import ValidationError as PathfinderValidationError
+from pathfinder.core.contract_registry import LEGACY_PROFILE, EVIDENCE_PROFILE
 from pathfinder.services.assessment_service import AssessmentService
 from pathfinder.visualization.adapter import build_view_model
 from pathfinder.visualization.renderer import render_html
@@ -129,6 +130,7 @@ app = FastAPI(
         403: {"model": ApiErrorEnvelope, "description": "Insufficient permissions"},
         404: {"model": ApiErrorEnvelope, "description": "Resource not found"},
         400: {"model": ApiErrorEnvelope, "description": "Validation error"},
+        409: {"model": ApiErrorEnvelope, "description": "Input lifecycle, answer revision, migration or result-selection conflict"},
         500: {"model": ApiErrorEnvelope, "description": "Internal server error"},
         503: {"model": ApiErrorEnvelope, "description": "Boundary database unavailable or no validated generation is active"},
     },
@@ -180,6 +182,9 @@ def _not_found(detail: str) -> HTTPException:
 
 
 def _validation_error(detail: str) -> HTTPException:
+    for prefix, code in (('migration_required', 'MIGRATION_REQUIRED'), ('recommendation_required', 'RECOMMENDATION_REQUIRED'), ('semantic_approval_required', 'SEMANTIC_APPROVAL_REQUIRED')):
+        if detail.startswith(prefix):
+            return HTTPException(status_code=409, detail=ApiError(error=code, detail=detail).model_dump())
     return HTTPException(status_code=400, detail=ApiError(error="VALIDATION_ERROR", detail=detail).model_dump())
 
 
@@ -270,7 +275,14 @@ def get_assessment(assessment_id: str, authorization: str | None = Depends(beare
     require_demo_token(authorization)
     svc = _get_service()
     try:
-        return svc.get_session(assessment_id)
+        _require_legacy_session(assessment_id)
+        session = svc.get_session(assessment_id)
+        record = svc._result_record(session)
+        if record is not None and not svc.current_validity(record['input_set'])['valid']:
+            raise _validation_error('migration_required: use the v2 historical report for current source validity')
+        return session
+    except HTTPException:
+        raise
     except KeyError:
         raise _not_found("assessment not found")
 
@@ -287,7 +299,10 @@ async def submit_answers(
 ) -> dict[str, object]:
     require_demo_token(authorization)
     try:
+        _require_legacy_session(assessment_id)
         return await asyncio.to_thread(_get_service().submit_answers, assessment_id, body.answers, **_audit_context(request))
+    except HTTPException:
+        raise
     except (InputsWithdrawn, NoticeConflict) as exc:
         raise _lifecycle_conflict(exc) from exc
     except psycopg.Error:
@@ -310,9 +325,12 @@ async def recommendations(
 ) -> dict[str, object]:
     require_demo_token(authorization)
     try:
+        _require_legacy_session(assessment_id)
         return await _get_service().generate_recommendation_async(
             assessment_id, path_backend=path_backend, **_audit_context(request)
         )
+    except HTTPException:
+        raise
     except (InputsWithdrawn, NoticeConflict) as exc:
         raise _lifecycle_conflict(exc) from exc
     except psycopg.Error:
@@ -345,6 +363,7 @@ def report(
     authorization: str | None = Depends(bearer_authorization),
     format: str = Query(default="json"),
     token: str = Query(default=""),
+    result_id: str | None = None,
 ):
     # Accept token from query param for browser-friendly HTML visualization
     auth_value = authorization
@@ -353,7 +372,11 @@ def report(
     if auth_value not in {f"Bearer {DEMO_TOKEN}", f"Bearer {ADMIN_TOKEN}"}:
         raise _auth_error("invited demo token required")
     try:
-        raw = _get_service().report(assessment_id, **_audit_context(request))
+        _require_legacy_session(assessment_id)
+        raw = _get_service().report(assessment_id, result_id=result_id, **_audit_context(request))
+        _require_legacy_report(raw)
+    except HTTPException:
+        raise
     except (InputsWithdrawn, NoticeConflict) as exc:
         raise _lifecycle_conflict(exc) from exc
     except psycopg.Error:
@@ -397,11 +420,18 @@ def fhir_assessment_bundle(
 ):
     require_demo_token(authorization)
     try:
+        _require_legacy_session(assessment_id)
+        session = _get_service().get_session(assessment_id)
+        record = _get_service()._result_record(session)
+        if record is not None:
+            _require_legacy_report({'result': record, 'current_validity': _get_service().current_validity(record['input_set'])})
         bundle = _get_service().export_fhir_bundle(
             assessment_id,
             fhir_version=fhir_version,
             **_audit_context(request),
         )
+    except HTTPException:
+        raise
     except (InputsWithdrawn, NoticeConflict) as exc:
         raise _lifecycle_conflict(exc) from exc
     except psycopg.Error:
@@ -416,6 +446,114 @@ def fhir_assessment_bundle(
             content={"detail": ApiError(error="SERVER_ERROR", detail="internal server error").model_dump()},
         )
     return FhirResponse(content=bundle)
+
+
+def _require_legacy_session(assessment_id):
+    session = _get_service().get_session(assessment_id)
+    if session.get('profile_id', LEGACY_PROFILE.profile_id) != LEGACY_PROFILE.profile_id:
+        raise _validation_error('migration_required: this assessment uses the v2 API')
+
+
+def _require_legacy_report(raw):
+    if not raw['current_validity']['valid'] or raw['result'].get('binding_status') == 'legacy_unbound':
+        raise _validation_error('migration_required: this historical result needs the v2 evidence and validity projection')
+
+
+def _v2_call(operation, *args, **kwargs):
+    try:
+        return operation(*args, **kwargs)
+    except psycopg.Error:
+        raise
+    except (InputsWithdrawn, NoticeConflict) as exc:
+        raise _lifecycle_conflict(exc) from exc
+    except SessionConflict as exc:
+        raise HTTPException(status_code=409, detail=ApiError(error='ANSWER_REVISION_CONFLICT', detail=str(exc)).model_dump()) from exc
+    except KeyError as exc:
+        raise _not_found('assessment, questionnaire or result not found') from exc
+    except ValueError as exc:
+        raise _validation_error(str(exc)) from exc
+
+
+def _require_v2_writer(assessment_id):
+    session = _v2_call(_get_service().get_session, assessment_id)
+    if session.get('profile_id') != EVIDENCE_PROFILE.profile_id:
+        raise _validation_error('migration_required: create a new v2 assessment to use evidence semantics')
+
+
+@app.get('/v2/questionnaires', response_model=StakeholderTypesResponse)
+def questionnaires_v2(authorization: str | None = Depends(bearer_authorization)):
+    require_demo_token(authorization)
+    return {'stakeholder_types': _v2_call(_get_service().stakeholder_types, profile_id=EVIDENCE_PROFILE.profile_id), 'mock_data_mode': False}
+
+
+@app.get('/v2/questionnaires/{stakeholder_type}', response_model=QuestionnaireResponse)
+def questionnaire_v2(stakeholder_type: str, authorization: str | None = Depends(bearer_authorization)):
+    require_demo_token(authorization)
+    return _v2_call(_get_service().get_questionnaire, stakeholder_type, profile_id=EVIDENCE_PROFILE.profile_id)
+
+
+@app.post('/v2/assessments', response_model=CreateAssessmentResponse)
+def create_assessment_v2(body: CreateAssessmentRequest, request: Request, authorization: str | None = Depends(bearer_authorization)):
+    require_demo_token(authorization)
+    return _v2_call(_get_service().create_session, body.stakeholder_type, body.target_scenario,
+                    profile_id=EVIDENCE_PROFILE.profile_id, **_audit_context(request))
+
+
+@app.get('/v2/assessments/{assessment_id}', response_model=AssessmentStateResponse)
+def get_assessment_v2(assessment_id: str, authorization: str | None = Depends(bearer_authorization)):
+    require_demo_token(authorization)
+    session = _v2_call(_get_service().get_session, assessment_id)
+    record = _v2_call(_get_service()._result_record, session)
+    if record is not None:
+        session['recommendation'] = _get_service()._result_projection(record, _v2_call(_get_service().current_validity, record['input_set']))
+    return session
+
+
+@app.post('/v2/assessments/{assessment_id}/answers/batch', response_model=StakeholderStateResponse)
+def submit_answers_v2(assessment_id: str, body: BatchAnswersRequest, request: Request, authorization: str | None = Depends(bearer_authorization)):
+    require_demo_token(authorization)
+    _require_v2_writer(assessment_id)
+    state = _v2_call(_get_service().submit_answers, assessment_id, body.answers, **_audit_context(request))
+    return {**state, 'confidence_meaning': 'answer_completeness'}
+
+
+@app.post('/v2/assessments/{assessment_id}/recommendations', response_model=RecommendationResponse)
+def recommendations_v2(assessment_id: str, request: Request, authorization: str | None = Depends(bearer_authorization)):
+    require_demo_token(authorization)
+    _require_v2_writer(assessment_id)
+    return _v2_call(_get_service().generate_recommendation, assessment_id, **_audit_context(request))
+
+
+@app.get('/v2/assessments/{assessment_id}/report', response_model=None,
+         responses={200: {'model': ReportResponse, 'content': {'application/json': {'schema': {'$ref': '#/components/schemas/ReportResponse'}}, 'text/html': {'schema': {'type': 'string'}}}}})
+def report_v2(assessment_id: str, request: Request, result_id: str | None = None, format: str = 'json',
+              token: str = '', authorization: str | None = Depends(bearer_authorization)):
+    if not authorization and token and ENVIRONMENT != 'production':
+        authorization = 'Bearer ' + token
+    require_demo_token(authorization)
+    raw = _v2_call(_get_service().report, assessment_id, result_id=result_id, **_audit_context(request))
+    if format == 'html':
+        return HTMLResponse(render_html(build_view_model(raw)))
+    return ReportResponse.model_validate(raw).model_dump(mode='json')
+
+
+@app.get('/v2/assessments/{assessment_id}/fhir', response_class=FhirResponse,
+         responses={200: {'model': FhirBundle, 'content': {'application/fhir+json': {'schema': {'$ref': '#/components/schemas/FhirBundle'}}}}})
+def fhir_assessment_v2(assessment_id: str, request: Request, result_id: str | None = None,
+                       fhir_version: str = 'R4', authorization: str | None = Depends(bearer_authorization)):
+    require_demo_token(authorization)
+    bundle = _v2_call(_get_service().export_fhir_bundle, assessment_id, result_id=result_id,
+                     fhir_version=fhir_version, **_audit_context(request))
+    return FhirResponse(bundle)
+
+
+@app.get('/v2/roadmap', response_model=RoadmapResponse)
+def roadmap_v2(authorization: str | None = Depends(bearer_authorization)):
+    require_demo_token(authorization)
+    generation = _v2_call(_get_service()._active_generation, EVIDENCE_PROFILE.profile_id)[1]
+    if generation is None:
+        raise HTTPException(status_code=503, detail=ApiError(error='SERVER_ERROR', detail='no validated v2 generation is active').model_dump())
+    return generation.graph.to_dict()
 
 
 # ─── Roadmap ────────────────────────────────────────────────────────
@@ -448,6 +586,7 @@ def roadmap_node(node_id: str, authorization: str | None = Depends(bearer_author
 app.include_router(dashboard_router)
 
 
+@app.post("/v2/admin/import")
 @app.post("/v1/admin/import")
 async def import_boundary_snapshots(request: Request, authorization: str | None = Depends(bearer_authorization)) -> dict[str, object]:
     require_admin_token(authorization)

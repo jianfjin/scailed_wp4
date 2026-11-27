@@ -17,7 +17,10 @@ class ConditionMatch:
     operator: str
     expected: Any
     actual: Any
-    matched: bool
+    matched: bool | None
+
+    def outcome_label(self) -> str:
+        return "Unknown / not evaluated" if self.matched is None else "True" if self.matched else "False"
 
     def display_operator(self) -> str:
         labels = {
@@ -92,23 +95,36 @@ class ReadinessSummary:
     total_rules_triggered: int = 0
     total_blockers: int = 0
     total_steps: int = 0
+    recommendation_kind: str = ""
+    profile_id: str = "legacy-v1"
+    inputs_valid: bool | None = None
+    validity_status: str = "not_observed"
+    result_id: str = ""
+    answer_revision: int | None = None
+    lifecycle_revision: int | None = None
 
     def status_label(self) -> str:
+        if self.inputs_valid is False:
+            return "HISTORICAL — INPUTS WITHDRAWN"
         if self.status == "blocked":
             return "NOT READY"
+        if self.recommendation_kind == "conditional_direction":
+            return "CONDITIONAL DIRECTION"
         if self.status == "degraded":
             return "UNVERIFIED"
+        if self.profile_id == "evidence-v2":
+            return "GUIDANCE AVAILABLE"
         return "READY"
 
     def status_color(self) -> str:
-        if self.status == "blocked":
+        if self.status == "blocked" or self.inputs_valid is False:
             return "#9B2C2C"
         if self.status == "degraded":
             return "#92400E"
         return "#166534"
 
     def status_bg(self) -> str:
-        if self.status == "blocked":
+        if self.status == "blocked" or self.inputs_valid is False:
             return "#FED7D7"
         if self.status == "degraded":
             return "#FEF3C7"
@@ -133,6 +149,7 @@ class RuleCard:
     compliance_refs: tuple[str, ...] = ()
     source_doc_ref: str = ""
     is_blocker: bool = False
+    truth: str = "not_evaluated"
 
     def rule_type_label(self) -> str:
         labels = {
@@ -153,6 +170,34 @@ class RuleCard:
 
 
 @dataclass(frozen=True)
+class CapabilityFindingView:
+    capability_id: str
+    judgment: str
+    source: str
+    verification_status: str
+    answer_ids: tuple[str, ...] = ()
+    evidence_refs: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class InputValidityView:
+    contract: str
+    snapshot_id: str
+    producer_wp: str
+    notice_id: str
+    reason: str
+    dependency_path: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class RuleEvaluationView:
+    rule_id: str
+    truth: str
+    critical: bool
+    condition_matches: tuple[ConditionMatch, ...] = ()
+
+
+@dataclass(frozen=True)
 class ReportViewModel:
     """Top-level view model for the visualization page."""
 
@@ -167,3 +212,7 @@ class ReportViewModel:
     upstream_snapshot: str = ""
     disclaimer: str = ""
     generated_at: str = ""
+    missing_information: tuple[str, ...] = ()
+    capability_findings: tuple[CapabilityFindingView, ...] = ()
+    affected_inputs: tuple[InputValidityView, ...] = ()
+    condition_evaluations: tuple[RuleEvaluationView, ...] = ()

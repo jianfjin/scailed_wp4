@@ -14,7 +14,9 @@ def _questionnaire_version_suffix(version: object) -> str:
     return value.rsplit("-", 1)[-1] if value else "v1"
 
 
-def _questionnaire_id(questionnaire: dict[str, Any]) -> str:
+def _questionnaire_id(questionnaire: dict[str, Any], result_id: str | None = None) -> str:
+    if result_id:
+        return fhir_id("questionnaire", result_id)
     return fhir_id(
         "questionnaire",
         questionnaire.get("stakeholder_type", "unknown"),
@@ -23,11 +25,15 @@ def _questionnaire_id(questionnaire: dict[str, Any]) -> str:
 
 
 def _organization_id(session: dict[str, Any]) -> str:
-    return fhir_id("organization", session.get("assessment_id", "assessment"))
+    return fhir_id("organization", _session_scope(session))
 
 
 def _assessment_group_id(session: dict[str, Any]) -> str:
-    return fhir_id("group", session.get("assessment_id", "assessment"))
+    return fhir_id("group", _session_scope(session))
+
+
+def _session_scope(session: dict[str, Any]) -> str:
+    return str(session.get("result_id") or session.get("assessment_id", "assessment"))
 
 
 def _question_type_to_fhir(question_type: str) -> str:
@@ -66,7 +72,7 @@ def _answer_value_for_question(value: Any, question: dict[str, Any]) -> list[dic
     return _answer_value(value)
 
 
-def questionnaire_to_fhir(questionnaire: dict[str, Any]) -> dict[str, Any]:
+def questionnaire_to_fhir(questionnaire: dict[str, Any], result_id: str | None = None) -> dict[str, Any]:
     items: list[dict[str, Any]] = []
     for question in questionnaire.get("questions", []):
         question_type = str(question.get("question_type", "text"))
@@ -88,7 +94,7 @@ def questionnaire_to_fhir(questionnaire: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "resourceType": "Questionnaire",
-        "id": _questionnaire_id(questionnaire),
+        "id": _questionnaire_id(questionnaire, result_id),
         "status": "active",
         "title": str(questionnaire.get("title", "Pathfinder assessment")),
         "subjectType": ["Organization"],
@@ -123,7 +129,7 @@ def questionnaire_response_from_session(
     session: dict[str, Any],
     questionnaire: dict[str, Any],
 ) -> dict[str, Any]:
-    questionnaire_resource = questionnaire_to_fhir(questionnaire)
+    questionnaire_resource = questionnaire_to_fhir(questionnaire, session.get("result_id"))
     answers = session.get("answers")
     if not isinstance(answers, dict):
         raise ValueError("assessment has no submitted answers")
@@ -142,7 +148,7 @@ def questionnaire_response_from_session(
         "resourceType": "QuestionnaireResponse",
         "id": fhir_id(
             "questionnaire-response",
-            session.get("assessment_id", "assessment"),
+            _session_scope(session),
         ),
         "status": "completed",
         "questionnaire": "Questionnaire/" + str(questionnaire_resource["id"]),
@@ -195,6 +201,14 @@ def readiness_observation_from_report(report: dict[str, Any]) -> dict[str, Any]:
             }
         )
 
+    findings = snapshot.get("capability_findings", {})
+    for capability_id, finding in sorted(findings.items()):
+        components.append({
+            "code": codeable_concept(capability_id, capability_id),
+            "valueCodeableConcept": codeable_concept(finding["judgment"], finding["judgment"]),
+            "extension": [_semantic_extension("capability_finding", finding)],
+        })
+
     if "confidence" in snapshot:
         components.append(
             {
@@ -212,11 +226,14 @@ def readiness_observation_from_report(report: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "resourceType": "Observation",
-        "id": fhir_id("readiness", session.get("assessment_id", "assessment")),
+        "id": fhir_id("readiness", _session_scope(session)),
         "status": "final",
         "code": codeable_concept("secondary-use-readiness", "Secondary use readiness"),
         "focus": [reference("Organization", _organization_id(session))],
         "component": components,
+        **({"extension": [_semantic_extension("capability_findings", findings),
+                          _semantic_extension("confidence_meaning", "answer_completeness")]}
+           if snapshot.get("profile_id") == "evidence-v2" or findings else {}),
     }
 
 
@@ -246,24 +263,72 @@ def _metadata_extension(name: str, value: Any) -> dict[str, str]:
     }
 
 
+def _semantic_extension(name: str, value: Any) -> dict[str, str]:
+    return {"url": f"https://scailed.eu/fhir/pathfinder/StructureDefinition/{name}",
+            "valueString": json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)}
+
+
+def result_projection_extensions(report: dict[str, Any]) -> list[dict[str, str]]:
+    """Metadata for one selected immutable result and one validity observation."""
+    record = report.get("result", {})
+    if not record:
+        return []
+    return [_semantic_extension(name, record[name])
+            for name in ("result_id", "answer_revision", "profile_id", "semantics_version", "binding_status", "content_hash")
+            if name in record] + [_semantic_extension("current_validity", report["current_validity"])]
+
+
+def recommendation_output_from_report(report: dict[str, Any]) -> dict[str, Any]:
+    recommendation = _recommendation_from_report(report)
+    parameters = []
+    for field, name in (("blockers", "blocker"), ("warnings", "warning"), ("missing_information", "missing_information")):
+        parameters.extend({"name": name, "valueString": str(value)} for value in recommendation.get(field, []))
+    parameters.append({"name": "original_status", "valueCode": str(recommendation.get("status", "unknown"))})
+    return {"resourceType": "Parameters", "id": fhir_id("guidance-output", _session_scope(_report_session(report))),
+            "parameter": parameters}
+
+
+def _includes_care_plan(report: dict[str, Any]) -> bool:
+    recommendation = _recommendation_from_report(report)
+    profile = report.get("result", {}).get("profile_id", recommendation.get("profile_id", "legacy-v1"))
+    return recommendation.get("status") != "blocked" or profile == "legacy-v1"
+
+
 def guidance_response_from_report(report: dict[str, Any]) -> dict[str, Any]:
-    assessment_id = _assessment_id_from_report(report)
+    scope = _session_scope(_report_session(report))
     recommendation = _recommendation_from_report(report)
-    status = "success" if recommendation.get("status") == "ready" else "data-required"
+    conditional = recommendation.get("status") != "blocked" and (
+        recommendation.get("recommendation_kind") == "conditional_direction" or bool(recommendation.get("missing_information")))
 
-    return {
+    resource = {
         "resourceType": "GuidanceResponse",
-        "id": fhir_id("guidance-response", assessment_id),
-        "status": status,
+        "id": fhir_id("guidance-response", scope),
+        "status": "data-required" if conditional else "success",
         "moduleUri": "https://scailed.eu/fhir/pathfinder/PlanDefinition/secondary-use-readiness",
-        "subject": reference("Group", fhir_id("group", assessment_id)),
-        "result": reference("CarePlan", fhir_id("care-plan", assessment_id)),
+        "subject": reference("Group", fhir_id("group", scope)),
+        "outputParameters": reference("Parameters", fhir_id("guidance-output", scope)),
     }
+    if _includes_care_plan(report):
+        resource["result"] = reference("CarePlan", fhir_id("care-plan", scope))
+    if conditional:
+        resource["dataRequirement"] = [
+            {"type": "Observation", "codeFilter": [{"path": "component.code", "code": [coding(str(field).removeprefix("capability:"))]}]}
+            for field in recommendation.get("missing_information", [])
+        ]
+    return resource
 
 
-def care_plan_from_report(report: dict[str, Any]) -> dict[str, Any]:
-    assessment_id = _assessment_id_from_report(report)
+def care_plan_from_report(report: dict[str, Any]) -> dict[str, Any] | None:
+    scope = _session_scope(_report_session(report))
     recommendation = _recommendation_from_report(report)
+    if not _includes_care_plan(report):
+        return None
+    validity = report.get("current_validity", {})
+    status = "active" if recommendation.get("status") == "ready" else "draft"
+    if recommendation.get("recommendation_kind") == "conditional_direction":
+        status = "draft"
+    if validity.get("valid") is False:
+        status = "revoked"
     next_steps = recommendation.get("next_steps", [])
     if not isinstance(next_steps, list):
         next_steps = []
@@ -294,22 +359,22 @@ def care_plan_from_report(report: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "resourceType": "CarePlan",
-        "id": fhir_id("care-plan", assessment_id),
-        "status": "active" if recommendation.get("status") == "ready" else "draft",
+        "id": fhir_id("care-plan", scope),
+        "status": status,
         "intent": "plan",
         "title": "Pathfinder readiness recommendation",
         "description": str(report.get("disclaimer", "Pathfinder assessment recommendation")),
-        "subject": reference("Group", fhir_id("group", assessment_id)),
+        "subject": reference("Group", fhir_id("group", scope)),
         "supportingInfo": [
-            reference("Organization", fhir_id("organization", assessment_id)),
-            reference("Observation", fhir_id("readiness", assessment_id)),
+            reference("Organization", fhir_id("organization", scope)),
+            reference("Observation", fhir_id("readiness", scope)),
         ],
         "activity": activities,
     }
 
 
 def provenance_from_report(report: dict[str, Any]) -> dict[str, Any]:
-    assessment_id = _assessment_id_from_report(report)
+    scope = _session_scope(_report_session(report))
     trace = _trace_from_report(report)
     extensions = [
         _metadata_extension(name, trace[name])
@@ -342,18 +407,26 @@ def provenance_from_report(report: dict[str, Any]) -> dict[str, Any]:
                 "what": {"display": f"{name}: {value}"},
             })
 
-    return {
+    targets = [reference("GuidanceResponse", fhir_id("guidance-response", scope)),
+               reference("Observation", fhir_id("readiness", scope)),
+               reference("QuestionnaireResponse", fhir_id("questionnaire-response", scope))]
+    if _includes_care_plan(report):
+        targets.append(reference("CarePlan", fhir_id("care-plan", scope)))
+    resource = {
         "resourceType": "Provenance",
-        "id": fhir_id("provenance", assessment_id),
-        "target": [
-            reference("GuidanceResponse", fhir_id("guidance-response", assessment_id)),
-            reference("CarePlan", fhir_id("care-plan", assessment_id)),
-            reference("Observation", fhir_id("readiness", assessment_id)),
-        ],
+        "id": fhir_id("provenance", scope),
+        "target": targets,
         "recorded": "1970-01-01T00:00:00+00:00",
         "agent": [{"who": {"display": "Pathfinder AssessmentService"}}],
         "entity": entities,
     }
+    record = report.get("result", {})
+    if record:
+        resource["extension"] = [_semantic_extension(name, record[name])
+                                 for name in ("input_set", "findings", "original_output", "evaluation_date") if name in record]
+        if record.get("evaluation_date"):
+            resource["recorded"] = str(record["evaluation_date"]) + "T00:00:00+00:00"
+    return resource
 
 
 def _event_attr(event: Any, name: str, default: Any = None) -> Any:
@@ -380,7 +453,7 @@ def _audit_event_identity(event: Any, event_type: str, event_data: dict[str, Any
     return hashlib.sha256(serialized).hexdigest()[:24]
 
 
-def audit_event_to_fhir(event: Any, assessment_id: str) -> dict[str, Any]:
+def audit_event_to_fhir(event: Any, assessment_id: str, result_id: str | None = None) -> dict[str, Any]:
     event_type = str(_event_attr(event, "event_type", "audit-event"))
     event_data = _event_attr(event, "event_data", {})
     if not isinstance(event_data, dict):
@@ -392,16 +465,19 @@ def audit_event_to_fhir(event: Any, assessment_id: str) -> dict[str, Any]:
         if value:
             extensions.append(_metadata_extension(name, value))
 
+    event_identity = _audit_event_identity(event, event_type, event_data)
+    if result_id:
+        event_identity = hashlib.sha256(json.dumps([event_identity, result_id]).encode()).hexdigest()[:32]
     audit_event: dict[str, Any] = {
         "resourceType": "AuditEvent",
-        "id": fhir_id("audit-event", _audit_event_identity(event, event_type, event_data)),
+        "id": fhir_id("audit-event", event_identity),
         "type": coding(event_type, event_type),
         "action": "E",
         "recorded": str(_event_attr(event, "timestamp", "1970-01-01T00:00:00+00:00")),
         "outcome": "0",
         "agent": [{"who": {"display": "Pathfinder AssessmentService"}, "requestor": False}],
         "source": {"observer": {"display": "Pathfinder"}},
-        "entity": [{"what": reference("Bundle", fhir_id("bundle", assessment_id))}],
+        "entity": [{"what": reference("Bundle", fhir_id("bundle", result_id or assessment_id))}],
     }
     if event_data:
         audit_event["subtype"] = [

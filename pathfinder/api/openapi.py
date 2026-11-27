@@ -7,17 +7,12 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
+from pathfinder.core.contract_registry import CONTRACTS as CONTRACT_REGISTRY
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACTS = ROOT / "contracts"
 
-CONTRACT_COMPONENTS = {  # contract name -> payload schema file
-    "pf.taxonomy.v1": "wp2-taxonomy.schema.json",
-    "pf.questionnaire.v1": "wp4-questionnaire.schema.json",
-    "pf.roadmap.v1": "wp3-roadmap.schema.json",
-    "pf.rulebundle.v1": "wp8-rulebundle.schema.json",
-    "pf.feedback.v1": "wp4-feedback.schema.json",
-}
+CONTRACT_COMPONENTS = {name: definition.schema for name, definition in CONTRACT_REGISTRY.items()}
 SAMPLES = {
     "pf.taxonomy.v1": "wp2-taxonomy.snapshot.json",
     "pf.questionnaire.v1": "wp4-questionnaire.snapshot.json",
@@ -173,23 +168,18 @@ def enrich_openapi(spec: dict) -> dict:
         comp.setdefault("title", contract)
         schemas[name] = comp
 
-    envelope = strip_meta(load(CONTRACTS / "envelope.schema.json"))
-    # map external payload refs ("wpN-x.schema.json") to the component refs defined above
-    by_file = {fname: "PF_" + contract.replace(".", "_") for contract, fname in CONTRACT_COMPONENTS.items()}
-    env_txt = json.dumps(envelope)
-    env_txt = re.sub(r'"([a-z0-9-]+)\.schema\.json"',
-                     lambda m: '"#/components/schemas/' + by_file[m.group(1) + ".schema.json"] + '"',
-                     env_txt)
-    envelope = json.loads(env_txt)
-    envelope = json.loads(json.dumps(envelope).replace('"#/$defs/', '"#/components/schemas/SnapshotEnvelope/$defs/'))
-    envelope["title"] = "SnapshotEnvelope"
-    envelope["description"] = ("The single delivery format for every cross-WP artefact "
-                               "(protocol §3): {contract, manifest, payload}.")
-    schemas["SnapshotEnvelope"] = envelope
+    by_file = {fname: 'PF_' + contract.replace('.', '_') for contract, fname in CONTRACT_COMPONENTS.items()}
+    for filename, name in (('envelope.schema.json', 'SnapshotEnvelope'), ('envelope.v2.schema.json', 'SnapshotEnvelopeV2')):
+        envelope = strip_meta(load(CONTRACTS / filename))
+        text = re.sub(r'"([a-z0-9.-]+\.schema\.json)"',
+                      lambda match: '"#/components/schemas/' + by_file[match.group(1)] + '"', json.dumps(envelope))
+        envelope = json.loads(text.replace('"#/$defs/', f'"#/components/schemas/{name}/$defs/'))
+        envelope['title'] = name
+        schemas[name] = envelope
 
     schemas["BoundaryImportRequest"] = {
         "type": "object", "required": ["snapshots"], "additionalProperties": False,
-        "properties": {"snapshots": {"type": "array", "minItems": 1, "items": {"$ref": "#/components/schemas/SnapshotEnvelope"},
+        "properties": {"snapshots": {"type": "array", "minItems": 1, "items": {"oneOf": [{"$ref": "#/components/schemas/SnapshotEnvelope"}, {"allOf": [{"$ref": "#/components/schemas/SnapshotEnvelopeV2"}, {"properties": {"contract": {"enum": ["pf.questionnaire.v2", "pf.rulebundle.v2"]}}}]}]},
             "description": "Complete runtime dependency closure in THIS batch: include taxonomy, roadmap, questionnaire(s) and rulebundle, plus every exact manifest.dependencies snapshot. Active snapshots are not merged into this batch. manifest.supersedes is historical lineage and does not require resubmitting its predecessor."}},
         "title": "BoundaryImportRequest",
     }
@@ -234,6 +224,17 @@ def enrich_openapi(spec: dict) -> dict:
     imp["responses"]["200"] = {"description": "Batch validated and activated as a new generation.",
         "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ActivationReport"}}}}
 
+    v2_import = op('/v2/admin/import')
+    v2_import.update(json.loads(json.dumps(imp)))
+    v2_import['operationId'] = 'import_boundary_snapshots_v2'
+    withdrawal = op('/v2/admin/withdrawals')
+    withdrawal['tags'] = ['Boundary contracts']
+    withdrawal['description'] = 'Authorized administrator relays reviewed source-owner confirmation. The attestation and checksums do not independently authenticate the source WP.'
+    withdrawal['requestBody'] = {'required': True, 'content': {'application/json': {
+        'schema': {'allOf': [{'$ref': '#/components/schemas/SnapshotEnvelopeV2'}, {'properties': {'contract': {'const': 'pf.withdrawal.v1'}}}]},
+        'example': load(CONTRACTS / 'samples/v2/withdrawal.notice.json'),
+    }}}
+
     _enrich_legacy_imports(spec)
 
     op("/admin/rules/reload")["tags"] = ["Admin (legacy demo)"]
@@ -245,7 +246,7 @@ def enrich_openapi(spec: dict) -> dict:
         for m, o in spec["paths"][p].items():
             if "tags" in o:
                 continue
-            if p.startswith("/v1/questionnaires"):
+            if p.startswith(("/v1/questionnaires", "/v2/questionnaires")):
                 o["tags"] = ["Questionnaires"]
             elif "/assessments" in p:
                 o["tags"] = ["Assessments"]

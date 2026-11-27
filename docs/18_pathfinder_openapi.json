@@ -6,6 +6,186 @@
     "description": "Machine-readable view of the WP boundary data interface and the Pathfinder service API.\n\n* Normative companion (human-readable): `docs/16_wp_boundary_data_protocol.md` ([Confluence page](https://edmf.atlassian.net/wiki/spaces/S/pages/11370498)).\n* Source of truth for payload structures: `contracts/*.schema.json` \u2014 the `SnapshotEnvelope` components below are embedded verbatim from those files.\n* Every imported snapshot passes the four validation gates at activation time (`scripts/validate_contracts.py`, also executed in-process by the server).\n\nBoundary flow: WP2/WP3/WP8 (and WP4 self-descriptions) deliver versioned JSON snapshots via `POST /v1/admin/import`; `GET /health` reports the active snapshot generation. Paths under `/admin/import/*` are the legacy per-WP demo endpoints retained for the in-memory mode."
   },
   "paths": {
+    "/v2/admin/withdrawals": {
+      "post": {
+        "summary": "Withdraw Inputs",
+        "operationId": "withdraw_inputs_v2_admin_withdrawals_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/SnapshotEnvelopeV2"
+                  },
+                  {
+                    "properties": {
+                      "contract": {
+                        "const": "pf.withdrawal.v1"
+                      }
+                    }
+                  }
+                ]
+              },
+              "example": {
+                "contract": "pf.withdrawal.v1",
+                "manifest": {
+                  "contract_version": "1.0.0",
+                  "snapshot_id": "ea85328c-4e20-52ee-813c-20c4fccd74ef",
+                  "producer_wp": "WP2",
+                  "generated_at": "2026-11-10T00:00:00Z",
+                  "generator": {
+                    "name": "contracts-builder",
+                    "version": "1.0.0",
+                    "seed": null
+                  },
+                  "supersedes": null,
+                  "items_checksum": "sha256:a7aa813e1f9b32dc8c94ee2c6fec35808e376c73edd101b47044df6dc46d9e46",
+                  "derived_from": [
+                    {
+                      "source": "D2.1",
+                      "section": "s.2 stakeholder mapping",
+                      "status": "approved"
+                    }
+                  ],
+                  "dependencies": {}
+                },
+                "payload": {
+                  "notice_id": "ea85328c-4e20-52ee-813c-20c4fccd74ef",
+                  "targets": [
+                    {
+                      "contract": "pf.taxonomy.v1",
+                      "snapshot_id": "136c7555-45e3-40dc-a9ac-6749cc516ef3",
+                      "producer_wp": "WP2"
+                    }
+                  ],
+                  "reason": "Synthetic withdrawal example; not a real source-owner instruction.",
+                  "source_confirmation": {
+                    "reference": "synthetic-fixture-confirmation",
+                    "material_checksum": "sha256:a6a203fa95284e28f924b8567336445f65627190f508a5673aacf6f42d7cf135",
+                    "target_checksum": "sha256:5fb9ee15e800ff5367ef5b390de989f25e54071335e573bac1c56657799c82df",
+                    "confirmed_by_wp": "WP2",
+                    "admin_attested": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WithdrawalReceipt"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Withdrawal identity conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "Boundary contracts"
+        ],
+        "description": "Authorized administrator relays reviewed source-owner confirmation. The attestation and checksums do not independently authenticate the source WP."
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -53,6 +233,16 @@
           },
           "400": {
             "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -135,6 +325,16 @@
           },
           "400": {
             "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -255,6 +455,16 @@
               }
             }
           },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -358,6 +568,16 @@
           },
           "400": {
             "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -480,6 +700,16 @@
           },
           "400": {
             "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -615,6 +845,16 @@
               }
             }
           },
+          "409": {
+            "description": "Assessment changed during this write; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -627,16 +867,6 @@
           },
           "503": {
             "description": "Boundary database unavailable or no validated generation is active",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Assessment changed during this write; reload and retry",
             "content": {
               "application/json": {
                 "schema": {
@@ -752,6 +982,16 @@
               }
             }
           },
+          "409": {
+            "description": "Assessment changed during this write; reload and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -764,16 +1004,6 @@
           },
           "503": {
             "description": "Boundary database unavailable or no validated generation is active",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Assessment changed during this write; reload and retry",
             "content": {
               "application/json": {
                 "schema": {
@@ -846,6 +1076,22 @@
               "default": "",
               "title": "Token"
             }
+          },
+          {
+            "name": "result_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Result Id"
+            }
           }
         ],
         "responses": {
@@ -896,6 +1142,16 @@
           },
           "400": {
             "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -1031,6 +1287,16 @@
               }
             }
           },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -1074,6 +1340,1183 @@
         },
         "tags": [
           "Assessments"
+        ]
+      }
+    },
+    "/v2/questionnaires": {
+      "get": {
+        "summary": "Questionnaires V2",
+        "operationId": "questionnaires_v2_v2_questionnaires_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StakeholderTypesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "Questionnaires"
+        ]
+      }
+    },
+    "/v2/questionnaires/{stakeholder_type}": {
+      "get": {
+        "summary": "Questionnaire V2",
+        "operationId": "questionnaire_v2_v2_questionnaires__stakeholder_type__get",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stakeholder_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Stakeholder Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionnaireResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Questionnaires"
+        ]
+      }
+    },
+    "/v2/assessments": {
+      "post": {
+        "summary": "Create Assessment V2",
+        "operationId": "create_assessment_v2_v2_assessments_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAssessmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateAssessmentResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "Assessments"
+        ]
+      }
+    },
+    "/v2/assessments/{assessment_id}": {
+      "get": {
+        "summary": "Get Assessment V2",
+        "operationId": "get_assessment_v2_v2_assessments__assessment_id__get",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assessment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Assessment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentStateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Assessments"
+        ]
+      }
+    },
+    "/v2/assessments/{assessment_id}/answers/batch": {
+      "post": {
+        "summary": "Submit Answers V2",
+        "operationId": "submit_answers_v2_v2_assessments__assessment_id__answers_batch_post",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assessment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Assessment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchAnswersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StakeholderStateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Assessments"
+        ]
+      }
+    },
+    "/v2/assessments/{assessment_id}/recommendations": {
+      "post": {
+        "summary": "Recommendations V2",
+        "operationId": "recommendations_v2_v2_assessments__assessment_id__recommendations_post",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assessment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Assessment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecommendationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Assessments"
+        ]
+      }
+    },
+    "/v2/assessments/{assessment_id}/report": {
+      "get": {
+        "summary": "Report V2",
+        "operationId": "report_v2_v2_assessments__assessment_id__report_get",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assessment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Assessment Id"
+            }
+          },
+          {
+            "name": "result_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Result Id"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "json",
+              "title": "Format"
+            }
+          },
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Assessments"
+        ]
+      }
+    },
+    "/v2/assessments/{assessment_id}/fhir": {
+      "get": {
+        "summary": "Fhir Assessment V2",
+        "operationId": "fhir_assessment_v2_v2_assessments__assessment_id__fhir_get",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assessment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Assessment Id"
+            }
+          },
+          {
+            "name": "result_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Result Id"
+            }
+          },
+          {
+            "name": "fhir_version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "R4",
+              "title": "Fhir Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/fhir+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FhirBundle"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Assessments"
+        ]
+      }
+    },
+    "/v2/roadmap": {
+      "get": {
+        "summary": "Roadmap V2",
+        "operationId": "roadmap_v2_v2_roadmap_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoadmapResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "Roadmap"
         ]
       }
     },
@@ -1124,6 +2567,16 @@
           },
           "400": {
             "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -1244,6 +2697,16 @@
               }
             }
           },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -1341,6 +2804,16 @@
           },
           "400": {
             "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -1467,6 +2940,16 @@
               }
             }
           },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -1561,6 +3044,16 @@
           },
           "400": {
             "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -1670,6 +3163,16 @@
               }
             }
           },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -1755,6 +3258,927 @@
           },
           "400": {
             "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Boundary database unavailable or no validated generation is active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Per-token/IP rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "tags": [
+          "Boundary contracts"
+        ],
+        "description": "Validates each envelope against `contracts/` (Gate 1 schema, Gate 2 checksum + manifest, Gate 3 referential R1\u2013R13, Gate 4 rule tests) and, only if the whole batch passes, activates it as a new generation. On any violation nothing changes and a 400 Validation error lists every finding.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoundaryImportRequest"
+              },
+              "examples": {
+                "full-delivery": {
+                  "summary": "One snapshot per producer contract",
+                  "value": {
+                    "snapshots": [
+                      {
+                        "contract": "pf.taxonomy.v1",
+                        "manifest": {
+                          "contract_version": "1.0.0",
+                          "snapshot_id": "136c7555-45e3-40dc-a9ac-6749cc516ef3",
+                          "producer_wp": "WP2",
+                          "generated_at": "2026-11-10T00:00:00Z",
+                          "generator": {
+                            "name": "contracts-builder",
+                            "version": "1.0.0",
+                            "seed": null
+                          },
+                          "supersedes": null,
+                          "items_checksum": "sha256:39ebf4e8ad76be092a83a28bdc942af2ec3b8e75273fc11b2a90a54291678ce3",
+                          "derived_from": [
+                            {
+                              "source": "D2.1",
+                              "section": "s.2 stakeholder mapping",
+                              "status": "approved"
+                            }
+                          ],
+                          "dependencies": {}
+                        },
+                        "payload": {
+                          "dimensions": [
+                            {
+                              "dimension_id": "pf:wp2:dimension:maturity-governance",
+                              "label": "Governance maturity",
+                              "positioning_axis": "operational",
+                              "scale": {
+                                "min": 1,
+                                "max": 5
+                              },
+                              "state_key": "governance"
+                            },
+                            {
+                              "dimension_id": "pf:wp2:dimension:maturity-data",
+                              "label": "Data maturity",
+                              "positioning_axis": "technical",
+                              "scale": {
+                                "min": 1,
+                                "max": 5
+                              },
+                              "state_key": "data"
+                            },
+                            {
+                              "dimension_id": "pf:wp2:dimension:maturity-compliance",
+                              "label": "Compliance maturity",
+                              "positioning_axis": "regulatory",
+                              "scale": {
+                                "min": 1,
+                                "max": 5
+                              },
+                              "state_key": "compliance"
+                            },
+                            {
+                              "dimension_id": "pf:wp2:dimension:maturity-infrastructure",
+                              "label": "Infrastructure maturity",
+                              "positioning_axis": "technical",
+                              "state_key": "infrastructure",
+                              "scale": {
+                                "min": 1,
+                                "max": 5
+                              }
+                            },
+                            {
+                              "dimension_id": "pf:wp2:dimension:maturity-capability",
+                              "label": "Capability maturity",
+                              "positioning_axis": "technical",
+                              "state_key": "capability",
+                              "scale": {
+                                "min": 1,
+                                "max": 5
+                              }
+                            }
+                          ],
+                          "stakeholder_types": [
+                            {
+                              "stakeholder_type_id": "pf:wp2:stakeholder:biotech-sme",
+                              "label": "Biotech SME",
+                              "ehds_roles": [
+                                "data-user"
+                              ],
+                              "segment": "industry",
+                              "capabilities": [
+                                "rd-pipelines"
+                              ],
+                              "status": "active",
+                              "successor": null,
+                              "personas": [
+                                {
+                                  "persona_id": "pf:wp2:persona:sme-regulatory-lead",
+                                  "label": "Regulatory lead at an SME",
+                                  "influence": "medium",
+                                  "interest": "high"
+                                }
+                              ]
+                            },
+                            {
+                              "stakeholder_type_id": "pf:wp2:stakeholder:ai-factory-operator",
+                              "label": "AI Factory operator",
+                              "ehds_roles": [
+                                "intermediary"
+                              ],
+                              "segment": "infrastructure",
+                              "capabilities": [
+                                "secure-processing"
+                              ],
+                              "status": "active",
+                              "successor": null
+                            },
+                            {
+                              "stakeholder_type_id": "pf:wp2:stakeholder:health-data-access-body",
+                              "label": "Health Data Access Body",
+                              "ehds_roles": [
+                                "regulator",
+                                "intermediary"
+                              ],
+                              "segment": "healthcare authorities",
+                              "status": "active",
+                              "successor": null
+                            },
+                            {
+                              "stakeholder_type_id": "pf:wp2:stakeholder:health-data-infrastructure",
+                              "label": "Health data infrastructure",
+                              "ehds_roles": [
+                                "data-holder",
+                                "intermediary"
+                              ],
+                              "segment": "infrastructure",
+                              "status": "active",
+                              "successor": null
+                            },
+                            {
+                              "stakeholder_type_id": "pf:wp2:stakeholder:research-infrastructure",
+                              "label": "Research infrastructure",
+                              "ehds_roles": [
+                                "data-holder",
+                                "data-user"
+                              ],
+                              "segment": "researchers",
+                              "status": "active",
+                              "successor": null
+                            },
+                            {
+                              "stakeholder_type_id": "pf:wp2:stakeholder:patient-organisation",
+                              "label": "Patient organisation",
+                              "ehds_roles": [
+                                "data-holder"
+                              ],
+                              "segment": "patient organisations",
+                              "status": "deprecated",
+                              "successor": "pf:wp2:stakeholder:research-infrastructure"
+                            }
+                          ],
+                          "scenarios": [
+                            {
+                              "scenario_id": "pf:wp2:scenario:secondary-use-readiness",
+                              "label": "Secondary use readiness",
+                              "applicable_stakeholder_types": [
+                                "pf:wp2:stakeholder:biotech-sme",
+                                "pf:wp2:stakeholder:health-data-infrastructure"
+                              ]
+                            },
+                            {
+                              "scenario_id": "pf:wp2:scenario:ai-model-training",
+                              "label": "AI model training under EHDS",
+                              "applicable_stakeholder_types": [
+                                "pf:wp2:stakeholder:biotech-sme",
+                                "pf:wp2:stakeholder:ai-factory-operator"
+                              ]
+                            },
+                            {
+                              "scenario_id": "pf:wp2:scenario:infrastructure-onboarding",
+                              "label": "EHDS infrastructure onboarding",
+                              "applicable_stakeholder_types": [
+                                "pf:wp2:stakeholder:health-data-infrastructure",
+                                "pf:wp2:stakeholder:research-infrastructure"
+                              ]
+                            }
+                          ],
+                          "capability_vocabulary": [
+                            "legal-basis",
+                            "rd-pipelines",
+                            "secure-processing"
+                          ]
+                        }
+                      },
+                      {
+                        "contract": "pf.roadmap.v1",
+                        "manifest": {
+                          "contract_version": "1.0.0",
+                          "snapshot_id": "ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1",
+                          "producer_wp": "WP3",
+                          "generated_at": "2026-11-10T00:00:00Z",
+                          "generator": {
+                            "name": "contracts-builder",
+                            "version": "1.0.0",
+                            "seed": null
+                          },
+                          "supersedes": null,
+                          "items_checksum": "sha256:ba2dd54a2029be1d6dd019f05dd723f743fe2426d492e9802307979e0955111f",
+                          "derived_from": [
+                            {
+                              "source": "D3.2",
+                              "status": "approved"
+                            },
+                            {
+                              "source": "D3.1",
+                              "section": "catalogue",
+                              "status": "approved"
+                            },
+                            {
+                              "source": "WP3/MS3.1",
+                              "status": "draft"
+                            }
+                          ],
+                          "dependencies": {
+                            "pf.taxonomy.v1": "136c7555-45e3-40dc-a9ac-6749cc516ef3"
+                          }
+                        },
+                        "payload": {
+                          "nodes": [
+                            {
+                              "node_id": "pf:wp3:node:governance-framework",
+                              "label": "Governance Framework",
+                              "dimension": "governance",
+                              "action_type": "governance_action",
+                              "time_horizon": "short",
+                              "maturity_level": 1,
+                              "stakeholder_types": [
+                                "all"
+                              ],
+                              "prerequisites": [],
+                              "dataset_refs": [],
+                              "status": "active",
+                              "successor": null,
+                              "source_wp": "WP3",
+                              "source_doc_ref": "D3.2 s.4",
+                              "confidence": 0.95
+                            },
+                            {
+                              "node_id": "pf:wp3:node:data-catalogue",
+                              "label": "Data Catalogue",
+                              "dimension": "data",
+                              "action_type": "data_foundation",
+                              "time_horizon": "short",
+                              "maturity_level": 2,
+                              "stakeholder_types": [
+                                "all"
+                              ],
+                              "prerequisites": [
+                                "pf:wp3:node:governance-framework"
+                              ],
+                              "dataset_refs": [
+                                "pf:wp3:dataset:priority-oncology-registry"
+                              ],
+                              "status": "active",
+                              "successor": null,
+                              "source_wp": "WP3",
+                              "source_doc_ref": "D3.2 s.4",
+                              "confidence": 0.95
+                            },
+                            {
+                              "node_id": "pf:wp3:node:legal-basis-secondary-use",
+                              "label": "Legal Basis Secondary Use",
+                              "dimension": "compliance",
+                              "action_type": "governance_action",
+                              "time_horizon": "short",
+                              "maturity_level": 2,
+                              "stakeholder_types": [
+                                "all"
+                              ],
+                              "prerequisites": [
+                                "pf:wp3:node:governance-framework"
+                              ],
+                              "dataset_refs": [],
+                              "status": "active",
+                              "successor": null,
+                              "source_wp": "WP3",
+                              "source_doc_ref": "D3.2 s.4",
+                              "confidence": 0.95
+                            },
+                            {
+                              "node_id": "pf:wp3:node:spe-secure-processing",
+                              "label": "Spe Secure Processing",
+                              "dimension": "infrastructure",
+                              "action_type": "deployment_pathway",
+                              "time_horizon": "medium",
+                              "maturity_level": 3,
+                              "stakeholder_types": [
+                                "all"
+                              ],
+                              "prerequisites": [
+                                "pf:wp3:node:data-catalogue",
+                                "pf:wp3:node:legal-basis-secondary-use"
+                              ],
+                              "dataset_refs": [],
+                              "status": "active",
+                              "successor": null,
+                              "source_wp": "WP3",
+                              "source_doc_ref": "D3.2 s.4",
+                              "confidence": 0.95
+                            },
+                            {
+                              "node_id": "pf:wp3:node:ai-model-validation",
+                              "label": "Ai Model Validation",
+                              "dimension": "capability",
+                              "action_type": "priority_application",
+                              "time_horizon": "medium",
+                              "maturity_level": 4,
+                              "stakeholder_types": [
+                                "all"
+                              ],
+                              "prerequisites": [
+                                "pf:wp3:node:spe-secure-processing"
+                              ],
+                              "dataset_refs": [],
+                              "status": "active",
+                              "successor": null,
+                              "source_wp": "WP3",
+                              "source_doc_ref": "D3.2 s.4",
+                              "confidence": 0.95
+                            },
+                            {
+                              "node_id": "pf:wp3:node:semantic-interoperability",
+                              "label": "Semantic Interoperability",
+                              "dimension": "data",
+                              "action_type": "semantic_interoperability",
+                              "time_horizon": "long",
+                              "maturity_level": 4,
+                              "stakeholder_types": [
+                                "all"
+                              ],
+                              "prerequisites": [
+                                "pf:wp3:node:data-catalogue"
+                              ],
+                              "dataset_refs": [],
+                              "status": "active",
+                              "successor": null,
+                              "source_wp": "WP3",
+                              "source_doc_ref": "D3.2 s.4",
+                              "confidence": 0.95
+                            },
+                            {
+                              "node_id": "pf:wp3:node:scale-and-sustain",
+                              "label": "Scale And Sustain",
+                              "dimension": "governance",
+                              "action_type": "infrastructure_provision",
+                              "time_horizon": "long",
+                              "maturity_level": 5,
+                              "stakeholder_types": [
+                                "all"
+                              ],
+                              "prerequisites": [
+                                "pf:wp3:node:ai-model-validation",
+                                "pf:wp3:node:semantic-interoperability"
+                              ],
+                              "dataset_refs": [],
+                              "status": "active",
+                              "successor": null,
+                              "source_wp": "WP3",
+                              "source_doc_ref": "D3.2 s.4",
+                              "confidence": 0.95
+                            }
+                          ],
+                          "edges": [
+                            {
+                              "edge_id": "pf:wp3:edge:gov-catalog",
+                              "from_node_id": "pf:wp3:node:governance-framework",
+                              "to_node_id": "pf:wp3:node:data-catalogue",
+                              "relation_type": "prerequisite",
+                              "required": true
+                            },
+                            {
+                              "edge_id": "pf:wp3:edge:gov-legal",
+                              "from_node_id": "pf:wp3:node:governance-framework",
+                              "to_node_id": "pf:wp3:node:legal-basis-secondary-use",
+                              "relation_type": "prerequisite",
+                              "required": true
+                            },
+                            {
+                              "edge_id": "pf:wp3:edge:catalog-spe",
+                              "from_node_id": "pf:wp3:node:data-catalogue",
+                              "to_node_id": "pf:wp3:node:spe-secure-processing",
+                              "relation_type": "prerequisite",
+                              "required": true
+                            },
+                            {
+                              "edge_id": "pf:wp3:edge:legal-spe",
+                              "from_node_id": "pf:wp3:node:legal-basis-secondary-use",
+                              "to_node_id": "pf:wp3:node:spe-secure-processing",
+                              "relation_type": "prerequisite",
+                              "required": true
+                            },
+                            {
+                              "edge_id": "pf:wp3:edge:spe-ai",
+                              "from_node_id": "pf:wp3:node:spe-secure-processing",
+                              "to_node_id": "pf:wp3:node:ai-model-validation",
+                              "relation_type": "prerequisite",
+                              "required": true
+                            },
+                            {
+                              "edge_id": "pf:wp3:edge:catalog-sem",
+                              "from_node_id": "pf:wp3:node:data-catalogue",
+                              "to_node_id": "pf:wp3:node:semantic-interoperability",
+                              "relation_type": "enabler",
+                              "required": false
+                            },
+                            {
+                              "edge_id": "pf:wp3:edge:ai-scale",
+                              "from_node_id": "pf:wp3:node:ai-model-validation",
+                              "to_node_id": "pf:wp3:node:scale-and-sustain",
+                              "relation_type": "prerequisite",
+                              "required": true
+                            },
+                            {
+                              "edge_id": "pf:wp3:edge:sem-scale",
+                              "from_node_id": "pf:wp3:node:semantic-interoperability",
+                              "to_node_id": "pf:wp3:node:scale-and-sustain",
+                              "relation_type": "prerequisite",
+                              "required": true
+                            }
+                          ],
+                          "datasets": [
+                            {
+                              "dataset_id": "pf:wp3:dataset:priority-oncology-registry",
+                              "label": "High-priority oncology registry datasets",
+                              "availability": "limited",
+                              "suitability": 0.8,
+                              "quality": 0.7,
+                              "representativeness": 0.6,
+                              "completeness": 0.65,
+                              "ai_act_alignment": "conditional",
+                              "source_doc_ref": "D3.1 s.6",
+                              "maturity": 0.5
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "contract": "pf.questionnaire.v1",
+                        "manifest": {
+                          "contract_version": "1.0.0",
+                          "snapshot_id": "cdb84fac-6484-43ce-bf05-ad9502075e71",
+                          "producer_wp": "WP4",
+                          "generated_at": "2026-11-10T00:00:00Z",
+                          "generator": {
+                            "name": "contracts-builder",
+                            "version": "1.0.0",
+                            "seed": null
+                          },
+                          "supersedes": null,
+                          "items_checksum": "sha256:e4c84031d1e1ebfc04901b48b5e55dd3fd1461e068efae33cdc7541841a62cb3",
+                          "derived_from": [
+                            {
+                              "source": "T4.1",
+                              "status": "approved"
+                            }
+                          ],
+                          "dependencies": {
+                            "pf.taxonomy.v1": "136c7555-45e3-40dc-a9ac-6749cc516ef3"
+                          }
+                        },
+                        "payload": {
+                          "stakeholder_type": "pf:wp2:stakeholder:biotech-sme",
+                          "version": "1.0.0",
+                          "title": "Biotech SME readiness self-assessment",
+                          "target_scenarios": [
+                            "pf:wp2:scenario:secondary-use-readiness",
+                            "pf:wp2:scenario:ai-model-training"
+                          ],
+                          "review_status": "for-review",
+                          "questions": [
+                            {
+                              "question_id": "pf:wp4:question:biotech-sme-1",
+                              "label": "Question 1",
+                              "question_type": "single_choice",
+                              "required": true,
+                              "options": [
+                                "yes",
+                                "no",
+                                "planned"
+                              ],
+                              "min_value": null,
+                              "max_value": null,
+                              "maturity_dimension": null,
+                              "visible_if": null,
+                              "capability_maps_to": []
+                            },
+                            {
+                              "question_id": "pf:wp4:question:biotech-sme-2",
+                              "label": "Question 2",
+                              "question_type": "numeric",
+                              "required": true,
+                              "options": [],
+                              "min_value": 1,
+                              "max_value": 5,
+                              "maturity_dimension": "pf:wp2:dimension:maturity-governance",
+                              "visible_if": null,
+                              "capability_maps_to": []
+                            },
+                            {
+                              "question_id": "pf:wp4:question:biotech-sme-3",
+                              "label": "Question 3",
+                              "question_type": "numeric",
+                              "required": true,
+                              "options": [],
+                              "min_value": 1,
+                              "max_value": 5,
+                              "maturity_dimension": "pf:wp2:dimension:maturity-data",
+                              "visible_if": null,
+                              "capability_maps_to": []
+                            },
+                            {
+                              "question_id": "pf:wp4:question:biotech-sme-4",
+                              "label": "Question 4",
+                              "question_type": "numeric",
+                              "required": true,
+                              "options": [],
+                              "min_value": 1,
+                              "max_value": 5,
+                              "maturity_dimension": "pf:wp2:dimension:maturity-compliance",
+                              "visible_if": null,
+                              "capability_maps_to": []
+                            },
+                            {
+                              "question_id": "pf:wp4:question:biotech-sme-capabilities",
+                              "label": "Available capabilities",
+                              "question_type": "multi_choice",
+                              "required": true,
+                              "options": [
+                                "legal-basis",
+                                "secure-processing"
+                              ],
+                              "state_field": "capabilities"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "contract": "pf.rulebundle.v1",
+                        "manifest": {
+                          "contract_version": "1.0.0",
+                          "snapshot_id": "5f515fa8-649e-4a91-8fdd-806886f41bd0",
+                          "producer_wp": "WP8",
+                          "generated_at": "2026-11-10T00:00:00Z",
+                          "generator": {
+                            "name": "contracts-builder",
+                            "version": "1.0.0",
+                            "seed": null
+                          },
+                          "supersedes": null,
+                          "items_checksum": "sha256:471e7fc13e81eef9e4868491d988fbd0075255ae0008f47fc9bf7185fb1ba6af",
+                          "derived_from": [
+                            {
+                              "source": "T8.2",
+                              "status": "draft"
+                            },
+                            {
+                              "source": "T8.3.2",
+                              "status": "approved"
+                            }
+                          ],
+                          "dependencies": {
+                            "pf.taxonomy.v1": "136c7555-45e3-40dc-a9ac-6749cc516ef3",
+                            "pf.roadmap.v1": "ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1"
+                          }
+                        },
+                        "payload": {
+                          "references": [
+                            {
+                              "ref_id": "pf:wp8:reg:ehdsr",
+                              "instrument": "EHDSR",
+                              "locator": "Art.9(2)",
+                              "status": "in-force",
+                              "source_doc_ref": "T8.3.1"
+                            },
+                            {
+                              "ref_id": "pf:wp8:reg:gdpr",
+                              "instrument": "GDPR",
+                              "locator": "Art.9",
+                              "status": "in-force",
+                              "source_doc_ref": "T8.3.1"
+                            },
+                            {
+                              "ref_id": "pf:wp8:reg:ai-act",
+                              "instrument": "AI-Act",
+                              "locator": "Annex III",
+                              "status": "in-force",
+                              "source_doc_ref": "T8.3.2"
+                            },
+                            {
+                              "ref_id": "pf:wp8:reg:biotech-act",
+                              "instrument": "Biotech-Act",
+                              "status": "forthcoming",
+                              "source_doc_ref": "T8.3.1"
+                            }
+                          ],
+                          "rules": [
+                            {
+                              "rule_id": "pf:wp8:rule:secondary-use-eligibility",
+                              "parent_rule_id": null,
+                              "rule_type": "eligibility",
+                              "priority": 10,
+                              "applies_to": [
+                                "pf:wp2:stakeholder:biotech-sme"
+                              ],
+                              "status": "verified",
+                              "condition": {
+                                "and": [
+                                  {
+                                    "field": "capabilities",
+                                    "op": "contains",
+                                    "value": "legal-basis"
+                                  },
+                                  {
+                                    "field": "maturity.compliance",
+                                    "op": "gte",
+                                    "value": 2
+                                  }
+                                ]
+                              },
+                              "action": {
+                                "title": "Proceed to secure processing",
+                                "text": "Stakeholder may request secondary-use data through an SPE.",
+                                "node_id": "pf:wp3:node:spe-secure-processing",
+                                "block": false
+                              },
+                              "compliance_refs": [
+                                "pf:wp8:reg:ehdsr"
+                              ],
+                              "source_doc_ref": "D8.2 s.3",
+                              "rule_version": "1.0.0",
+                              "effective_from": "2025-12-09",
+                              "effective_until": null
+                            },
+                            {
+                              "rule_id": "pf:wp8:rule:missing-legal-basis-block",
+                              "parent_rule_id": null,
+                              "rule_type": "exclusion",
+                              "priority": 20,
+                              "applies_to": [
+                                "pf:wp2:stakeholder:biotech-sme"
+                              ],
+                              "status": "verified",
+                              "condition": {
+                                "not": {
+                                  "field": "capabilities",
+                                  "op": "contains",
+                                  "value": "legal-basis"
+                                }
+                              },
+                              "action": {
+                                "title": "Establish a legal basis first",
+                                "text": "No route while the legal basis capability is missing.",
+                                "node_id": "pf:wp3:node:legal-basis-secondary-use",
+                                "block": true
+                              },
+                              "compliance_refs": [
+                                "pf:wp8:reg:gdpr"
+                              ],
+                              "source_doc_ref": "D8.2 s.3",
+                              "rule_version": "1.0.0",
+                              "effective_from": "2025-12-09",
+                              "effective_until": null
+                            },
+                            {
+                              "rule_id": "pf:wp8:rule:high-risk-model-preference",
+                              "parent_rule_id": null,
+                              "rule_type": "preference",
+                              "priority": 5,
+                              "applies_to": [
+                                "pf:wp2:stakeholder:biotech-sme"
+                              ],
+                              "status": "verified",
+                              "condition": {
+                                "field": "regulatory_flags",
+                                "op": "contains",
+                                "value": "high-risk-ai"
+                              },
+                              "action": {
+                                "title": "Prefer validated pipelines",
+                                "text": "Prefer roadmap routes with an AI Act validation step.",
+                                "node_id": null,
+                                "block": false
+                              },
+                              "compliance_refs": [
+                                "pf:wp8:reg:ai-act"
+                              ],
+                              "source_doc_ref": "D8.2 s.3",
+                              "rule_version": "1.0.0",
+                              "effective_from": "2025-12-09",
+                              "effective_until": null
+                            },
+                            {
+                              "rule_id": "pf:wp8:rule:biotech-act-provisional",
+                              "parent_rule_id": null,
+                              "rule_type": "eligibility",
+                              "priority": 1,
+                              "applies_to": [
+                                "pf:wp2:stakeholder:biotech-sme"
+                              ],
+                              "status": "provisional",
+                              "condition": {
+                                "field": "maturity.governance",
+                                "op": "gte",
+                                "value": 3
+                              },
+                              "action": {
+                                "title": "Provisional upcoming-framework guidance",
+                                "text": "Guidance under a forthcoming instrument; not a legal conclusion.",
+                                "node_id": null,
+                                "block": false
+                              },
+                              "compliance_refs": [
+                                "pf:wp8:reg:biotech-act"
+                              ],
+                              "source_doc_ref": "D8.2 s.3",
+                              "rule_version": "1.0.0",
+                              "effective_from": "2025-12-09",
+                              "effective_until": null
+                            }
+                          ],
+                          "tests": [
+                            {
+                              "test_id": "t-eligibility-pass",
+                              "rule_id": "pf:wp8:rule:secondary-use-eligibility",
+                              "given": {
+                                "capabilities": [
+                                  "legal-basis"
+                                ],
+                                "maturity.compliance": 3
+                              },
+                              "expect": {
+                                "outcome": "triggered"
+                              }
+                            },
+                            {
+                              "test_id": "t-eligibility-fail",
+                              "rule_id": "pf:wp8:rule:secondary-use-eligibility",
+                              "given": {
+                                "capabilities": [],
+                                "maturity.compliance": 3
+                              },
+                              "expect": {
+                                "outcome": "not-triggered"
+                              }
+                            },
+                            {
+                              "test_id": "t-block",
+                              "rule_id": "pf:wp8:rule:missing-legal-basis-block",
+                              "given": {
+                                "capabilities": []
+                              },
+                              "expect": {
+                                "outcome": "blocked"
+                              }
+                            },
+                            {
+                              "test_id": "t-preference",
+                              "rule_id": "pf:wp8:rule:high-risk-model-preference",
+                              "given": {
+                                "regulatory_flags": [
+                                  "high-risk-ai"
+                                ]
+                              },
+                              "expect": {
+                                "outcome": "triggered"
+                              }
+                            },
+                            {
+                              "test_id": "t-provisional",
+                              "rule_id": "pf:wp8:rule:biotech-act-provisional",
+                              "given": {
+                                "maturity.governance": 4
+                              },
+                              "expect": {
+                                "outcome": "triggered",
+                                "action_contains": "not a legal conclusion"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/admin/import": {
+      "post": {
+        "summary": "Import & activate boundary snapshots (atomic)",
+        "operationId": "import_boundary_snapshots_v2",
+        "responses": {
+          "200": {
+            "description": "Batch validated and activated as a new generation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivationReport"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -2664,6 +5088,16 @@
               }
             }
           },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -2796,6 +5230,16 @@
               }
             }
           },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -2917,6 +5361,16 @@
           },
           "400": {
             "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -3079,6 +5533,16 @@
               }
             }
           },
+          "409": {
+            "description": "Input lifecycle, answer revision, migration or result-selection conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -3219,6 +5683,47 @@
         ],
         "title": "AdminReloadResponse"
       },
+      "AffectedInputResponse": {
+        "properties": {
+          "contract": {
+            "type": "string",
+            "title": "Contract"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "title": "Snapshot Id"
+          },
+          "producer_wp": {
+            "type": "string",
+            "title": "Producer Wp"
+          },
+          "dependency_path": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Dependency Path"
+          },
+          "notice_id": {
+            "type": "string",
+            "title": "Notice Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contract",
+          "snapshot_id",
+          "producer_wp",
+          "dependency_path",
+          "notice_id",
+          "reason"
+        ],
+        "title": "AffectedInputResponse"
+      },
       "ApiError": {
         "properties": {
           "error": {
@@ -3338,6 +5843,83 @@
         ],
         "title": "BatchAnswersRequest"
       },
+      "CapabilityFindingResponse": {
+        "properties": {
+          "capability_id": {
+            "type": "string",
+            "title": "Capability Id"
+          },
+          "judgment": {
+            "type": "string",
+            "title": "Judgment"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "answer_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Answer Ids"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence Refs"
+          },
+          "verification_status": {
+            "type": "string",
+            "title": "Verification Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "capability_id",
+          "judgment",
+          "source",
+          "verification_status"
+        ],
+        "title": "CapabilityFindingResponse"
+      },
+      "ConditionEvaluationResponse": {
+        "properties": {
+          "truth": {
+            "type": "string",
+            "title": "Truth"
+          },
+          "missing_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Fields"
+          },
+          "condition": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Condition"
+          },
+          "actual": {
+            "title": "Actual"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionEvaluationResponse"
+            },
+            "type": "array",
+            "title": "Children"
+          }
+        },
+        "type": "object",
+        "required": [
+          "truth"
+        ],
+        "title": "ConditionEvaluationResponse"
+      },
       "CreateAssessmentRequest": {
         "properties": {
           "stakeholder_type": {
@@ -3358,6 +5940,21 @@
       },
       "CreateAssessmentResponse": {
         "properties": {
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id",
+            "default": "legacy-v1"
+          },
+          "semantics_version": {
+            "type": "string",
+            "title": "Semantics Version",
+            "default": "legacy-v1.0"
+          },
+          "answer_revision": {
+            "type": "integer",
+            "title": "Answer Revision",
+            "default": 0
+          },
           "assessment_id": {
             "type": "string",
             "title": "Assessment Id"
@@ -3424,6 +6021,36 @@
           "status"
         ],
         "title": "CreateAssessmentResponse"
+      },
+      "CurrentValidityResponse": {
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "title": "Valid"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "lifecycle_revision": {
+            "type": "integer",
+            "title": "Lifecycle Revision"
+          },
+          "affected_inputs": {
+            "items": {
+              "$ref": "#/components/schemas/AffectedInputResponse"
+            },
+            "type": "array",
+            "title": "Affected Inputs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "valid",
+          "status",
+          "lifecycle_revision"
+        ],
+        "title": "CurrentValidityResponse"
       },
       "FhirBundle": {
         "properties": {
@@ -3590,6 +6217,39 @@
               }
             ],
             "title": "Max Value"
+          },
+          "maturity_dimension": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maturity Dimension"
+          },
+          "state_field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Field"
+          },
+          "capability_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capability Id"
           }
         },
         "type": "object",
@@ -3627,6 +6287,18 @@
             },
             "type": "array",
             "title": "Questions"
+          },
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id",
+            "default": "legacy-v1"
+          },
+          "capability_vocabulary": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Capability Vocabulary"
           }
         },
         "type": "object",
@@ -3644,7 +6316,102 @@
           "status": {
             "type": "string",
             "title": "Status",
-            "description": "ready | blocked"
+            "description": "ready | blocked | degraded"
+          },
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id",
+            "default": "legacy-v1"
+          },
+          "semantics_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Semantics Version"
+          },
+          "result_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Id"
+          },
+          "answer_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Revision"
+          },
+          "content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Hash"
+          },
+          "recommendation_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Kind"
+          },
+          "missing_information": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Information"
+          },
+          "confidence_meaning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Meaning"
+          },
+          "capability_findings": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CapabilityFindingResponse"
+            },
+            "type": "object",
+            "title": "Capability Findings"
+          },
+          "current_validity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CurrentValidityResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "current_node": {
             "type": "string",
@@ -3749,6 +6516,26 @@
           },
           "recommended_path": {
             "$ref": "#/components/schemas/RecommendationResponse"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResultRecordResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current_validity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CurrentValidityResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -3874,6 +6661,125 @@
         ],
         "title": "RequestStatsResponse"
       },
+      "ResultRecordResponse": {
+        "properties": {
+          "result_id": {
+            "type": "string",
+            "title": "Result Id"
+          },
+          "assessment_id": {
+            "type": "string",
+            "title": "Assessment Id"
+          },
+          "answer_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer Revision"
+          },
+          "answers": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answers"
+          },
+          "findings": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/CapabilityFindingResponse"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Findings"
+          },
+          "readiness_snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StakeholderStateResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input_set": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeInputResponse"
+            },
+            "type": "array",
+            "title": "Input Set"
+          },
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id"
+          },
+          "semantics_version": {
+            "type": "string",
+            "title": "Semantics Version"
+          },
+          "evaluation_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluation Date"
+          },
+          "binding_status": {
+            "type": "string",
+            "title": "Binding Status"
+          },
+          "original_output": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Original Output"
+          },
+          "content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Hash"
+          }
+        },
+        "type": "object",
+        "required": [
+          "result_id",
+          "assessment_id",
+          "answer_revision",
+          "answers",
+          "findings",
+          "input_set",
+          "profile_id",
+          "semantics_version",
+          "binding_status",
+          "original_output"
+        ],
+        "title": "ResultRecordResponse"
+      },
       "RoadmapEdgeResponse": {
         "properties": {
           "edge_id": {
@@ -3975,8 +6881,107 @@
         ],
         "title": "RoadmapResponse"
       },
+      "RuleEvaluationResponse": {
+        "properties": {
+          "truth": {
+            "type": "string",
+            "title": "Truth"
+          },
+          "missing_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Fields"
+          },
+          "condition": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Condition"
+          },
+          "actual": {
+            "title": "Actual"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionEvaluationResponse"
+            },
+            "type": "array",
+            "title": "Children"
+          },
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "critical": {
+            "type": "boolean",
+            "title": "Critical"
+          }
+        },
+        "type": "object",
+        "required": [
+          "truth",
+          "rule_id",
+          "critical"
+        ],
+        "title": "RuleEvaluationResponse"
+      },
+      "RuntimeInputResponse": {
+        "properties": {
+          "contract": {
+            "type": "string",
+            "title": "Contract"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "title": "Snapshot Id"
+          },
+          "producer_wp": {
+            "type": "string",
+            "title": "Producer Wp"
+          },
+          "dependency_path": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Dependency Path"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contract",
+          "snapshot_id",
+          "producer_wp",
+          "dependency_path"
+        ],
+        "title": "RuntimeInputResponse"
+      },
       "StakeholderStateResponse": {
         "properties": {
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id",
+            "default": "legacy-v1"
+          },
+          "capability_findings": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CapabilityFindingResponse"
+            },
+            "type": "object",
+            "title": "Capability Findings"
+          },
+          "confidence_meaning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Meaning"
+          },
           "stakeholder_type": {
             "type": "string",
             "title": "Stakeholder Type"
@@ -4146,6 +7151,13 @@
       },
       "TraceRecordResponse": {
         "properties": {
+          "condition_evaluations": {
+            "items": {
+              "$ref": "#/components/schemas/RuleEvaluationResponse"
+            },
+            "type": "array",
+            "title": "Condition Evaluations"
+          },
           "answer_ids": {
             "items": {
               "type": "string"
@@ -4279,6 +7291,34 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WithdrawalReceipt": {
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "title": "Accepted"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created"
+          },
+          "notice_id": {
+            "type": "string",
+            "title": "Notice Id"
+          },
+          "lifecycle_revision": {
+            "type": "integer",
+            "title": "Lifecycle Revision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accepted",
+          "created",
+          "notice_id",
+          "lifecycle_revision"
+        ],
+        "title": "WithdrawalReceipt"
       },
       "PF_pf_taxonomy_v1": {
         "title": "pf.taxonomy.v1 payload \u2014 WP2 stakeholder taxonomy (B1)",
@@ -4498,155 +7538,6 @@
           "id": {
             "type": "string",
             "pattern": "^pf:wp2:[a-z-]+:[a-z0-9-]{1,64}$"
-          }
-        }
-      },
-      "PF_pf_questionnaire_v1": {
-        "title": "pf.questionnaire.v1 payload \u2014 WP4 questionnaires published for WP2 review (B2)",
-        "description": "T2.4 has WP2 support WP4 pathfinding content; this contract is the review channel. Field names match pathfinder/core/models.py Question/Questionnaire so the snapshot imports without transformation.",
-        "type": "object",
-        "required": [
-          "stakeholder_type",
-          "version",
-          "title",
-          "target_scenarios",
-          "questions"
-        ],
-        "additionalProperties": false,
-        "properties": {
-          "stakeholder_type": {
-            "$ref": "#/components/schemas/PF_pf_questionnaire_v1/$defs/taxid",
-            "description": "References an active pf.taxonomy.v1 stakeholder_type_id."
-          },
-          "version": {
-            "type": "string",
-            "minLength": 1
-          },
-          "title": {
-            "type": "string",
-            "minLength": 1
-          },
-          "target_scenarios": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/PF_pf_questionnaire_v1/$defs/taxid"
-            },
-            "description": "Scenario IDs from the active taxonomy."
-          },
-          "questions": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-              "type": "object",
-              "required": [
-                "question_id",
-                "label",
-                "question_type",
-                "required"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "question_id": {
-                  "$ref": "#/components/schemas/PF_pf_questionnaire_v1/$defs/qid"
-                },
-                "label": {
-                  "type": "string",
-                  "minLength": 1
-                },
-                "help_text": {
-                  "type": "string"
-                },
-                "question_type": {
-                  "type": "string",
-                  "enum": [
-                    "single_choice",
-                    "multi_choice",
-                    "numeric",
-                    "text"
-                  ]
-                },
-                "required": {
-                  "type": "boolean"
-                },
-                "options": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                "min_value": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ]
-                },
-                "max_value": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ],
-                  "description": "numeric questions: scale 1..5 enforced referentially (integer maturity, RFQ 3.2)."
-                },
-                "maturity_dimension": {
-                  "oneOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "$ref": "#/components/schemas/PF_pf_questionnaire_v1/$defs/taxid"
-                    }
-                  ],
-                  "description": "Taxonomy dimension_id when the question feeds a maturity dimension."
-                },
-                "state_field": {
-                  "type": "string",
-                  "enum": [
-                    "capabilities",
-                    "missing_capabilities",
-                    "regulatory_flags"
-                  ],
-                  "description": "A multi-choice answer directly supplies this state collection."
-                },
-                "visible_if": {
-                  "type": [
-                    "object",
-                    "null"
-                  ],
-                  "description": "Conditional visibility: same condition grammar as pf.rulebundle.v1 conditions.",
-                  "additionalProperties": true
-                },
-                "capability_maps_to": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          },
-          "review_status": {
-            "type": "string",
-            "enum": [
-              "draft",
-              "for-review",
-              "approved"
-            ],
-            "default": "for-review"
-          },
-          "metadata": {
-            "type": "object",
-            "additionalProperties": true
-          }
-        },
-        "$defs": {
-          "qid": {
-            "type": "string",
-            "pattern": "^pf:wp4:question:[a-z0-9-]{1,64}$"
-          },
-          "taxid": {
-            "type": "string",
-            "pattern": "^pf:wp(2|4):[a-z-]+:[a-z0-9-]{1,64}$"
           }
         }
       },
@@ -4913,6 +7804,155 @@
           "dsid": {
             "type": "string",
             "pattern": "^pf:wp3:dataset:[a-z0-9-]{1,64}$"
+          }
+        }
+      },
+      "PF_pf_questionnaire_v1": {
+        "title": "pf.questionnaire.v1 payload \u2014 WP4 questionnaires published for WP2 review (B2)",
+        "description": "T2.4 has WP2 support WP4 pathfinding content; this contract is the review channel. Field names match pathfinder/core/models.py Question/Questionnaire so the snapshot imports without transformation.",
+        "type": "object",
+        "required": [
+          "stakeholder_type",
+          "version",
+          "title",
+          "target_scenarios",
+          "questions"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "stakeholder_type": {
+            "$ref": "#/components/schemas/PF_pf_questionnaire_v1/$defs/taxid",
+            "description": "References an active pf.taxonomy.v1 stakeholder_type_id."
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target_scenarios": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/PF_pf_questionnaire_v1/$defs/taxid"
+            },
+            "description": "Scenario IDs from the active taxonomy."
+          },
+          "questions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "question_id",
+                "label",
+                "question_type",
+                "required"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "question_id": {
+                  "$ref": "#/components/schemas/PF_pf_questionnaire_v1/$defs/qid"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "help_text": {
+                  "type": "string"
+                },
+                "question_type": {
+                  "type": "string",
+                  "enum": [
+                    "single_choice",
+                    "multi_choice",
+                    "numeric",
+                    "text"
+                  ]
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "min_value": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "max_value": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "numeric questions: scale 1..5 enforced referentially (integer maturity, RFQ 3.2)."
+                },
+                "maturity_dimension": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PF_pf_questionnaire_v1/$defs/taxid"
+                    }
+                  ],
+                  "description": "Taxonomy dimension_id when the question feeds a maturity dimension."
+                },
+                "state_field": {
+                  "type": "string",
+                  "enum": [
+                    "capabilities",
+                    "missing_capabilities",
+                    "regulatory_flags"
+                  ],
+                  "description": "A multi-choice answer directly supplies this state collection."
+                },
+                "visible_if": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "Conditional visibility: same condition grammar as pf.rulebundle.v1 conditions.",
+                  "additionalProperties": true
+                },
+                "capability_maps_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "review_status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "for-review",
+              "approved"
+            ],
+            "default": "for-review"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "$defs": {
+          "qid": {
+            "type": "string",
+            "pattern": "^pf:wp4:question:[a-z0-9-]{1,64}$"
+          },
+          "taxid": {
+            "type": "string",
+            "pattern": "^pf:wp(2|4):[a-z-]+:[a-z0-9-]{1,64}$"
           }
         }
       },
@@ -5554,9 +8594,621 @@
           }
         ]
       },
+      "PF_pf_questionnaire_v2": {
+        "title": "pf.questionnaire.v2 \u2014 explicit capability evidence mapping",
+        "description": "Each mapped capability question declares yes, no or unknown. Unselected positive items do not assert absence.",
+        "type": "object",
+        "required": [
+          "stakeholder_type",
+          "version",
+          "title",
+          "target_scenarios",
+          "questions"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "stakeholder_type": {
+            "$ref": "#/components/schemas/PF_pf_questionnaire_v2/$defs/taxid",
+            "description": "References an active pf.taxonomy.v1 stakeholder_type_id."
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target_scenarios": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/PF_pf_questionnaire_v2/$defs/taxid"
+            },
+            "description": "Scenario IDs from the active taxonomy."
+          },
+          "questions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "question_id",
+                "label",
+                "question_type",
+                "required"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "question_id": {
+                  "$ref": "#/components/schemas/PF_pf_questionnaire_v2/$defs/qid"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "help_text": {
+                  "type": "string"
+                },
+                "question_type": {
+                  "type": "string",
+                  "enum": [
+                    "single_choice",
+                    "multi_choice",
+                    "numeric",
+                    "text"
+                  ]
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "min_value": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "max_value": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "numeric questions: scale 1..5 enforced referentially (integer maturity, RFQ 3.2)."
+                },
+                "maturity_dimension": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PF_pf_questionnaire_v2/$defs/taxid"
+                    }
+                  ],
+                  "description": "Taxonomy dimension_id when the question feeds a maturity dimension."
+                },
+                "state_field": {
+                  "type": "string",
+                  "enum": [
+                    "capabilities",
+                    "missing_capabilities",
+                    "regulatory_flags"
+                  ],
+                  "description": "A multi-choice answer directly supplies this state collection."
+                },
+                "visible_if": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "description": "Conditional visibility: same condition grammar as pf.rulebundle.v1 conditions.",
+                  "additionalProperties": true
+                },
+                "capability_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Capability vocabulary ID judged by an explicit yes/no/unknown answer."
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "required": [
+                      "capability_id"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "question_type": {
+                        "const": "single_choice"
+                      },
+                      "options": {
+                        "const": [
+                          "yes",
+                          "no",
+                          "unknown"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "options"
+                    ],
+                    "not": {
+                      "required": [
+                        "state_field"
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "review_status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "for-review",
+              "approved"
+            ],
+            "default": "for-review"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "$defs": {
+          "qid": {
+            "type": "string",
+            "pattern": "^pf:wp4:question:[a-z0-9-]{1,64}$"
+          },
+          "taxid": {
+            "type": "string",
+            "pattern": "^pf:wp(2|4):[a-z-]+:[a-z0-9-]{1,64}$"
+          }
+        }
+      },
+      "PF_pf_rulebundle_v2": {
+        "title": "pf.rulebundle.v2 \u2014 three-valued conditions and paired tests",
+        "description": "Machine-readable projection of T8.2/T8.3 outputs ('road legal' per T4.1). Legal instruments per T8.3.2: EHDSR and the interplay with AI Act, IVDR/MDR, HTA Regulation, GDPR, and key forthcoming pieces (e.g. Biotech Act). Provisional status mirrors the phased T8.3 sub-task drafts: unverified regulatory state, never a legal conclusion.",
+        "type": "object",
+        "required": [
+          "references",
+          "rules",
+          "tests"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "references": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "ref_id",
+                "instrument",
+                "status"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "ref_id": {
+                  "$ref": "#/components/schemas/PF_pf_rulebundle_v2/$defs/id"
+                },
+                "instrument": {
+                  "type": "string",
+                  "enum": [
+                    "EHDSR",
+                    "GDPR",
+                    "AI-Act",
+                    "IVDR",
+                    "MDR",
+                    "HTAR",
+                    "Data-Act",
+                    "Biotech-Act",
+                    "national",
+                    "other"
+                  ]
+                },
+                "locator": {
+                  "type": "string",
+                  "description": "Article/annex/recital or section, e.g. 'Art.9(2)' or 'Annex I'."
+                },
+                "eur_lex_uri": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "in-force",
+                    "provisional",
+                    "forthcoming"
+                  ]
+                },
+                "source_doc_ref": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "rules": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/PF_pf_rulebundle_v2/$defs/rule"
+            }
+          },
+          "tests": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Paired rule tests, executed at import and in CI (docs/13 import protocol).",
+            "items": {
+              "type": "object",
+              "required": [
+                "test_id",
+                "rule_id",
+                "given",
+                "expect"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "test_id": {
+                  "type": "string"
+                },
+                "rule_id": {
+                  "$ref": "#/components/schemas/PF_pf_rulebundle_v2/$defs/rid"
+                },
+                "given": {
+                  "type": "object",
+                  "description": "StakeholderState field assertions, keyed by state path, e.g. 'capabilities: [legal-basis]', 'maturity.data: 2', 'flags: [x]'.",
+                  "additionalProperties": true
+                },
+                "expect": {
+                  "type": "object",
+                  "required": [
+                    "outcome"
+                  ],
+                  "properties": {
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "triggered",
+                        "not-triggered",
+                        "blocked",
+                        "unknown"
+                      ]
+                    },
+                    "action_contains": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "$defs": {
+          "id": {
+            "type": "string",
+            "pattern": "^pf:wp8:reg:[a-z0-9-]{1,64}$"
+          },
+          "rid": {
+            "type": "string",
+            "pattern": "^pf:wp8:rule:[a-z0-9-]{1,64}$"
+          },
+          "condition": {
+            "type": "object",
+            "description": "Explicit three-valued AND/OR/NOT; absent capability evidence is unknown. Empty object is unconditional.",
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "and"
+                ],
+                "properties": {
+                  "and": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/components/schemas/PF_pf_rulebundle_v2/$defs/condition"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": [
+                  "or"
+                ],
+                "properties": {
+                  "or": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "$ref": "#/components/schemas/PF_pf_rulebundle_v2/$defs/condition"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": [
+                  "not"
+                ],
+                "properties": {
+                  "not": {
+                    "$ref": "#/components/schemas/PF_pf_rulebundle_v2/$defs/condition"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": [
+                  "field",
+                  "op"
+                ],
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "op": {
+                    "type": "string",
+                    "enum": [
+                      "eq",
+                      "ne",
+                      "gt",
+                      "gte",
+                      "lt",
+                      "lte",
+                      "in",
+                      "not_in",
+                      "contains",
+                      "exists"
+                    ]
+                  },
+                  "value": {}
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "maxProperties": 0
+              }
+            ]
+          },
+          "rule": {
+            "type": "object",
+            "required": [
+              "rule_id",
+              "rule_type",
+              "priority",
+              "applies_to",
+              "condition",
+              "action",
+              "compliance_refs",
+              "source_doc_ref",
+              "rule_version",
+              "status"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "rule_id": {
+                "$ref": "#/components/schemas/PF_pf_rulebundle_v2/$defs/rid"
+              },
+              "parent_rule_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rule_type": {
+                "type": "string",
+                "enum": [
+                  "eligibility",
+                  "exclusion",
+                  "preference",
+                  "override"
+                ]
+              },
+              "priority": {
+                "type": "integer"
+              },
+              "applies_to": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "verified",
+                  "provisional"
+                ],
+                "description": "provisional -> Pathfinder renders unverified regulatory state (RFQ 3.4)."
+              },
+              "condition": {
+                "$ref": "#/components/schemas/PF_pf_rulebundle_v2/$defs/condition"
+              },
+              "action": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "text"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "node_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Roadmap node ID this action advances."
+                  },
+                  "block": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "warning": {
+                    "type": "string"
+                  }
+                }
+              },
+              "compliance_refs": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PF_pf_rulebundle_v2/$defs/id"
+                }
+              },
+              "source_doc_ref": {
+                "type": "string"
+              },
+              "rule_version": {
+                "type": "string",
+                "minLength": 1
+              },
+              "effective_from": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "effective_until": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              }
+            }
+          }
+        }
+      },
+      "PF_pf_withdrawal_v1": {
+        "title": "pf.withdrawal.v1 \u2014 owner-confirmed exact-version notice",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "notice_id",
+          "targets",
+          "reason",
+          "source_confirmation"
+        ],
+        "properties": {
+          "notice_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "targets": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "contract",
+                "snapshot_id",
+                "producer_wp"
+              ],
+              "properties": {
+                "contract": {
+                  "type": "string",
+                  "enum": [
+                    "pf.taxonomy.v1",
+                    "pf.roadmap.v1",
+                    "pf.questionnaire.v1",
+                    "pf.rulebundle.v1",
+                    "pf.questionnaire.v2",
+                    "pf.rulebundle.v2"
+                  ]
+                },
+                "snapshot_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "producer_wp": {
+                  "type": "string",
+                  "enum": [
+                    "WP2",
+                    "WP3",
+                    "WP4",
+                    "WP8"
+                  ]
+                }
+              }
+            }
+          },
+          "source_confirmation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "reference",
+              "material_checksum",
+              "target_checksum",
+              "confirmed_by_wp",
+              "admin_attested"
+            ],
+            "properties": {
+              "reference": {
+                "type": "string",
+                "minLength": 1
+              },
+              "material_checksum": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "target_checksum": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "confirmed_by_wp": {
+                "type": "string",
+                "enum": [
+                  "WP2",
+                  "WP3",
+                  "WP4",
+                  "WP8"
+                ]
+              },
+              "admin_attested": {
+                "const": true
+              }
+            },
+            "description": "Audited manual intake attestation; does not independently authenticate the source owner."
+          }
+        }
+      },
       "SnapshotEnvelope": {
         "title": "SnapshotEnvelope",
-        "description": "The single delivery format for every cross-WP artefact (protocol \u00a73): {contract, manifest, payload}.",
+        "description": "Common manifest wrapping every cross-work-package snapshot. derived_from identifies snapshot-level sources; entity-level provenance requires a separate entity reference.",
         "type": "object",
         "required": [
           "contract",
@@ -5844,6 +9496,378 @@
           }
         }
       },
+      "SnapshotEnvelopeV2": {
+        "title": "SnapshotEnvelopeV2",
+        "description": "Common manifest wrapping every cross-work-package snapshot. derived_from identifies snapshot-level sources; entity-level provenance requires a separate entity reference.",
+        "type": "object",
+        "required": [
+          "contract",
+          "manifest",
+          "payload"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "contract": {
+            "type": "string",
+            "enum": [
+              "pf.taxonomy.v1",
+              "pf.questionnaire.v1",
+              "pf.roadmap.v1",
+              "pf.rulebundle.v1",
+              "pf.feedback.v1",
+              "pf.questionnaire.v2",
+              "pf.rulebundle.v2",
+              "pf.withdrawal.v1"
+            ]
+          },
+          "manifest": {
+            "$ref": "#/components/schemas/SnapshotEnvelopeV2/$defs/manifest"
+          },
+          "payload": {
+            "type": "object"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "contract": {
+                  "const": "pf.taxonomy.v1"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "payload": {
+                  "$ref": "#/components/schemas/PF_pf_taxonomy_v1"
+                },
+                "manifest": {
+                  "properties": {
+                    "producer_wp": {
+                      "const": "WP2"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "contract": {
+                  "const": "pf.questionnaire.v1"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "payload": {
+                  "$ref": "#/components/schemas/PF_pf_questionnaire_v1"
+                },
+                "manifest": {
+                  "properties": {
+                    "producer_wp": {
+                      "const": "WP4"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "contract": {
+                  "const": "pf.roadmap.v1"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "payload": {
+                  "$ref": "#/components/schemas/PF_pf_roadmap_v1"
+                },
+                "manifest": {
+                  "properties": {
+                    "producer_wp": {
+                      "const": "WP3"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "contract": {
+                  "const": "pf.rulebundle.v1"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "payload": {
+                  "$ref": "#/components/schemas/PF_pf_rulebundle_v1"
+                },
+                "manifest": {
+                  "properties": {
+                    "producer_wp": {
+                      "const": "WP8"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "contract": {
+                  "const": "pf.feedback.v1"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "payload": {
+                  "$ref": "#/components/schemas/PF_pf_feedback_v1"
+                },
+                "manifest": {
+                  "properties": {
+                    "producer_wp": {
+                      "const": "WP4"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "contract": {
+                  "const": "pf.questionnaire.v2"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "payload": {
+                  "$ref": "#/components/schemas/PF_pf_questionnaire_v2"
+                },
+                "manifest": {
+                  "properties": {
+                    "producer_wp": {
+                      "const": "WP4"
+                    },
+                    "migration_notes": {
+                      "minItems": 1
+                    }
+                  },
+                  "required": [
+                    "migration_notes"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "contract": {
+                  "const": "pf.rulebundle.v2"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "payload": {
+                  "$ref": "#/components/schemas/PF_pf_rulebundle_v2"
+                },
+                "manifest": {
+                  "properties": {
+                    "producer_wp": {
+                      "const": "WP8"
+                    },
+                    "migration_notes": {
+                      "minItems": 1
+                    }
+                  },
+                  "required": [
+                    "migration_notes"
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "contract": {
+                  "const": "pf.withdrawal.v1"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "payload": {
+                  "$ref": "#/components/schemas/PF_pf_withdrawal_v1"
+                },
+                "manifest": {
+                  "properties": {}
+                }
+              }
+            }
+          }
+        ],
+        "$defs": {
+          "manifest": {
+            "type": "object",
+            "required": [
+              "contract_version",
+              "snapshot_id",
+              "producer_wp",
+              "generated_at",
+              "generator",
+              "items_checksum",
+              "derived_from",
+              "dependencies"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "contract_version": {
+                "type": "string",
+                "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+              },
+              "snapshot_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "producer_wp": {
+                "type": "string",
+                "enum": [
+                  "WP2",
+                  "WP3",
+                  "WP4",
+                  "WP8"
+                ]
+              },
+              "generated_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "generator": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "version"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "version": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "seed": {
+                    "type": [
+                      "integer",
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              },
+              "supersedes": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uuid"
+              },
+              "items_checksum": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "dependencies": {
+                "type": "object",
+                "propertyNames": {
+                  "enum": [
+                    "pf.taxonomy.v1",
+                    "pf.roadmap.v1",
+                    "pf.questionnaire.v1",
+                    "pf.rulebundle.v1",
+                    "pf.questionnaire.v2",
+                    "pf.rulebundle.v2"
+                  ]
+                },
+                "additionalProperties": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "migration_notes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "from_version",
+                    "to_version",
+                    "change"
+                  ],
+                  "properties": {
+                    "from_version": {
+                      "type": "string"
+                    },
+                    "to_version": {
+                      "type": "string"
+                    },
+                    "change": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              "derived_from": {
+                "type": "array",
+                "minItems": 1,
+                "description": "The SCAILED deliverables/milestones this projection was extracted from (Part B objects, e.g. D2.1 stakeholder mapping, D3.1 landscape, MS3.1/D3.2 roadmap, T8.3.x outputs, D8.x).",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "source",
+                    "status"
+                  ],
+                  "properties": {
+                    "source": {
+                      "type": "string",
+                      "pattern": "^(D[0-9]+\\.[0-9]+|WP[0-9]+/MS[0-9]+\\.[0-9]+|T[0-9]+\\.[0-9]+)",
+                      "description": "Part B object id. Milestones carry a WP qualifier (WP3/MS3.1) because Part B numbers collide across work packages (WP1/MS3.1 is 'Project Completed', WP3/MS3.1 is 'Initial Strategic Roadmap')."
+                    },
+                    "section": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "approved",
+                        "draft",
+                        "forthcoming"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
       "BoundaryImportRequest": {
         "type": "object",
         "required": [
@@ -5855,7 +9879,28 @@
             "type": "array",
             "minItems": 1,
             "items": {
-              "$ref": "#/components/schemas/SnapshotEnvelope"
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SnapshotEnvelope"
+                },
+                {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SnapshotEnvelopeV2"
+                    },
+                    {
+                      "properties": {
+                        "contract": {
+                          "enum": [
+                            "pf.questionnaire.v2",
+                            "pf.rulebundle.v2"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
             },
             "description": "Complete runtime dependency closure in THIS batch: include taxonomy, roadmap, questionnaire(s) and rulebundle, plus every exact manifest.dependencies snapshot. Active snapshots are not merged into this batch. manifest.supersedes is historical lineage and does not require resubmitting its predecessor."
           }

@@ -415,6 +415,11 @@ class AssessmentService:
             raise ValueError("no validated boundary generation is active for this profile")
         return (generation.questionnaire_engine if generation else self.questionnaire_engine).get(stakeholder_type).to_dict()
 
+    @staticmethod
+    def _check_writes_enabled(profile_id):
+        if profile_id == LEGACY_PROFILE.profile_id and os.getenv('PATHFINDER_V1_WRITES_ENABLED', 'true').lower() == 'false':
+            raise ValueError('migration_required: v1 writes are closed; use a new v2 assessment')
+
     def _input_set(self, session):
         generation = self._boundary_for_session(session)
         if generation is None:
@@ -440,6 +445,7 @@ class AssessmentService:
         ip: str | None = None, user_agent: str | None = None,
         profile_id=LEGACY_PROFILE.profile_id,
     ) -> dict[str, object]:
+        self._check_writes_enabled(profile_id)
         stakeholder_type, target_scenario = stakeholder_type.strip(), target_scenario.strip()
         generation_id, generation = self._active_generation(profile_id)
         if generation is None and (self._boundary_store or profile_id != LEGACY_PROFILE.profile_id):
@@ -491,6 +497,7 @@ class AssessmentService:
         user_agent: str | None = None,
     ) -> dict[str, object]:
         session, revision = self._load_session(assessment_id)
+        self._check_writes_enabled(session.get('profile_id', LEGACY_PROFILE.profile_id))
         generation = self._boundary_for_session(session)
         state = (generation.questionnaire_engine if generation else self.questionnaire_engine).build_state(
             str(session["stakeholder_type"]),
@@ -625,17 +632,21 @@ class AssessmentService:
         user_agent: str | None = None,
     ) -> dict[str, object]:
         session, revision = self._load_session(assessment_id)
+        self._check_writes_enabled(session.get('profile_id', LEGACY_PROFILE.profile_id))
         inputs = self._input_set(session)
         self._require_valid_inputs(inputs)
         state = self._state_for_recommendation(session)
         recommendation = self._recommend_for_session(session, state)
+        readiness = state.to_dict()
+        if session.get('stakeholder_state', {}).get('derivation_mode') == 'wp2_wp3':
+            readiness = deepcopy(session['stakeholder_state'])
         if session.get('profile_id') == EVIDENCE_PROFILE.profile_id:
             recommendation['capability_findings'] = state.to_dict()['capability_findings']
         record = {
             'result_id': str(uuid4()), 'assessment_id': assessment_id,
             'answer_revision': session.get('answer_revision', 0), 'answers': deepcopy(session.get('answers')),
             'findings': deepcopy(state.to_dict().get('capability_findings', {})),
-            'readiness_snapshot': state.to_dict(), 'input_set': inputs,
+            'readiness_snapshot': readiness, 'input_set': inputs,
             'profile_id': session.get('profile_id', LEGACY_PROFILE.profile_id),
             'semantics_version': session.get('semantics_version', LEGACY_PROFILE.semantics_version),
             'evaluation_date': session.get('evaluation_date', datetime.now(timezone.utc).date().isoformat()),
@@ -645,7 +656,7 @@ class AssessmentService:
         session['recommendation'] = deepcopy(recommendation)
         session['result_id'] = record['result_id']
         session['status'] = 'complete'
-        session['stakeholder_state'] = state.to_dict()
+        session['stakeholder_state'] = readiness
         if self._boundary_store:
             self._boundary_store.publish_result(session, revision, record, ip, user_agent)
         else:
@@ -740,43 +751,37 @@ class AssessmentService:
         fhir_version: str = "R4",
         ip: str | None = None,
         user_agent: str | None = None,
+        result_id=None,
     ) -> dict[str, object]:
-        session, _ = self._load_session(assessment_id)
-        if not isinstance(session.get("answers"), dict):
-            raise ValueError("answers must be submitted before FHIR export")
-        if not isinstance(session.get("recommendation"), dict):
-            raise ValueError("recommendation must be generated before FHIR export")
-
+        if result_id is None:
+            session, _ = self._load_session(assessment_id)
+            if not isinstance(session.get('answers'), dict):
+                raise ValueError('answers must be submitted before FHIR export')
+            if self._result_record(session) is None:
+                message = 'recommendation_required: generate a result for the current answers' if session.get('profile_id') == EVIDENCE_PROFILE.profile_id else 'recommendation must be generated before FHIR export'
+                raise ValueError(message)
         try:
-            report = self._build_report_payload(assessment_id)
+            report = self._build_report_payload(assessment_id, result_id)
+            session = report['session']
+            if report['result'].get('binding_status') != 'bound':
+                raise ValueError('migration_required: original answers are unavailable for this legacy result')
             generation = self._boundary_for_session(session)
-            questionnaire = (generation.questionnaire_engine.get(str(session["stakeholder_type"])).to_dict()
-                             if generation else self.get_questionnaire(str(session["stakeholder_type"])))
-            bundle = build_assessment_bundle(
-                report=report,
-                questionnaire=questionnaire,
-                audit_events=self._audit_events_for_assessment(assessment_id),
-                fhir_version=fhir_version,
-            )
+            questionnaire = (generation.questionnaire_engine.get(str(session['stakeholder_type'])).to_dict()
+                             if generation else self.get_questionnaire(str(session['stakeholder_type'])))
+            bundle = build_assessment_bundle(report, questionnaire, self._audit_events_for_assessment(assessment_id), fhir_version)
         except Exception as exc:
-            event = {"assessment_id": assessment_id, "error": str(exc), "fhir_version": fhir_version}
+            event = {'assessment_id': assessment_id, 'error': str(exc), 'fhir_version': fhir_version}
             if self._boundary_store:
-                self._boundary_store.append_event("fhir_export_failed", event, ip, user_agent)
+                self._boundary_store.append_event('fhir_export_failed', event, ip, user_agent)
             else:
-                self.audit_log.append("fhir_export_failed", event, ip=ip, user_agent=user_agent)
+                self.audit_log.append('fhir_export_failed', event, ip=ip, user_agent=user_agent)
             raise
-
-        event = {"assessment_id": assessment_id, "bundle_id": bundle["id"], "fhir_version": fhir_version}
+        event = {'assessment_id': assessment_id, 'bundle_id': bundle['id'], 'fhir_version': fhir_version}
         if self._boundary_store:
-            self._boundary_store.append_event("fhir_bundle_exported", event, ip, user_agent)
+            self._boundary_store.append_event('fhir_bundle_exported', event, ip, user_agent)
         else:
-            self.audit_log.append("fhir_bundle_exported", event, ip=ip, user_agent=user_agent)
-        return build_assessment_bundle(
-            report=report,
-            questionnaire=questionnaire,
-            audit_events=self._audit_events_for_assessment(assessment_id),
-            fhir_version=fhir_version,
-        )
+            self.audit_log.append('fhir_bundle_exported', event, ip=ip, user_agent=user_agent)
+        return bundle
 
     def import_wp2(
         self,
