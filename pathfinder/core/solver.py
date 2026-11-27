@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathfinder.core.compliance import ComplianceEvaluator
 from pathfinder.core.exceptions import NoFeasiblePathError
 from pathfinder.core.graph import InMemoryRoadmapGraph
-from pathfinder.core.models import PathResult, Rule, StakeholderState, TraceRecord
+from pathfinder.core.models import PathResult, Rule, StakeholderState, TraceRecord, TruthValue
 
 
 class PathfinderSolver:
@@ -23,6 +23,17 @@ class PathfinderSolver:
         current = self.graph.locate_current(state)
         target = self.graph.locate_target(state)
         triggered = self.evaluator.triggered_rules(state, rules)
+        evaluations = []
+        missing = set()
+        if self.evaluator.profile_id == "evidence-v2":
+            for rule in rules:
+                if not rule.applies_to_stakeholder(state.stakeholder_type):
+                    continue
+                result = self.evaluator.evaluate_details(rule.condition, state)
+                critical = rule.rule_type == "exclusion" or rule.action.block
+                evaluations.append({"rule_id": rule.rule_id, "critical": critical, **result.to_dict()})
+                if critical and result.truth is TruthValue.UNKNOWN:
+                    missing.update(result.missing_fields)
         blockers = tuple(
             rule.action.text
             for rule in triggered
@@ -63,6 +74,7 @@ class PathfinderSolver:
             schema_version=state.schema_version,
             rule_version=triggered[0].rule_version if triggered else "demo-rules-v1",
             confidence=state.confidence,
+            condition_evaluations=tuple(evaluations),
         )
         return PathResult(
             current_node=current.node_id,
@@ -74,4 +86,7 @@ class PathfinderSolver:
             confidence=state.confidence,
             trace=trace,
             path_backend="python",
+            missing_information=tuple(sorted(missing)),
+            profile_id=state.profile_id,
+            regulatory_status="unverified" if any(rule.regulatory_status != "verified" for rule in rules) else "verified",
         )

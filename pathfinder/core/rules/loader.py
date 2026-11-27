@@ -14,7 +14,10 @@ from pathfinder.core.rules.validator import validate_rule_bundle
 class RuleLoader:
     def __init__(self, questionnaires: list[Questionnaire]) -> None:
         self._questionnaire_engine = QuestionnaireEngine(questionnaires)
-        self._evaluator = ComplianceEvaluator()
+        profiles = {q.profile_id for q in questionnaires}
+        if len(profiles) != 1:
+            raise ValueError("rule loader requires a single evaluation profile")
+        self._evaluator = ComplianceEvaluator(next(iter(profiles)))
         self.active_rules: list[Rule] = []
         self.active_version: str | None = None
 

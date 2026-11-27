@@ -10,6 +10,7 @@ from typing import Mapping
 from pathfinder.adapters.boundary import questionnaire_from_snapshots
 from pathfinder.core.boundary_validation import canonical_checksum, validate_documents
 from pathfinder.core.graph import InMemoryRoadmapGraph
+from pathfinder.core.compliance import ComplianceEvaluator
 from pathfinder.core.models import RoadmapEdge, RoadmapNode, Rule, RuleAction, RuleType
 from pathfinder.core.questionnaire import QuestionnaireEngine
 from pathfinder.core.solver import PathfinderSolver
@@ -52,8 +53,6 @@ def build_boundary_generation(snapshots: list[dict]) -> BoundaryGeneration:
     for snapshot in snapshots:
         groups.setdefault(snapshot["contract"], []).append(snapshot)
     profile = profile_for_contracts(groups)
-    if profile != LEGACY_PROFILE:
-        raise ValueError("evidence-v2 evaluator is not available for activation")
     for name in ("pf.taxonomy.v1", "pf.roadmap.v1", profile.rulebundle_contract):
         if len(groups.get(name, [])) != 1:
             raise ValueError(f"activation requires exactly one {name} snapshot")
@@ -108,5 +107,5 @@ def build_boundary_generation(snapshots: list[dict]) -> BoundaryGeneration:
     versions = {d["contract"]: d["manifest"]["snapshot_id"] for d in (tax, road, bundle)}
     hashes = {d["manifest"]["snapshot_id"]: canonical_checksum(d) for d in snapshots}
     return BoundaryGeneration(MappingProxyType(versions), MappingProxyType(ids), MappingProxyType(hashes), QuestionnaireEngine(questionnaires),
-        graph, PathfinderSolver(graph), tuple(rules), "unverified" if unverified else "verified", tuple(warnings),
+        graph, PathfinderSolver(graph, ComplianceEvaluator(profile.profile_id)), tuple(rules), "unverified" if unverified else "verified", tuple(warnings),
         profile.profile_id, profile.semantics_version, profile.questionnaire_contract, profile.rulebundle_contract)

@@ -42,6 +42,18 @@ class CapabilityFinding:
     verification_status: str = "unverified"
 
 
+@dataclass(frozen=True)
+class ConditionEvaluation:
+    truth: TruthValue
+    missing_fields: tuple[str, ...] = ()
+    condition: dict[str, Any] = field(default_factory=dict)
+    actual: Any = None
+    children: tuple[ConditionEvaluation, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
 class RuleType(StrEnum):
     ELIGIBILITY = "eligibility"
     EXCLUSION = "exclusion"
@@ -198,9 +210,13 @@ class TraceRecord:
     schema_version: str
     rule_version: str
     confidence: float
+    condition_evaluations: tuple[dict[str, Any], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        if not self.condition_evaluations:
+            data.pop("condition_evaluations")
+        return data
 
 
 @dataclass(frozen=True)
@@ -215,6 +231,9 @@ class PathResult:
     trace: TraceRecord
     effort_estimate: str = "medium"
     path_backend: str = "python"  # "python" | "cypher" | "n/a (blocked)"
+    missing_information: tuple[str, ...] = ()
+    profile_id: str = "legacy-v1"
+    regulatory_status: str = "verified"
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
