@@ -65,7 +65,7 @@ section{scroll-margin-top:calc(var(--toc-height,128px) + 16px)}
 </tbody></table>
 <p style="font-size:16px;color:var(--g700);max-width:780px;margin:20px 0 0">The binding interface between SCAILED Pathfinder work packages WP2, WP3, WP4 and WP8: one snapshot format, five contracts, four validation gates, one validator implementation. Internals stay free; the boundary is the agreement.</p>
 </header>
-<nav class="toc"><a href="#1-purpose-and-scope"><b>01</b> 1. Purpose and scope</a><a href="#2-normative-principles"><b>02</b> 2. Normative principles</a><a href="#3-the-snapshot-format-envelope"><b>03</b> 3. The snapshot format (envelope)</a><a href="#4-id-namespace-and-stability"><b>04</b> 4. ID namespace and stability</a><a href="#5-the-contracts"><b>05</b> 5. The contracts</a><a href="#6-referential-rules-gate-3-in-full"><b>06</b> 6. Referential rules (Gate 3 in full)</a><a href="#7-validation-gates"><b>07</b> 7. Validation gates</a><a href="#8-delivery-and-activation-flow"><b>08</b> 8. Delivery and activation flow</a><a href="#9-runtime-modes-and-production-requirements"><b>09</b> 9. Runtime modes and production requirements</a><a href="#10-versioning-and-change-governance"><b>10</b> 10. Versioning and change governance</a><a href="#11-obligations-per-work-package"><b>11</b> 11. Obligations per work package</a><a href="#12-non-goals"><b>12</b> 12. Non-goals</a><a href="#13-grounding-in-part-b-traceability"><b>13</b> 13. Grounding in Part B (traceability)</a><a href="#14-file-inventory"><b>14</b> 14. File inventory</a><a href="#15-faq-the-five-questions-we-expect"><b>15</b> 15. FAQ (the five questions we expect)</a><a href="#16-complete-json-samples"><b>16</b> 16. Complete JSON samples</a></nav>
+<nav class="toc"><a href="#1-purpose-and-scope"><b>01</b> 1. Purpose and scope</a><a href="#2-normative-principles"><b>02</b> 2. Normative principles</a><a href="#3-the-snapshot-format-envelope"><b>03</b> 3. The snapshot format (envelope)</a><a href="#4-id-namespace-and-stability"><b>04</b> 4. ID namespace and stability</a><a href="#5-the-contracts"><b>05</b> 5. The contracts</a><a href="#6-referential-rules-gate-3-in-full"><b>06</b> 6. Referential rules (Gate 3 in full)</a><a href="#7-validation-gates"><b>07</b> 7. Validation gates</a><a href="#8-delivery-and-activation-flow"><b>08</b> 8. Delivery and activation flow</a><a href="#9-runtime-modes-and-production-requirements"><b>09</b> 9. Runtime modes and production requirements</a><a href="#10-versioning-and-change-governance"><b>10</b> 10. Versioning and change governance</a><a href="#11-obligations-per-work-package"><b>11</b> 11. Obligations per work package</a><a href="#12-non-goals"><b>12</b> 12. Non-goals</a><a href="#13-grounding-in-part-b-traceability"><b>13</b> 13. Grounding in Part B (traceability)</a><a href="#14-file-inventory"><b>14</b> 14. File inventory</a><a href="#15-faq-the-five-questions-we-expect"><b>15</b> 15. FAQ (the five questions we expect)</a><a href="#16-complete-json-samples"><b>16</b> 16. Complete JSON samples</a><a href="#17-proposed-semantic-v2-profile-and-withdrawal-control"><b>17</b> 17. Proposed semantic v2 profile and withdrawal control</a></nav>
 <hr>
 <section id="1-purpose-and-scope"><div class="sec-head"><span class="idx">01</span><h2>1. Purpose and scope</h2></div>
 <p>This protocol fixes the data that crosses the boundaries between the SCAILED Pathfinder work packages WP2 (stakeholder analysis), WP3 (strategic roadmap), WP4 (pathfinder toolkit — the Pathfinder service itself) and WP8 (legal and regulatory alignment). It defines:</p>
@@ -571,12 +571,12 @@ section{scroll-margin-top:calc(var(--toc-height,128px) + 16px)}
 </tr>
 <tr>
 <td>R3</td>
-<td all="all"><code>node.stakeholder_types</code> ∈ taxonomy IDs ∪</td>
+<td all><code>node.stakeholder_types</code> ∈ taxonomy IDs ∪</td>
 <td>roadmap × taxonomy</td>
 </tr>
 <tr>
 <td>R4</td>
-<td all="all"><code>scenario.applicable_stakeholder_types</code> ∈ taxonomy IDs ∪</td>
+<td all><code>scenario.applicable_stakeholder_types</code> ∈ taxonomy IDs ∪</td>
 <td>taxonomy</td>
 </tr>
 <tr>
@@ -586,7 +586,7 @@ section{scroll-margin-top:calc(var(--toc-height,128px) + 16px)}
 </tr>
 <tr>
 <td>R6</td>
-<td all="all">Rule <code>applies_to</code> ∈ taxonomy IDs ∪</td>
+<td all>Rule <code>applies_to</code> ∈ taxonomy IDs ∪</td>
 <td>rulebundle × taxonomy</td>
 </tr>
 <tr>
@@ -853,7 +853,7 @@ docs/reviews/16_…                    xiaolong review + P0 fix log (lineage)
 <li><a href="../contracts/samples/wp4-feedback-wp8.snapshot.json">WP4 feedback to WP8</a></li>
 </ul>
 <h3>16.2 Embedded JSON</h3>
-<ul class="sample-index"><li><a href="#sample-wp2-taxonomy">wp2-taxonomy.snapshot.json</a></li><li><a href="#sample-wp3-roadmap">wp3-roadmap.snapshot.json</a></li><li><a href="#sample-wp4-questionnaire">wp4-questionnaire.snapshot.json</a></li><li><a href="#sample-wp8-rulebundle">wp8-rulebundle.snapshot.json</a></li><li><a href="#sample-wp4-feedback-wp2">wp4-feedback-wp2.snapshot.json</a></li><li><a href="#sample-wp4-feedback">wp4-feedback.snapshot.json</a></li><li><a href="#sample-wp4-feedback-wp8">wp4-feedback-wp8.snapshot.json</a></li></ul><div class="sample-controls" hidden><button type="button" class="sample-button" data-samples-expand="true">Expand all JSON</button><button type="button" class="sample-button" data-samples-expand="false">Collapse all JSON</button><span class="sample-count">7 complete snapshot files</span></div><article class="sample-card" id="sample-wp2-taxonomy" data-filename="wp2-taxonomy.snapshot.json"><h3>Stakeholder taxonomy</h3><p class="sample-file"><code>wp2-taxonomy.snapshot.json</code></p><p class="sample-meta"><strong>WP2</strong> · <code>pf.taxonomy.v1</code></p><p class="sample-meta">Snapshot: <code>136c7555-45e3-40dc-a9ac-6749cc516ef3</code></p><div class="sample-actions" hidden><button type="button" class="sample-button" data-copy-sample aria-label="Copy wp2-taxonomy.snapshot.json">Copy JSON</button><button type="button" class="sample-button" data-download-sample aria-label="Download wp2-taxonomy.snapshot.json">Download JSON</button><span class="sample-status" role="status" aria-live="polite"></span></div><details open><summary>Show complete JSON · 5,186 bytes</summary><pre tabindex="0" aria-label="wp2-taxonomy.snapshot.json JSON"><code class="language-json" data-sample-code>{
+<ul class="sample-index"><li><a href="#sample-v2-wp2-taxonomy">v2/wp2-taxonomy.snapshot.json</a></li><li><a href="#sample-wp2-taxonomy">wp2-taxonomy.snapshot.json</a></li><li><a href="#sample-v2-wp3-roadmap">v2/wp3-roadmap.snapshot.json</a></li><li><a href="#sample-wp3-roadmap">wp3-roadmap.snapshot.json</a></li><li><a href="#sample-wp4-questionnaire">wp4-questionnaire.snapshot.json</a></li><li><a href="#sample-wp8-rulebundle">wp8-rulebundle.snapshot.json</a></li><li><a href="#sample-wp4-feedback-wp2">wp4-feedback-wp2.snapshot.json</a></li><li><a href="#sample-wp4-feedback">wp4-feedback.snapshot.json</a></li><li><a href="#sample-wp4-feedback-wp8">wp4-feedback-wp8.snapshot.json</a></li><li><a href="#sample-v2-wp4-questionnaire">v2/wp4-questionnaire.snapshot.json</a></li><li><a href="#sample-v2-wp8-rulebundle">v2/wp8-rulebundle.snapshot.json</a></li><li><a href="#sample-v2-withdrawal.notice.json">v2/withdrawal.notice.json</a></li></ul><div class="sample-controls" hidden><button type="button" class="sample-button" data-samples-expand="true">Expand all JSON</button><button type="button" class="sample-button" data-samples-expand="false">Collapse all JSON</button><span class="sample-count">12 complete JSON files (runtime snapshots and separate control examples)</span></div><article class="sample-card" id="sample-v2-wp2-taxonomy" data-filename="wp2-taxonomy.snapshot.json"><h3>Stakeholder taxonomy</h3><p class="sample-file"><code>v2/wp2-taxonomy.snapshot.json</code></p><p class="sample-meta"><strong>WP2</strong> · <code>pf.taxonomy.v1</code></p><p class="sample-meta">Snapshot: <code>136c7555-45e3-40dc-a9ac-6749cc516ef3</code></p><div class="sample-actions" hidden><button type="button" class="sample-button" data-copy-sample aria-label="Copy wp2-taxonomy.snapshot.json">Copy JSON</button><button type="button" class="sample-button" data-download-sample aria-label="Download wp2-taxonomy.snapshot.json">Download JSON</button><span class="sample-status" role="status" aria-live="polite"></span></div><details open><summary>Show complete JSON · 5,186 bytes</summary><pre tabindex="0" aria-label="wp2-taxonomy.snapshot.json JSON"><code class="language-json" data-sample-code>{
   &quot;contract&quot;: &quot;pf.taxonomy.v1&quot;,
   &quot;manifest&quot;: {
     &quot;contract_version&quot;: &quot;1.0.0&quot;,
@@ -1038,6 +1038,446 @@ docs/reviews/16_…                    xiaolong review + P0 fix log (lineage)
       &quot;legal-basis&quot;,
       &quot;rd-pipelines&quot;,
       &quot;secure-processing&quot;
+    ]
+  }
+}
+</code></pre></details></article><article class="sample-card" id="sample-wp2-taxonomy" data-filename="wp2-taxonomy.snapshot.json"><h3>Stakeholder taxonomy</h3><p class="sample-file"><code>wp2-taxonomy.snapshot.json</code></p><p class="sample-meta"><strong>WP2</strong> · <code>pf.taxonomy.v1</code></p><p class="sample-meta">Snapshot: <code>136c7555-45e3-40dc-a9ac-6749cc516ef3</code></p><div class="sample-actions" hidden><button type="button" class="sample-button" data-copy-sample aria-label="Copy wp2-taxonomy.snapshot.json">Copy JSON</button><button type="button" class="sample-button" data-download-sample aria-label="Download wp2-taxonomy.snapshot.json">Download JSON</button><span class="sample-status" role="status" aria-live="polite"></span></div><details><summary>Show complete JSON · 5,186 bytes</summary><pre tabindex="0" aria-label="wp2-taxonomy.snapshot.json JSON"><code class="language-json" data-sample-code>{
+  &quot;contract&quot;: &quot;pf.taxonomy.v1&quot;,
+  &quot;manifest&quot;: {
+    &quot;contract_version&quot;: &quot;1.0.0&quot;,
+    &quot;snapshot_id&quot;: &quot;136c7555-45e3-40dc-a9ac-6749cc516ef3&quot;,
+    &quot;producer_wp&quot;: &quot;WP2&quot;,
+    &quot;generated_at&quot;: &quot;2026-11-10T00:00:00Z&quot;,
+    &quot;generator&quot;: {
+      &quot;name&quot;: &quot;contracts-builder&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;seed&quot;: null
+    },
+    &quot;supersedes&quot;: null,
+    &quot;items_checksum&quot;: &quot;sha256:39ebf4e8ad76be092a83a28bdc942af2ec3b8e75273fc11b2a90a54291678ce3&quot;,
+    &quot;derived_from&quot;: [
+      {
+        &quot;source&quot;: &quot;D2.1&quot;,
+        &quot;section&quot;: &quot;s.2 stakeholder mapping&quot;,
+        &quot;status&quot;: &quot;approved&quot;
+      }
+    ],
+    &quot;dependencies&quot;: {}
+  },
+  &quot;payload&quot;: {
+    &quot;dimensions&quot;: [
+      {
+        &quot;dimension_id&quot;: &quot;pf:wp2:dimension:maturity-governance&quot;,
+        &quot;label&quot;: &quot;Governance maturity&quot;,
+        &quot;positioning_axis&quot;: &quot;operational&quot;,
+        &quot;scale&quot;: {
+          &quot;min&quot;: 1,
+          &quot;max&quot;: 5
+        },
+        &quot;state_key&quot;: &quot;governance&quot;
+      },
+      {
+        &quot;dimension_id&quot;: &quot;pf:wp2:dimension:maturity-data&quot;,
+        &quot;label&quot;: &quot;Data maturity&quot;,
+        &quot;positioning_axis&quot;: &quot;technical&quot;,
+        &quot;scale&quot;: {
+          &quot;min&quot;: 1,
+          &quot;max&quot;: 5
+        },
+        &quot;state_key&quot;: &quot;data&quot;
+      },
+      {
+        &quot;dimension_id&quot;: &quot;pf:wp2:dimension:maturity-compliance&quot;,
+        &quot;label&quot;: &quot;Compliance maturity&quot;,
+        &quot;positioning_axis&quot;: &quot;regulatory&quot;,
+        &quot;scale&quot;: {
+          &quot;min&quot;: 1,
+          &quot;max&quot;: 5
+        },
+        &quot;state_key&quot;: &quot;compliance&quot;
+      },
+      {
+        &quot;dimension_id&quot;: &quot;pf:wp2:dimension:maturity-infrastructure&quot;,
+        &quot;label&quot;: &quot;Infrastructure maturity&quot;,
+        &quot;positioning_axis&quot;: &quot;technical&quot;,
+        &quot;state_key&quot;: &quot;infrastructure&quot;,
+        &quot;scale&quot;: {
+          &quot;min&quot;: 1,
+          &quot;max&quot;: 5
+        }
+      },
+      {
+        &quot;dimension_id&quot;: &quot;pf:wp2:dimension:maturity-capability&quot;,
+        &quot;label&quot;: &quot;Capability maturity&quot;,
+        &quot;positioning_axis&quot;: &quot;technical&quot;,
+        &quot;state_key&quot;: &quot;capability&quot;,
+        &quot;scale&quot;: {
+          &quot;min&quot;: 1,
+          &quot;max&quot;: 5
+        }
+      }
+    ],
+    &quot;stakeholder_types&quot;: [
+      {
+        &quot;stakeholder_type_id&quot;: &quot;pf:wp2:stakeholder:biotech-sme&quot;,
+        &quot;label&quot;: &quot;Biotech SME&quot;,
+        &quot;ehds_roles&quot;: [
+          &quot;data-user&quot;
+        ],
+        &quot;segment&quot;: &quot;industry&quot;,
+        &quot;capabilities&quot;: [
+          &quot;rd-pipelines&quot;
+        ],
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;successor&quot;: null,
+        &quot;personas&quot;: [
+          {
+            &quot;persona_id&quot;: &quot;pf:wp2:persona:sme-regulatory-lead&quot;,
+            &quot;label&quot;: &quot;Regulatory lead at an SME&quot;,
+            &quot;influence&quot;: &quot;medium&quot;,
+            &quot;interest&quot;: &quot;high&quot;
+          }
+        ]
+      },
+      {
+        &quot;stakeholder_type_id&quot;: &quot;pf:wp2:stakeholder:ai-factory-operator&quot;,
+        &quot;label&quot;: &quot;AI Factory operator&quot;,
+        &quot;ehds_roles&quot;: [
+          &quot;intermediary&quot;
+        ],
+        &quot;segment&quot;: &quot;infrastructure&quot;,
+        &quot;capabilities&quot;: [
+          &quot;secure-processing&quot;
+        ],
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;successor&quot;: null
+      },
+      {
+        &quot;stakeholder_type_id&quot;: &quot;pf:wp2:stakeholder:health-data-access-body&quot;,
+        &quot;label&quot;: &quot;Health Data Access Body&quot;,
+        &quot;ehds_roles&quot;: [
+          &quot;regulator&quot;,
+          &quot;intermediary&quot;
+        ],
+        &quot;segment&quot;: &quot;healthcare authorities&quot;,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;successor&quot;: null
+      },
+      {
+        &quot;stakeholder_type_id&quot;: &quot;pf:wp2:stakeholder:health-data-infrastructure&quot;,
+        &quot;label&quot;: &quot;Health data infrastructure&quot;,
+        &quot;ehds_roles&quot;: [
+          &quot;data-holder&quot;,
+          &quot;intermediary&quot;
+        ],
+        &quot;segment&quot;: &quot;infrastructure&quot;,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;successor&quot;: null
+      },
+      {
+        &quot;stakeholder_type_id&quot;: &quot;pf:wp2:stakeholder:research-infrastructure&quot;,
+        &quot;label&quot;: &quot;Research infrastructure&quot;,
+        &quot;ehds_roles&quot;: [
+          &quot;data-holder&quot;,
+          &quot;data-user&quot;
+        ],
+        &quot;segment&quot;: &quot;researchers&quot;,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;successor&quot;: null
+      },
+      {
+        &quot;stakeholder_type_id&quot;: &quot;pf:wp2:stakeholder:patient-organisation&quot;,
+        &quot;label&quot;: &quot;Patient organisation&quot;,
+        &quot;ehds_roles&quot;: [
+          &quot;data-holder&quot;
+        ],
+        &quot;segment&quot;: &quot;patient organisations&quot;,
+        &quot;status&quot;: &quot;deprecated&quot;,
+        &quot;successor&quot;: &quot;pf:wp2:stakeholder:research-infrastructure&quot;
+      }
+    ],
+    &quot;scenarios&quot;: [
+      {
+        &quot;scenario_id&quot;: &quot;pf:wp2:scenario:secondary-use-readiness&quot;,
+        &quot;label&quot;: &quot;Secondary use readiness&quot;,
+        &quot;applicable_stakeholder_types&quot;: [
+          &quot;pf:wp2:stakeholder:biotech-sme&quot;,
+          &quot;pf:wp2:stakeholder:health-data-infrastructure&quot;
+        ]
+      },
+      {
+        &quot;scenario_id&quot;: &quot;pf:wp2:scenario:ai-model-training&quot;,
+        &quot;label&quot;: &quot;AI model training under EHDS&quot;,
+        &quot;applicable_stakeholder_types&quot;: [
+          &quot;pf:wp2:stakeholder:biotech-sme&quot;,
+          &quot;pf:wp2:stakeholder:ai-factory-operator&quot;
+        ]
+      },
+      {
+        &quot;scenario_id&quot;: &quot;pf:wp2:scenario:infrastructure-onboarding&quot;,
+        &quot;label&quot;: &quot;EHDS infrastructure onboarding&quot;,
+        &quot;applicable_stakeholder_types&quot;: [
+          &quot;pf:wp2:stakeholder:health-data-infrastructure&quot;,
+          &quot;pf:wp2:stakeholder:research-infrastructure&quot;
+        ]
+      }
+    ],
+    &quot;capability_vocabulary&quot;: [
+      &quot;legal-basis&quot;,
+      &quot;rd-pipelines&quot;,
+      &quot;secure-processing&quot;
+    ]
+  }
+}
+</code></pre></details></article><article class="sample-card" id="sample-v2-wp3-roadmap" data-filename="wp3-roadmap.snapshot.json"><h3>Roadmap</h3><p class="sample-file"><code>v2/wp3-roadmap.snapshot.json</code></p><p class="sample-meta"><strong>WP3</strong> · <code>pf.roadmap.v1</code></p><p class="sample-meta">Snapshot: <code>ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1</code></p><div class="sample-actions" hidden><button type="button" class="sample-button" data-copy-sample aria-label="Copy wp3-roadmap.snapshot.json">Copy JSON</button><button type="button" class="sample-button" data-download-sample aria-label="Download wp3-roadmap.snapshot.json">Download JSON</button><span class="sample-status" role="status" aria-live="polite"></span></div><details><summary>Show complete JSON · 7,362 bytes</summary><pre tabindex="0" aria-label="wp3-roadmap.snapshot.json JSON"><code class="language-json" data-sample-code>{
+  &quot;contract&quot;: &quot;pf.roadmap.v1&quot;,
+  &quot;manifest&quot;: {
+    &quot;contract_version&quot;: &quot;1.0.0&quot;,
+    &quot;snapshot_id&quot;: &quot;ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1&quot;,
+    &quot;producer_wp&quot;: &quot;WP3&quot;,
+    &quot;generated_at&quot;: &quot;2026-11-10T00:00:00Z&quot;,
+    &quot;generator&quot;: {
+      &quot;name&quot;: &quot;contracts-builder&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;seed&quot;: null
+    },
+    &quot;supersedes&quot;: null,
+    &quot;items_checksum&quot;: &quot;sha256:ba2dd54a2029be1d6dd019f05dd723f743fe2426d492e9802307979e0955111f&quot;,
+    &quot;derived_from&quot;: [
+      {
+        &quot;source&quot;: &quot;D3.2&quot;,
+        &quot;status&quot;: &quot;approved&quot;
+      },
+      {
+        &quot;source&quot;: &quot;D3.1&quot;,
+        &quot;section&quot;: &quot;catalogue&quot;,
+        &quot;status&quot;: &quot;approved&quot;
+      },
+      {
+        &quot;source&quot;: &quot;WP3/MS3.1&quot;,
+        &quot;status&quot;: &quot;draft&quot;
+      }
+    ],
+    &quot;dependencies&quot;: {
+      &quot;pf.taxonomy.v1&quot;: &quot;136c7555-45e3-40dc-a9ac-6749cc516ef3&quot;
+    }
+  },
+  &quot;payload&quot;: {
+    &quot;nodes&quot;: [
+      {
+        &quot;node_id&quot;: &quot;pf:wp3:node:governance-framework&quot;,
+        &quot;label&quot;: &quot;Governance Framework&quot;,
+        &quot;dimension&quot;: &quot;governance&quot;,
+        &quot;action_type&quot;: &quot;governance_action&quot;,
+        &quot;time_horizon&quot;: &quot;short&quot;,
+        &quot;maturity_level&quot;: 1,
+        &quot;stakeholder_types&quot;: [
+          &quot;all&quot;
+        ],
+        &quot;prerequisites&quot;: [],
+        &quot;dataset_refs&quot;: [],
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;successor&quot;: null,
+        &quot;source_wp&quot;: &quot;WP3&quot;,
+        &quot;source_doc_ref&quot;: &quot;D3.2 s.4&quot;,
+        &quot;confidence&quot;: 0.95
+      },
+      {
+        &quot;node_id&quot;: &quot;pf:wp3:node:data-catalogue&quot;,
+        &quot;label&quot;: &quot;Data Catalogue&quot;,
+        &quot;dimension&quot;: &quot;data&quot;,
+        &quot;action_type&quot;: &quot;data_foundation&quot;,
+        &quot;time_horizon&quot;: &quot;short&quot;,
+        &quot;maturity_level&quot;: 2,
+        &quot;stakeholder_types&quot;: [
+          &quot;all&quot;
+        ],
+        &quot;prerequisites&quot;: [
+          &quot;pf:wp3:node:governance-framework&quot;
+        ],
+        &quot;dataset_refs&quot;: [
+          &quot;pf:wp3:dataset:priority-oncology-registry&quot;
+        ],
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;successor&quot;: null,
+        &quot;source_wp&quot;: &quot;WP3&quot;,
+        &quot;source_doc_ref&quot;: &quot;D3.2 s.4&quot;,
+        &quot;confidence&quot;: 0.95
+      },
+      {
+        &quot;node_id&quot;: &quot;pf:wp3:node:legal-basis-secondary-use&quot;,
+        &quot;label&quot;: &quot;Legal Basis Secondary Use&quot;,
+        &quot;dimension&quot;: &quot;compliance&quot;,
+        &quot;action_type&quot;: &quot;governance_action&quot;,
+        &quot;time_horizon&quot;: &quot;short&quot;,
+        &quot;maturity_level&quot;: 2,
+        &quot;stakeholder_types&quot;: [
+          &quot;all&quot;
+        ],
+        &quot;prerequisites&quot;: [
+          &quot;pf:wp3:node:governance-framework&quot;
+        ],
+        &quot;dataset_refs&quot;: [],
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;successor&quot;: null,
+        &quot;source_wp&quot;: &quot;WP3&quot;,
+        &quot;source_doc_ref&quot;: &quot;D3.2 s.4&quot;,
+        &quot;confidence&quot;: 0.95
+      },
+      {
+        &quot;node_id&quot;: &quot;pf:wp3:node:spe-secure-processing&quot;,
+        &quot;label&quot;: &quot;Spe Secure Processing&quot;,
+        &quot;dimension&quot;: &quot;infrastructure&quot;,
+        &quot;action_type&quot;: &quot;deployment_pathway&quot;,
+        &quot;time_horizon&quot;: &quot;medium&quot;,
+        &quot;maturity_level&quot;: 3,
+        &quot;stakeholder_types&quot;: [
+          &quot;all&quot;
+        ],
+        &quot;prerequisites&quot;: [
+          &quot;pf:wp3:node:data-catalogue&quot;,
+          &quot;pf:wp3:node:legal-basis-secondary-use&quot;
+        ],
+        &quot;dataset_refs&quot;: [],
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;successor&quot;: null,
+        &quot;source_wp&quot;: &quot;WP3&quot;,
+        &quot;source_doc_ref&quot;: &quot;D3.2 s.4&quot;,
+        &quot;confidence&quot;: 0.95
+      },
+      {
+        &quot;node_id&quot;: &quot;pf:wp3:node:ai-model-validation&quot;,
+        &quot;label&quot;: &quot;Ai Model Validation&quot;,
+        &quot;dimension&quot;: &quot;capability&quot;,
+        &quot;action_type&quot;: &quot;priority_application&quot;,
+        &quot;time_horizon&quot;: &quot;medium&quot;,
+        &quot;maturity_level&quot;: 4,
+        &quot;stakeholder_types&quot;: [
+          &quot;all&quot;
+        ],
+        &quot;prerequisites&quot;: [
+          &quot;pf:wp3:node:spe-secure-processing&quot;
+        ],
+        &quot;dataset_refs&quot;: [],
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;successor&quot;: null,
+        &quot;source_wp&quot;: &quot;WP3&quot;,
+        &quot;source_doc_ref&quot;: &quot;D3.2 s.4&quot;,
+        &quot;confidence&quot;: 0.95
+      },
+      {
+        &quot;node_id&quot;: &quot;pf:wp3:node:semantic-interoperability&quot;,
+        &quot;label&quot;: &quot;Semantic Interoperability&quot;,
+        &quot;dimension&quot;: &quot;data&quot;,
+        &quot;action_type&quot;: &quot;semantic_interoperability&quot;,
+        &quot;time_horizon&quot;: &quot;long&quot;,
+        &quot;maturity_level&quot;: 4,
+        &quot;stakeholder_types&quot;: [
+          &quot;all&quot;
+        ],
+        &quot;prerequisites&quot;: [
+          &quot;pf:wp3:node:data-catalogue&quot;
+        ],
+        &quot;dataset_refs&quot;: [],
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;successor&quot;: null,
+        &quot;source_wp&quot;: &quot;WP3&quot;,
+        &quot;source_doc_ref&quot;: &quot;D3.2 s.4&quot;,
+        &quot;confidence&quot;: 0.95
+      },
+      {
+        &quot;node_id&quot;: &quot;pf:wp3:node:scale-and-sustain&quot;,
+        &quot;label&quot;: &quot;Scale And Sustain&quot;,
+        &quot;dimension&quot;: &quot;governance&quot;,
+        &quot;action_type&quot;: &quot;infrastructure_provision&quot;,
+        &quot;time_horizon&quot;: &quot;long&quot;,
+        &quot;maturity_level&quot;: 5,
+        &quot;stakeholder_types&quot;: [
+          &quot;all&quot;
+        ],
+        &quot;prerequisites&quot;: [
+          &quot;pf:wp3:node:ai-model-validation&quot;,
+          &quot;pf:wp3:node:semantic-interoperability&quot;
+        ],
+        &quot;dataset_refs&quot;: [],
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;successor&quot;: null,
+        &quot;source_wp&quot;: &quot;WP3&quot;,
+        &quot;source_doc_ref&quot;: &quot;D3.2 s.4&quot;,
+        &quot;confidence&quot;: 0.95
+      }
+    ],
+    &quot;edges&quot;: [
+      {
+        &quot;edge_id&quot;: &quot;pf:wp3:edge:gov-catalog&quot;,
+        &quot;from_node_id&quot;: &quot;pf:wp3:node:governance-framework&quot;,
+        &quot;to_node_id&quot;: &quot;pf:wp3:node:data-catalogue&quot;,
+        &quot;relation_type&quot;: &quot;prerequisite&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;edge_id&quot;: &quot;pf:wp3:edge:gov-legal&quot;,
+        &quot;from_node_id&quot;: &quot;pf:wp3:node:governance-framework&quot;,
+        &quot;to_node_id&quot;: &quot;pf:wp3:node:legal-basis-secondary-use&quot;,
+        &quot;relation_type&quot;: &quot;prerequisite&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;edge_id&quot;: &quot;pf:wp3:edge:catalog-spe&quot;,
+        &quot;from_node_id&quot;: &quot;pf:wp3:node:data-catalogue&quot;,
+        &quot;to_node_id&quot;: &quot;pf:wp3:node:spe-secure-processing&quot;,
+        &quot;relation_type&quot;: &quot;prerequisite&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;edge_id&quot;: &quot;pf:wp3:edge:legal-spe&quot;,
+        &quot;from_node_id&quot;: &quot;pf:wp3:node:legal-basis-secondary-use&quot;,
+        &quot;to_node_id&quot;: &quot;pf:wp3:node:spe-secure-processing&quot;,
+        &quot;relation_type&quot;: &quot;prerequisite&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;edge_id&quot;: &quot;pf:wp3:edge:spe-ai&quot;,
+        &quot;from_node_id&quot;: &quot;pf:wp3:node:spe-secure-processing&quot;,
+        &quot;to_node_id&quot;: &quot;pf:wp3:node:ai-model-validation&quot;,
+        &quot;relation_type&quot;: &quot;prerequisite&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;edge_id&quot;: &quot;pf:wp3:edge:catalog-sem&quot;,
+        &quot;from_node_id&quot;: &quot;pf:wp3:node:data-catalogue&quot;,
+        &quot;to_node_id&quot;: &quot;pf:wp3:node:semantic-interoperability&quot;,
+        &quot;relation_type&quot;: &quot;enabler&quot;,
+        &quot;required&quot;: false
+      },
+      {
+        &quot;edge_id&quot;: &quot;pf:wp3:edge:ai-scale&quot;,
+        &quot;from_node_id&quot;: &quot;pf:wp3:node:ai-model-validation&quot;,
+        &quot;to_node_id&quot;: &quot;pf:wp3:node:scale-and-sustain&quot;,
+        &quot;relation_type&quot;: &quot;prerequisite&quot;,
+        &quot;required&quot;: true
+      },
+      {
+        &quot;edge_id&quot;: &quot;pf:wp3:edge:sem-scale&quot;,
+        &quot;from_node_id&quot;: &quot;pf:wp3:node:semantic-interoperability&quot;,
+        &quot;to_node_id&quot;: &quot;pf:wp3:node:scale-and-sustain&quot;,
+        &quot;relation_type&quot;: &quot;prerequisite&quot;,
+        &quot;required&quot;: true
+      }
+    ],
+    &quot;datasets&quot;: [
+      {
+        &quot;dataset_id&quot;: &quot;pf:wp3:dataset:priority-oncology-registry&quot;,
+        &quot;label&quot;: &quot;High-priority oncology registry datasets&quot;,
+        &quot;availability&quot;: &quot;limited&quot;,
+        &quot;suitability&quot;: 0.8,
+        &quot;quality&quot;: 0.7,
+        &quot;representativeness&quot;: 0.6,
+        &quot;completeness&quot;: 0.65,
+        &quot;ai_act_alignment&quot;: &quot;conditional&quot;,
+        &quot;source_doc_ref&quot;: &quot;D3.1 s.6&quot;,
+        &quot;maturity&quot;: 0.5
+      }
     ]
   }
 }
@@ -1803,10 +2243,349 @@ docs/reviews/16_…                    xiaolong review + P0 fix log (lineage)
     &quot;recipient&quot;: &quot;WP8&quot;
   }
 }
+</code></pre></details></article><article class="sample-card" id="sample-v2-wp4-questionnaire" data-filename="wp4-questionnaire.snapshot.json"><h3>Evidence questionnaire v2 (proposed)</h3><p class="sample-file"><code>v2/wp4-questionnaire.snapshot.json</code></p><p class="sample-meta"><strong>WP4</strong> · <code>pf.questionnaire.v2</code></p><p class="sample-meta">Snapshot: <code>f49313a8-1bb8-51c5-9dab-747c848d670a</code></p><div class="sample-actions" hidden><button type="button" class="sample-button" data-copy-sample aria-label="Copy wp4-questionnaire.snapshot.json">Copy JSON</button><button type="button" class="sample-button" data-download-sample aria-label="Download wp4-questionnaire.snapshot.json">Download JSON</button><span class="sample-status" role="status" aria-live="polite"></span></div><details><summary>Show complete JSON · 2,671 bytes</summary><pre tabindex="0" aria-label="wp4-questionnaire.snapshot.json JSON"><code class="language-json" data-sample-code>{
+  &quot;contract&quot;: &quot;pf.questionnaire.v2&quot;,
+  &quot;manifest&quot;: {
+    &quot;contract_version&quot;: &quot;2.0.0&quot;,
+    &quot;snapshot_id&quot;: &quot;f49313a8-1bb8-51c5-9dab-747c848d670a&quot;,
+    &quot;producer_wp&quot;: &quot;WP4&quot;,
+    &quot;generated_at&quot;: &quot;2026-11-10T00:00:00Z&quot;,
+    &quot;generator&quot;: {
+      &quot;name&quot;: &quot;contracts-builder&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;seed&quot;: null
+    },
+    &quot;supersedes&quot;: null,
+    &quot;items_checksum&quot;: &quot;sha256:ec685da38bf3db04e40b5e17b0fb458b096a1851c475d9f8a66cf5dda602606a&quot;,
+    &quot;derived_from&quot;: [
+      {
+        &quot;source&quot;: &quot;T4.1&quot;,
+        &quot;status&quot;: &quot;approved&quot;
+      }
+    ],
+    &quot;dependencies&quot;: {
+      &quot;pf.taxonomy.v1&quot;: &quot;136c7555-45e3-40dc-a9ac-6749cc516ef3&quot;
+    },
+    &quot;migration_notes&quot;: [
+      {
+        &quot;from_version&quot;: &quot;1.0.0&quot;,
+        &quot;to_version&quot;: &quot;2.0.0&quot;,
+        &quot;change&quot;: &quot;Explicit capability claims, unknown and provenance; synthetic example pending owner approval.&quot;
+      }
+    ]
+  },
+  &quot;payload&quot;: {
+    &quot;stakeholder_type&quot;: &quot;pf:wp2:stakeholder:biotech-sme&quot;,
+    &quot;version&quot;: &quot;2.0.0&quot;,
+    &quot;title&quot;: &quot;Biotech SME readiness self-assessment&quot;,
+    &quot;target_scenarios&quot;: [
+      &quot;pf:wp2:scenario:secondary-use-readiness&quot;,
+      &quot;pf:wp2:scenario:ai-model-training&quot;
+    ],
+    &quot;review_status&quot;: &quot;for-review&quot;,
+    &quot;questions&quot;: [
+      {
+        &quot;question_id&quot;: &quot;pf:wp4:question:biotech-sme-1&quot;,
+        &quot;label&quot;: &quot;Does this assessment report a secure processing capability?&quot;,
+        &quot;question_type&quot;: &quot;single_choice&quot;,
+        &quot;required&quot;: true,
+        &quot;options&quot;: [
+          &quot;yes&quot;,
+          &quot;no&quot;,
+          &quot;unknown&quot;
+        ],
+        &quot;min_value&quot;: null,
+        &quot;max_value&quot;: null,
+        &quot;maturity_dimension&quot;: null,
+        &quot;visible_if&quot;: null,
+        &quot;capability_id&quot;: &quot;secure-processing&quot;
+      },
+      {
+        &quot;question_id&quot;: &quot;pf:wp4:question:biotech-sme-2&quot;,
+        &quot;label&quot;: &quot;Question 2&quot;,
+        &quot;question_type&quot;: &quot;numeric&quot;,
+        &quot;required&quot;: true,
+        &quot;options&quot;: [],
+        &quot;min_value&quot;: 1,
+        &quot;max_value&quot;: 5,
+        &quot;maturity_dimension&quot;: &quot;pf:wp2:dimension:maturity-governance&quot;,
+        &quot;visible_if&quot;: null
+      },
+      {
+        &quot;question_id&quot;: &quot;pf:wp4:question:biotech-sme-3&quot;,
+        &quot;label&quot;: &quot;Question 3&quot;,
+        &quot;question_type&quot;: &quot;numeric&quot;,
+        &quot;required&quot;: true,
+        &quot;options&quot;: [],
+        &quot;min_value&quot;: 1,
+        &quot;max_value&quot;: 5,
+        &quot;maturity_dimension&quot;: &quot;pf:wp2:dimension:maturity-data&quot;,
+        &quot;visible_if&quot;: null
+      },
+      {
+        &quot;question_id&quot;: &quot;pf:wp4:question:biotech-sme-4&quot;,
+        &quot;label&quot;: &quot;Question 4&quot;,
+        &quot;question_type&quot;: &quot;numeric&quot;,
+        &quot;required&quot;: true,
+        &quot;options&quot;: [],
+        &quot;min_value&quot;: 1,
+        &quot;max_value&quot;: 5,
+        &quot;maturity_dimension&quot;: &quot;pf:wp2:dimension:maturity-compliance&quot;,
+        &quot;visible_if&quot;: null
+      }
+    ]
+  }
+}
+</code></pre></details></article><article class="sample-card" id="sample-v2-wp8-rulebundle" data-filename="wp8-rulebundle.snapshot.json"><h3>Three-valued rules v2 (proposed)</h3><p class="sample-file"><code>v2/wp8-rulebundle.snapshot.json</code></p><p class="sample-meta"><strong>WP8</strong> · <code>pf.rulebundle.v2</code></p><p class="sample-meta">Snapshot: <code>084a49cc-e963-5222-97ca-04aaa046491a</code></p><div class="sample-actions" hidden><button type="button" class="sample-button" data-copy-sample aria-label="Copy wp8-rulebundle.snapshot.json">Copy JSON</button><button type="button" class="sample-button" data-download-sample aria-label="Download wp8-rulebundle.snapshot.json">Download JSON</button><span class="sample-status" role="status" aria-live="polite"></span></div><details><summary>Show complete JSON · 3,364 bytes</summary><pre tabindex="0" aria-label="wp8-rulebundle.snapshot.json JSON"><code class="language-json" data-sample-code>{
+  &quot;contract&quot;: &quot;pf.rulebundle.v2&quot;,
+  &quot;manifest&quot;: {
+    &quot;contract_version&quot;: &quot;2.0.0&quot;,
+    &quot;snapshot_id&quot;: &quot;084a49cc-e963-5222-97ca-04aaa046491a&quot;,
+    &quot;producer_wp&quot;: &quot;WP8&quot;,
+    &quot;generated_at&quot;: &quot;2026-11-10T00:00:00Z&quot;,
+    &quot;generator&quot;: {
+      &quot;name&quot;: &quot;contracts-builder&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;seed&quot;: null
+    },
+    &quot;supersedes&quot;: null,
+    &quot;items_checksum&quot;: &quot;sha256:ccb5c267aae4351078b645c599a41a36d415c3c96f2c3ba6034ab714c947efa7&quot;,
+    &quot;derived_from&quot;: [
+      {
+        &quot;source&quot;: &quot;T8.2&quot;,
+        &quot;status&quot;: &quot;draft&quot;
+      },
+      {
+        &quot;source&quot;: &quot;T8.3.2&quot;,
+        &quot;status&quot;: &quot;approved&quot;
+      }
+    ],
+    &quot;dependencies&quot;: {
+      &quot;pf.taxonomy.v1&quot;: &quot;136c7555-45e3-40dc-a9ac-6749cc516ef3&quot;,
+      &quot;pf.roadmap.v1&quot;: &quot;ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1&quot;
+    },
+    &quot;migration_notes&quot;: [
+      {
+        &quot;from_version&quot;: &quot;1.0.0&quot;,
+        &quot;to_version&quot;: &quot;2.0.0&quot;,
+        &quot;change&quot;: &quot;Three-valued evaluation; synthetic rule examples pending source owner approval.&quot;
+      }
+    ]
+  },
+  &quot;payload&quot;: {
+    &quot;references&quot;: [
+      {
+        &quot;ref_id&quot;: &quot;pf:wp8:reg:ehdsr&quot;,
+        &quot;instrument&quot;: &quot;EHDSR&quot;,
+        &quot;locator&quot;: &quot;Art.9(2)&quot;,
+        &quot;status&quot;: &quot;in-force&quot;,
+        &quot;source_doc_ref&quot;: &quot;T8.3.1&quot;
+      },
+      {
+        &quot;ref_id&quot;: &quot;pf:wp8:reg:gdpr&quot;,
+        &quot;instrument&quot;: &quot;GDPR&quot;,
+        &quot;locator&quot;: &quot;Art.9&quot;,
+        &quot;status&quot;: &quot;in-force&quot;,
+        &quot;source_doc_ref&quot;: &quot;T8.3.1&quot;
+      },
+      {
+        &quot;ref_id&quot;: &quot;pf:wp8:reg:ai-act&quot;,
+        &quot;instrument&quot;: &quot;AI-Act&quot;,
+        &quot;locator&quot;: &quot;Annex III&quot;,
+        &quot;status&quot;: &quot;in-force&quot;,
+        &quot;source_doc_ref&quot;: &quot;T8.3.2&quot;
+      },
+      {
+        &quot;ref_id&quot;: &quot;pf:wp8:reg:biotech-act&quot;,
+        &quot;instrument&quot;: &quot;Biotech-Act&quot;,
+        &quot;status&quot;: &quot;forthcoming&quot;,
+        &quot;source_doc_ref&quot;: &quot;T8.3.1&quot;
+      }
+    ],
+    &quot;rules&quot;: [
+      {
+        &quot;rule_id&quot;: &quot;pf:wp8:rule:processing-environment-example&quot;,
+        &quot;rule_type&quot;: &quot;exclusion&quot;,
+        &quot;priority&quot;: 10,
+        &quot;applies_to&quot;: [
+          &quot;all&quot;
+        ],
+        &quot;status&quot;: &quot;provisional&quot;,
+        &quot;condition&quot;: {
+          &quot;not&quot;: {
+            &quot;field&quot;: &quot;capabilities&quot;,
+            &quot;op&quot;: &quot;contains&quot;,
+            &quot;value&quot;: &quot;secure-processing&quot;
+          }
+        },
+        &quot;action&quot;: {
+          &quot;title&quot;: &quot;Review processing environment&quot;,
+          &quot;text&quot;: &quot;Synthetic example: confirm the processing environment before using this direction.&quot;,
+          &quot;block&quot;: true
+        },
+        &quot;compliance_refs&quot;: [
+          &quot;pf:wp8:reg:ehdsr&quot;
+        ],
+        &quot;source_doc_ref&quot;: &quot;D8.2 s.3&quot;,
+        &quot;rule_version&quot;: &quot;2.0.0&quot;,
+        &quot;effective_from&quot;: &quot;2025-12-09&quot;,
+        &quot;effective_until&quot;: null
+      }
+    ],
+    &quot;tests&quot;: [
+      {
+        &quot;test_id&quot;: &quot;positive&quot;,
+        &quot;rule_id&quot;: &quot;pf:wp8:rule:processing-environment-example&quot;,
+        &quot;given&quot;: {
+          &quot;capabilities&quot;: [
+            &quot;secure-processing&quot;
+          ]
+        },
+        &quot;expect&quot;: {
+          &quot;outcome&quot;: &quot;not-triggered&quot;
+        }
+      },
+      {
+        &quot;test_id&quot;: &quot;negative&quot;,
+        &quot;rule_id&quot;: &quot;pf:wp8:rule:processing-environment-example&quot;,
+        &quot;given&quot;: {
+          &quot;missing_capabilities&quot;: [
+            &quot;secure-processing&quot;
+          ]
+        },
+        &quot;expect&quot;: {
+          &quot;outcome&quot;: &quot;blocked&quot;
+        }
+      },
+      {
+        &quot;test_id&quot;: &quot;unanswered&quot;,
+        &quot;rule_id&quot;: &quot;pf:wp8:rule:processing-environment-example&quot;,
+        &quot;given&quot;: {},
+        &quot;expect&quot;: {
+          &quot;outcome&quot;: &quot;unknown&quot;
+        }
+      }
+    ]
+  }
+}
+</code></pre></details></article><article class="sample-card" id="sample-v2-withdrawal.notice.json" data-filename="withdrawal.notice.json"><h3>Withdrawal control (synthetic attestation)</h3><p class="sample-file"><code>v2/withdrawal.notice.json</code></p><p class="sample-meta"><strong>WP2</strong> · <code>pf.withdrawal.v1</code></p><p class="sample-meta">Snapshot: <code>ea85328c-4e20-52ee-813c-20c4fccd74ef</code></p><div class="sample-actions" hidden><button type="button" class="sample-button" data-copy-sample aria-label="Copy withdrawal.notice.json">Copy JSON</button><button type="button" class="sample-button" data-download-sample aria-label="Download withdrawal.notice.json">Download JSON</button><span class="sample-status" role="status" aria-live="polite"></span></div><details><summary>Show complete JSON · 1,298 bytes</summary><pre tabindex="0" aria-label="withdrawal.notice.json JSON"><code class="language-json" data-sample-code>{
+  &quot;contract&quot;: &quot;pf.withdrawal.v1&quot;,
+  &quot;manifest&quot;: {
+    &quot;contract_version&quot;: &quot;1.0.0&quot;,
+    &quot;snapshot_id&quot;: &quot;ea85328c-4e20-52ee-813c-20c4fccd74ef&quot;,
+    &quot;producer_wp&quot;: &quot;WP2&quot;,
+    &quot;generated_at&quot;: &quot;2026-11-10T00:00:00Z&quot;,
+    &quot;generator&quot;: {
+      &quot;name&quot;: &quot;contracts-builder&quot;,
+      &quot;version&quot;: &quot;1.0.0&quot;,
+      &quot;seed&quot;: null
+    },
+    &quot;supersedes&quot;: null,
+    &quot;items_checksum&quot;: &quot;sha256:a7aa813e1f9b32dc8c94ee2c6fec35808e376c73edd101b47044df6dc46d9e46&quot;,
+    &quot;derived_from&quot;: [
+      {
+        &quot;source&quot;: &quot;D2.1&quot;,
+        &quot;section&quot;: &quot;s.2 stakeholder mapping&quot;,
+        &quot;status&quot;: &quot;approved&quot;
+      }
+    ],
+    &quot;dependencies&quot;: {}
+  },
+  &quot;payload&quot;: {
+    &quot;notice_id&quot;: &quot;ea85328c-4e20-52ee-813c-20c4fccd74ef&quot;,
+    &quot;targets&quot;: [
+      {
+        &quot;contract&quot;: &quot;pf.taxonomy.v1&quot;,
+        &quot;snapshot_id&quot;: &quot;136c7555-45e3-40dc-a9ac-6749cc516ef3&quot;,
+        &quot;producer_wp&quot;: &quot;WP2&quot;
+      }
+    ],
+    &quot;reason&quot;: &quot;Synthetic withdrawal example; not a real source-owner instruction.&quot;,
+    &quot;source_confirmation&quot;: {
+      &quot;reference&quot;: &quot;synthetic-fixture-confirmation&quot;,
+      &quot;material_checksum&quot;: &quot;sha256:a6a203fa95284e28f924b8567336445f65627190f508a5673aacf6f42d7cf135&quot;,
+      &quot;target_checksum&quot;: &quot;sha256:5fb9ee15e800ff5367ef5b390de989f25e54071335e573bac1c56657799c82df&quot;,
+      &quot;confirmed_by_wp&quot;: &quot;WP2&quot;,
+      &quot;admin_attested&quot;: true
+    }
+  }
+}
 </code></pre></details></article>
 
 <hr />
 <p><em>End of protocol. Deviations, errata and extensions: RFC against <code>contracts/</code>, per Section 10.</em></p>
+</section><section id="17-proposed-semantic-v2-profile-and-withdrawal-control"><div class="sec-head"><span class="idx">17</span><h2>17. Proposed semantic v2 profile and withdrawal control</h2></div>
+<p>Status: internally implemented with synthetic examples; affected-WP approval and production cutover remain pending in <a href="rfcs/pathfinder-semantic-v2.md">the RFC</a>. The versioning obligations in section 10 still apply.</p>
+<div class="protocol-table" tabindex="0" role="region" aria-label="Protocol table; scroll horizontally if needed"><table>
+<thead>
+<tr>
+<th>Profile / message</th>
+<th>Contracts</th>
+<th>Consumer behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>legacy-v1</code></td>
+<td>taxonomy v1, roadmap v1, questionnaire v1, rulebundle v1</td>
+<td>Original interpretation during the agreed overlap.</td>
+</tr>
+<tr>
+<td><code>evidence-v2</code></td>
+<td>taxonomy v1, roadmap v1, questionnaire v2, rulebundle v2</td>
+<td>Three-valued conditions and per-capability evidence. Mixed or unsupported majors are rejected.</td>
+</tr>
+<tr>
+<td><code>pf.withdrawal.v1</code></td>
+<td>Separate control envelope with exact targets and source confirmation</td>
+<td>Not a runtime input and never eligible for activation.</td>
+</tr>
+</tbody>
+</table></div>
+<p>A v2 capability question uses <code>capability_id</code>, <code>single_choice</code> and the options <code>yes</code>, <code>no</code>, <code>unknown</code>. Positive multichoice omission remains unknown; explicit negative answers alone create absent findings. Each finding retains its answer IDs, evidence references, source and verification status. Self-report remains unverified when completeness is 1.</p>
+<p>Rule AND/OR/NOT preserve unknown. A blocking unknown yields <code>degraded</code> plus <code>conditional_direction</code> and <code>missing_information</code>; known blockers take precedence. Missing information does not execute an action, and irrelevant unknown branches do not become required tasks. Paired import tests and live evaluation use the same profile.</p>
+<p>Runtime deliveries live under <code>contracts/samples/v2/*.snapshot.json</code>; <code>contracts/samples/v2/withdrawal.notice.json</code> is the separate synthetic control example. The embedded samples below retain their relative paths so old and new majors remain distinguishable. These examples do not constitute source-owner confirmation.</p>
+<p>The same complete runtime batch can be submitted to <code>/v2/admin/import</code>; the existing technical import endpoint also understands registered profiles. <code>POST /v2/admin/withdrawals</code> requires administrator authorization and an attestation that the source owner's confirmation material was checked. The notice records a material checksum/reference and a checksum of exact targets. Producer labels and checksums alone do not authenticate the source.</p>
+<p>Results bind <code>result_id</code>, <code>answer_revision</code>, original answers/findings, actual <code>input_set</code>, profile, semantics version and evaluation date. <code>content_hash</code> describes deterministic output; result identity and <code>current_validity.lifecycle_revision</code> are separate metadata. Changing answers invalidates the current result reference, while explicit historical reads keep original evidence. v2 report reads never implicitly recompute.</p>
+<div class="protocol-table" tabindex="0" role="region" aria-label="Protocol table; scroll horizontally if needed"><table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Valid conditional or blocked evaluation</td>
+<td>200, with distinct recommendation kind and evidence</td>
+</tr>
+<tr>
+<td>Input withdrawal</td>
+<td>409 <code>INPUTS_WITHDRAWN</code></td>
+</tr>
+<tr>
+<td>Concurrent answer update</td>
+<td>409 <code>ANSWER_REVISION_CONFLICT</code> on v2</td>
+</tr>
+<tr>
+<td>Notice identity reused with different content</td>
+<td>409 <code>NOTICE_IDENTITY_CONFLICT</code></td>
+</tr>
+<tr>
+<td>No result for current answers</td>
+<td>409 <code>RECOMMENDATION_REQUIRED</code></td>
+</tr>
+<tr>
+<td>Closed v1 writes or unsafe legacy projection</td>
+<td>409 <code>MIGRATION_REQUIRED</code></td>
+</tr>
+<tr>
+<td>Lifecycle database unavailable</td>
+<td>503; no cached validity success</td>
+</tr>
+</tbody>
+</table></div>
+<p>JSON, HTML, React and FHIR use one selected result and one validity observation. FHIR resources bind the result and answer revision; historical QuestionnaireResponse answers are not replaced by current answers. See the <a href="runbooks/pathfinder-semantic-cutover.md">runbook</a> for the exact R4 status policy, migration rehearsal, local acceptance evidence and release gates. The existing feedback contract must not count unknown as false; additional v2 aggregation semantics require a separate agreement.</p>
 </section>
 <footer><div class="k">EDMF · SCAILED WP4</div><div>Generated from: docs/16_wp_boundary_data_protocol.md · contracts/</div></footer>
 </div><script id="contract-samples-script">

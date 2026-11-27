@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Pathfinder · 跨 WP 语义协作",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [1380, 790],
+    "legend": {
+      "entries": {
+        "external": {"label": "源内容语境"},
+        "backend": {"label": "交界约定与评估"}
+      }
+    }
+  },
+  "components": [
+    {"id": "taxonomy-knowledge", "type": "external", "label": "分类参考 · WP2", "sublabel": "参与者类型 · 场景 · 能力词汇", "tag": "内容含义由 WP2 确认", "pos": [60, 85], "size": [230, 100]},
+    {"id": "roadmap-knowledge", "type": "external", "label": "路线图 · WP3", "sublabel": "节点 · 关系 · 前置条件", "tag": "内容含义由 WP3 确认", "pos": [60, 330], "size": [230, 100]},
+    {"id": "rule-knowledge", "type": "external", "label": "规则知识 · WP8", "sublabel": "项目规则 · 引用 · 适用条件", "tag": "内容含义由 WP8 确认", "pos": [60, 575], "size": [230, 100]},
+    {"id": "boundary-agreement", "type": "backend", "label": "交界约定", "sublabel": "源含义与兼容性共同确认", "tag": "内容确认 · 接入验收", "pos": [475, 330], "size": [230, 100]},
+    {"id": "assessment-context", "type": "backend", "label": "评估与导航 · WP4", "sublabel": "独立会话 · 本次能力判断", "tag": "保义适配 · 评估执行", "pos": [795, 330], "size": [230, 100]},
+    {"id": "conditional-guidance", "type": "backend", "label": "条件性方向", "sublabel": "未知条件与待补信息可见", "tag": "自报与核验分别说明", "pos": [1120, 330], "size": [230, 100]}
+  ],
+  "connections": [
+    {"id": "taxonomy-delivery", "from": "taxonomy-knowledge", "to": "boundary-agreement", "label": "分类与词汇"},
+    {"id": "roadmap-delivery", "from": "roadmap-knowledge", "to": "boundary-agreement", "label": "路线图与条件", "labelAt": [340, 410]},
+    {"id": "rule-delivery", "from": "rule-knowledge", "to": "boundary-agreement", "label": "规则与引用"},
+    {"id": "meaning-preserving-use", "from": "boundary-agreement", "to": "assessment-context", "label": "按约定消费", "variant": "emphasis"},
+    {"id": "source-aware-output", "from": "assessment-context", "to": "conditional-guidance", "label": "注明依据推演", "variant": "emphasis"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "语义责任", "items": ["来源 WP 确认内容含义", "WP4 负责协调、适配与执行"]},
+    {"dot": "emerald", "title": "评估边界", "items": ["机构、类型与场景角色分开", "V1 使用独立评估会话"]},
+    {"dot": "amber", "title": "阅读范围", "items": ["本图是语义协作主路径", "实现差异与反馈通道见主文档"]}
+  ]
+}

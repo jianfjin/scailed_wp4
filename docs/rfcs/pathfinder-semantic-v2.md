@@ -43,3 +43,11 @@ The v1/v2 overlap lasts one milestone or until consumers declare readiness, foll
 ## Production gates
 
 Before cutover, obtain the confirmations above, prove migration and real PostgreSQL concurrency behavior, stop old writers, apply the versioned storage migration, start lifecycle-aware workers and verify all projections. This proposal is not a deployment instruction or evidence that those gates have passed.
+
+## Internal implementation receipt and pending confirmation
+
+The repository implements both registered profiles, schema-v2 persistence, guarded result publication, administrator-attested withdrawal intake and JSON/React/HTML/FHIR projections. The [cutover runbook](../runbooks/pathfinder-semantic-cutover.md) records local acceptance evidence and remaining operational gates. This does not change the pending approval states above.
+
+Production v2 activation requires `PATHFINDER_SEMANTIC_V2_APPROVAL_REF` to identify the completed confirmation/readiness record; it must not be set merely because synthetic tests pass. At the approved end of overlap, all writers use `PATHFINDER_V1_WRITES_ENABLED=false`. The React v2 projection is selected explicitly by `VITE_PATHFINDER_API_VERSION=v2`.
+
+Confirmation records must identify the responsible source and affected consumer, decision date, material reference, supported major/profile, readiness/overlap decision and withdrawal intake procedure. Ordinary subsequent content batches follow the approved interface without a fresh bilateral RFC.

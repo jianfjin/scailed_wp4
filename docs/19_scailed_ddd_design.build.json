@@ -1,0 +1,53 @@
+{
+  "output": "docs/19_scailed_ddd_design.html",
+  "bytes": 1004933,
+  "sha256": "529d1883d1266c0405145a3d6f96a117f57de258ae07fb8e32ff11a073051ff4",
+  "terms": 25,
+  "adrs": 4,
+  "sources": [
+    {
+      "path": "docs/domain-modeling/2026-11-26-pathfinder-semantic-baseline.md",
+      "sha256": "4889bb00a1d9c3cc1a1a8f69ffbc87d43db4def966b95ac86530555b8e375aab"
+    },
+    {
+      "path": "docs/domain-modeling/pathfinder-boundaries/CONTEXT.md",
+      "sha256": "abcbe763ffff975503b4ff5c84c7f72121845aad03e1d2d5201ff5645604e32e"
+    },
+    {
+      "path": "docs/domain-modeling/2026-11-26-cross-wp-ddd.md",
+      "sha256": "08591736c0d26e847ddeea933686fd4c6dac18680e7e0ef47c183da0c4d09cb8"
+    },
+    {
+      "path": "CONTEXT-MAP.md",
+      "sha256": "6eda180d9cf2a0ecb1729bb76682bd1abadbd644fe2c2ca453e510c0df3db4b4"
+    },
+    {
+      "path": "docs/adr/0004-source-wps-retain-content-authority.md",
+      "sha256": "3bbbbf48a4bf4ec579edf8d3396d0fc4a5ebc103b79e48d82dbb02dbb09c0fbb"
+    },
+    {
+      "path": "docs/adr/0005-v1-independent-assessment-sessions.md",
+      "sha256": "8a2cbde6f95d37c31d6a647ef97681f1928a8e40b4ad50a85069c08742122c1e"
+    },
+    {
+      "path": "docs/adr/0006-type-capabilities-remain-reference-information.md",
+      "sha256": "6928e296a934fc6c6996d25f01e60fee6fb3de6a231e978ff36d57c7c185bfc6"
+    },
+    {
+      "path": "docs/adr/0007-withdrawn-inputs-stop-new-recommendations.md",
+      "sha256": "4888813ca8ae02f9abb0463a6f26b2d6d5437b9645a5211e400218de89305aab"
+    },
+    {
+      "path": "docs/19_scailed_ddd_context_map.architecture.json",
+      "sha256": "ef2e3d852847a3547a2b4a7938ec0f22bfe1edb75689fd5b2f6c7ef0b66f77b9"
+    },
+    {
+      "path": "docs/19_scailed_ddd_context_map.html",
+      "sha256": "da10813a715d29feaf8434cb99326c109d2d6e00d64c47afac28db095fe2ea70"
+    },
+    {
+      "path": "docs/runbooks/pathfinder-semantic-cutover.md",
+      "sha256": "13322b96322534f9d2555f43202b38625676cc4ac644d45d0a423fbe0d6d142c"
+    }
+  ]
+}
