@@ -63,7 +63,6 @@ class AssessmentService:
         nodes, edges = self._active_roadmap
         self.graph = InMemoryRoadmapGraph(nodes, edges)
         self.solver = PathfinderSolver(self.graph)
-        self._active_boundary = None
         self._boundary_store = boundary_store
         self._generation_cache = OrderedDict()
         self._boundary_lock = RLock()
@@ -145,7 +144,6 @@ class AssessmentService:
                 "regulatory_status": generation.regulatory_status,
             }, ip=ip, user_agent=user_agent)
             self._boundary_snapshot_hashes.update(generation.snapshot_hashes)
-            self._active_boundary = generation
             self._active_boundaries[generation.profile_id] = generation
             self._boundary_documents[id(generation)] = snapshots
         return {"accepted": True, "snapshot_ids": dict(generation.snapshot_ids),
@@ -637,15 +635,16 @@ class AssessmentService:
         self._require_valid_inputs(inputs)
         state = self._state_for_recommendation(session)
         recommendation = self._recommend_for_session(session, state)
-        readiness = state.to_dict()
+        state_payload = state.to_dict()
+        readiness = state_payload
         if session.get('stakeholder_state', {}).get('derivation_mode') == 'wp2_wp3':
             readiness = deepcopy(session['stakeholder_state'])
         if session.get('profile_id') == EVIDENCE_PROFILE.profile_id:
-            recommendation['capability_findings'] = state.to_dict()['capability_findings']
+            recommendation['capability_findings'] = deepcopy(state_payload['capability_findings'])
         record = {
             'result_id': str(uuid4()), 'assessment_id': assessment_id,
             'answer_revision': session.get('answer_revision', 0), 'answers': deepcopy(session.get('answers')),
-            'findings': deepcopy(state.to_dict().get('capability_findings', {})),
+            'findings': deepcopy(state_payload.get('capability_findings', {})),
             'readiness_snapshot': readiness, 'input_set': inputs,
             'profile_id': session.get('profile_id', LEGACY_PROFILE.profile_id),
             'semantics_version': session.get('semantics_version', LEGACY_PROFILE.semantics_version),

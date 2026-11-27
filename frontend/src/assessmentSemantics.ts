@@ -47,10 +47,13 @@ export function projectAssessmentSemantics(report: SemanticsReport) {
   const conditional = path?.recommendation_kind === "conditional_direction";
   const blocked = path?.status === "blocked";
   const originalStatus = path?.status ?? "unknown";
-  const heading = historical ? "Historical result — inputs withdrawn" :
-    blocked ? "Blocked" : conditional ? "Conditional direction" :
-    originalStatus === "degraded" ? "Unverified regulatory basis" :
-    profile === "evidence-v2" ? "Guidance available" : originalStatus === "ready" ? "Ready" : "Result unavailable";
+  let heading = "Result unavailable";
+  if (historical) heading = "Historical result — inputs withdrawn";
+  else if (blocked) heading = "Blocked";
+  else if (conditional) heading = "Conditional direction";
+  else if (originalStatus === "degraded") heading = "Unverified regulatory basis";
+  else if (profile === "evidence-v2") heading = "Guidance available";
+  else if (originalStatus === "ready") heading = "Ready";
   const pathHeading = historical ? "Historical candidate path — unavailable for new guidance" :
     blocked ? "Blocked candidate path" : conditional ? "Candidate direction — more information required" :
     "Proposed guidance path";

@@ -200,10 +200,7 @@ class PostgresBoundaryStore:
 
     def load_generation(self, generation_id):
         with self._connect() as conn:
-            row = conn.execute(f"SELECT documents FROM {self.schema}.generations WHERE generation_id=%s", (generation_id,)).fetchone()
-        if row is None:
-            raise ValueError(f"boundary generation {generation_id} not found")
-        return row["documents"]
+            return self._generation_documents(conn, generation_id)
 
     def create_session(self, session, generation_id, ip=None, user_agent=None):
         with self._connect() as conn:
@@ -289,8 +286,10 @@ class PostgresBoundaryStore:
         row = conn.execute(f'SELECT document FROM {self.schema}.snapshots WHERE snapshot_id=%s', (target['snapshot_id'],)).fetchone()
         if row is not None and identity(row['document']) != {key: target[key] for key in ('contract','snapshot_id','producer_wp')}:
             raise ValueError('snapshot identity conflicts with target contract or producer')
-        rows = conn.execute(f'SELECT contract,producer_wp FROM {self.schema}.withdrawal_targets WHERE snapshot_id=%s', (target['snapshot_id'],)).fetchall()
-        if any(row['contract'] != target['contract'] or row['producer_wp'] != target['producer_wp'] for row in rows):
+        conflict = conn.execute(f'''SELECT 1 FROM {self.schema}.withdrawal_targets
+            WHERE snapshot_id=%s AND (contract<>%s OR producer_wp<>%s) LIMIT 1''',
+            (target['snapshot_id'],target['contract'],target['producer_wp'])).fetchone()
+        if conflict:
             raise ValueError('snapshot target identity conflicts with contract or producer')
 
     def withdraw(self, notice, actor, ip=None, user_agent=None):

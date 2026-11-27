@@ -136,6 +136,24 @@ def _render_semantics(vm: ReportViewModel) -> str:
     </section>'''
 
 
+def _render_condition_rows(condition_matches) -> str:
+    condition_rows = ""
+    for cm in condition_matches:
+        match_icon = "?" if cm.matched is None else "✓" if cm.matched else "✗"
+        match_color = "#92400E" if cm.matched is None else "#166534" if cm.matched else "#9B2C2C"
+        condition_rows += f"""
+            <tr>
+              <td style="font-family:var(--mono); font-size:12px; color:{match_color};">{match_icon} {_esc(cm.outcome_label())}</td>
+              <td style="font-family:var(--mono); font-size:12px; color:var(--g700);">{_esc(str(cm.field))}</td>
+              <td style="font-family:var(--mono); font-size:12px; color:var(--g500);">{_esc(str(cm.display_operator()))}</td>
+              <td style="font-family:var(--mono); font-size:12px; color:var(--slate);">{_esc(str(cm.expected))}</td>
+              <td style="font-family:var(--mono); font-size:12px; color:var(--g500);">→</td>
+              <td style="font-family:var(--mono); font-size:12px; color:var(--slate); font-weight:600;">{_esc(str(cm.actual))}</td>
+            </tr>"""
+
+    return condition_rows
+
+
 def _render_blockers(vm: ReportViewModel) -> str:
     if not vm.blockers:
         if vm.summary.profile_id == "evidence-v2" or vm.summary.inputs_valid is False:
@@ -148,19 +166,7 @@ def _render_blockers(vm: ReportViewModel) -> str:
 
     cards = ""
     for i, blocker in enumerate(vm.blockers, 1):
-        condition_rows = ""
-        for cm in blocker.condition_matches:
-            match_icon = "?" if cm.matched is None else "✓" if cm.matched else "✗"
-            match_color = "#92400E" if cm.matched is None else "#166534" if cm.matched else "#9B2C2C"
-            condition_rows += f"""
-            <tr>
-              <td style="font-family:var(--mono); font-size:12px; color:{match_color};">{match_icon} {_esc(cm.outcome_label())}</td>
-              <td style="font-family:var(--mono); font-size:12px; color:var(--g700);">{_esc(str(cm.field))}</td>
-              <td style="font-family:var(--mono); font-size:12px; color:var(--g500);">{_esc(str(cm.display_operator()))}</td>
-              <td style="font-family:var(--mono); font-size:12px; color:var(--slate);">{_esc(str(cm.expected))}</td>
-              <td style="font-family:var(--mono); font-size:12px; color:var(--g500);">→</td>
-              <td style="font-family:var(--mono); font-size:12px; color:var(--slate); font-weight:600;">{_esc(str(cm.actual))}</td>
-            </tr>"""
+        condition_rows = _render_condition_rows(blocker.condition_matches)
 
         refs = " · ".join(blocker.compliance_refs) if blocker.compliance_refs else "none"
         cards += f"""
@@ -224,19 +230,7 @@ def _render_evidence(vm: ReportViewModel) -> str:
 
     cards = ""
     for rule in vm.triggered_rules:
-        condition_rows = ""
-        for cm in rule.condition_matches:
-            match_icon = "?" if cm.matched is None else "✓" if cm.matched else "✗"
-            match_color = "#92400E" if cm.matched is None else "#166534" if cm.matched else "#9B2C2C"
-            condition_rows += f"""
-            <tr>
-              <td style="font-family:var(--mono); font-size:12px; color:{match_color};">{match_icon} {_esc(cm.outcome_label())}</td>
-              <td style="font-family:var(--mono); font-size:12px; color:var(--g700);">{_esc(str(cm.field))}</td>
-              <td style="font-family:var(--mono); font-size:12px; color:var(--g500);">{_esc(str(cm.display_operator()))}</td>
-              <td style="font-family:var(--mono); font-size:12px; color:var(--slate);">{_esc(str(cm.expected))}</td>
-              <td style="font-family:var(--mono); font-size:12px; color:var(--g500);">→</td>
-              <td style="font-family:var(--mono); font-size:12px; color:var(--slate); font-weight:600;">{_esc(str(cm.actual))}</td>
-            </tr>"""
+        condition_rows = _render_condition_rows(rule.condition_matches)
 
         blocker_badge = ' <span style="font-family:var(--mono); font-size:9px; background:#FED7D7; color:#9B2C2C; padding:2px 6px; border-radius:3px;">BLOCKER</span>' if rule.is_blocker else ""
         warning_note = f'<div style="font-size:11px; color:#92400E; margin-top:4px;">⚠ {_esc(rule.warning)}</div>' if rule.warning else ""

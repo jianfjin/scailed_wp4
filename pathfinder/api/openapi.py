@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 import re
 from pathlib import Path
 
@@ -225,7 +226,7 @@ def enrich_openapi(spec: dict) -> dict:
         "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ActivationReport"}}}}
 
     v2_import = op('/v2/admin/import')
-    v2_import.update(json.loads(json.dumps(imp)))
+    v2_import.update(deepcopy(imp))
     v2_import['operationId'] = 'import_boundary_snapshots_v2'
     withdrawal = op('/v2/admin/withdrawals')
     withdrawal['tags'] = ['Boundary contracts']

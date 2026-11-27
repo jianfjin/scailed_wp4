@@ -242,10 +242,6 @@ def _report_session(report: dict[str, Any]) -> dict[str, Any]:
     return session if isinstance(session, dict) else {}
 
 
-def _assessment_id_from_report(report: dict[str, Any]) -> str:
-    return str(_report_session(report).get("assessment_id", "assessment"))
-
-
 def _recommendation_from_report(report: dict[str, Any]) -> dict[str, Any]:
     recommendation = report.get("recommended_path", {})
     return recommendation if isinstance(recommendation, dict) else {}
