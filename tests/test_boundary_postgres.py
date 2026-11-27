@@ -244,6 +244,7 @@ def test_runtime_role_requires_no_schema_ownership(stores):
         for table in ("active_generation", "sessions"):
             conn.execute(sql.SQL("GRANT SELECT, INSERT, UPDATE ON {}.{} TO {}").format(sql.Identifier(store.schema), sql.Identifier(table), sql.Identifier(role)))
         conn.execute(sql.SQL("GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA {} TO {}").format(sql.Identifier(store.schema), sql.Identifier(role)))
+    store.grant_runtime(role)
     try:
         dsn = make_conninfo(store.dsn, user=role, password="temporary-test-password")
         limited = PostgresBoundaryStore(dsn, schema=store.schema)
@@ -254,6 +255,11 @@ def test_runtime_role_requires_no_schema_ownership(stores):
         session = service.create_session(snapshots[1]["payload"]["stakeholder_type"], snapshots[1]["payload"]["target_scenarios"][0])
         service.submit_answers(session["assessment_id"], answers())
         assert service.report(session["assessment_id"])["audit_chain_valid"]
+        (document, revision, _), snapshots = persisted_answer_session(limited)
+        record = result_for(document, snapshots)
+        limited.publish_result(document, revision, record)
+        limited.withdraw(withdrawal_for(snapshots[0]), 'runtime administrator')
+        assert not limited.current_validity(record['input_set'])['valid']
         with psycopg.connect(dsn) as conn:
             with pytest.raises(psycopg.errors.InsufficientPrivilege):
                 conn.execute(f"DELETE FROM {store.schema}.audit_events")
@@ -292,3 +298,220 @@ def test_request_log_flush_uses_one_transaction(stores, monkeypatch):
             await pool.close()
 
     asyncio.run(exercise())
+
+
+def withdrawal_for(doc, notice_id=None):
+    import json
+    from pathlib import Path
+    from pathfinder.core.boundary_validation import canonical_checksum
+    notice=json.loads((Path(__file__).resolve().parents[1]/'contracts/samples/v2/withdrawal.notice.json').read_text())
+    notice_id=notice_id or str(uuid.uuid4())
+    producer=doc['manifest']['producer_wp']
+    notice['manifest']['snapshot_id']=notice_id
+    notice['manifest']['producer_wp']=producer
+    notice['payload']['notice_id']=notice_id
+    notice['payload']['targets']=[{'contract':doc['contract'],'snapshot_id':doc['manifest']['snapshot_id'],'producer_wp':producer}]
+    notice['payload']['source_confirmation']['confirmed_by_wp']=producer
+    notice['payload']['source_confirmation']['target_checksum']=canonical_checksum(notice['payload']['targets'])
+    notice['manifest']['items_checksum']=canonical_checksum(notice['payload'])
+    return notice
+
+
+def test_withdrawal_tombstone_precedes_activation_and_is_idempotent(stores):
+    from pathfinder.core.boundary_runtime import build_boundary_generation
+    from pathfinder.core.repositories.boundary_store import NoticeConflict
+    snapshots=snapshot_set()
+    notice=withdrawal_for(snapshots[0])
+    receipt=stores[0].withdraw(notice, 'administrator')
+    assert receipt['accepted']
+    assert not stores[1].withdraw(notice, 'another-administrator')['created']
+    before=stores[0].audit_count()
+    conflict=copy.deepcopy(notice); conflict['payload']['reason']='different reason'
+    from pathfinder.core.boundary_validation import canonical_checksum
+    conflict['manifest']['items_checksum']=canonical_checksum(conflict['payload'])
+    with pytest.raises(NoticeConflict):
+        stores[1].withdraw(conflict,'administrator')
+    assert stores[0].audit_count()==before
+    with pytest.raises(ValueError,match='withdrawn'):
+        stores[1].activate(snapshots,build_boundary_generation(snapshots))
+    assert stores[1].active_generation_id() is None
+
+
+def test_profile_pointers_do_not_overwrite_each_other(stores):
+    from pathfinder.core.boundary_runtime import build_boundary_generation
+    from types import SimpleNamespace
+    snapshots=snapshot_set(); generation=build_boundary_generation(snapshots)
+    legacy=stores[0].activate(snapshots,generation)
+    v2=SimpleNamespace(profile_id='evidence-v2',snapshot_ids=generation.snapshot_ids,
+                       questionnaire_ids=generation.questionnaire_ids,regulatory_status=generation.regulatory_status)
+    modern=stores[1].activate(snapshots,v2)
+    assert stores[0].active_generation_id()==legacy
+    assert stores[0].active_generation_id('evidence-v2')==modern
+    assert stores[1].load_active('evidence-v2')[0]==modern
+
+
+def persisted_answer_session(store):
+    service=make_service(store); snapshots=snapshot_set(); service.activate_boundary_snapshots(snapshots)
+    session=service.create_session(snapshots[1]['payload']['stakeholder_type'],snapshots[1]['payload']['target_scenarios'][0])
+    session, revision, _=store.load_session(session['assessment_id'])
+    session['answer_revision']=1; session['answers']={'old': True}
+    store.save_session(session,revision,'answers_submitted',{'assessment_id':session['assessment_id']})
+    return store.load_session(session['assessment_id']), snapshots
+
+
+def result_for(session, snapshots):
+    from pathfinder.core.boundary_lifecycle import runtime_input_set
+    return {'result_id':str(uuid.uuid4()),'assessment_id':session['assessment_id'],
+            'answer_revision':session['answer_revision'],'answers':copy.deepcopy(session['answers']),
+            'input_set':runtime_input_set(snapshots,session['stakeholder_type']),
+            'profile_id':'legacy-v1','original_output':{'status':'ready','confidence':1.0}}
+
+
+def test_publish_checks_answer_binding_withdrawals_and_rolls_back_audit(stores,monkeypatch):
+    from pathfinder.core.repositories.boundary_store import SessionConflict
+    (session,revision,_),snapshots=persisted_answer_session(stores[0])
+    result=result_for(session,snapshots)
+    before=stores[0].audit_count()
+    mismatch=copy.deepcopy(result); mismatch['answer_revision']=0
+    with pytest.raises(SessionConflict):
+        stores[1].publish_result(session,revision,mismatch)
+    assert stores[0].load_result(session['assessment_id']) is None
+    assert stores[0].audit_count()==before
+    def fail(*args,**kwargs):
+        raise RuntimeError('audit failed')
+    with monkeypatch.context() as patch:
+        patch.setattr(stores[0],'_append',fail)
+        with pytest.raises(RuntimeError,match='audit failed'):
+            stores[0].publish_result(session,revision,result)
+    assert stores[1].load_result(session['assessment_id']) is None
+    assert stores[1].load_session(session['assessment_id'])[1]==revision
+    stores[1].withdraw(withdrawal_for(snapshots[0]),'administrator')
+    with pytest.raises(ValueError,match='withdrawn'):
+        stores[0].publish_result(session,revision,result)
+    assert stores[1].load_result(session['assessment_id']) is None
+
+
+def test_published_result_remains_immutable_when_withdrawn(stores):
+    import psycopg
+    from pathfinder.core.boundary_validation import canonical_checksum
+    (session,revision,_),snapshots=persisted_answer_session(stores[0])
+    result=result_for(session,snapshots)
+    stores[0].publish_result(session,revision,result)
+    stored=stores[1].load_result(session['assessment_id'],result['result_id'])
+    assert stored==result
+    before=canonical_checksum(stored)
+    stores[1].withdraw(withdrawal_for(snapshots[0]),'administrator')
+    assert canonical_checksum(stores[0].load_result(session['assessment_id'],result['result_id']))==before
+    assert not stores[0].current_validity(result['input_set'])['valid']
+    assert stores[0].results_for_session(session['assessment_id'])==[stored]
+    for table in ('withdrawals','withdrawal_targets','results'):
+        with psycopg.connect(stores[0].dsn) as conn:
+            with pytest.raises(psycopg.errors.RaiseException,match='append-only'):
+                conn.execute(f'DELETE FROM {stores[0].schema}.{table}')
+
+
+def test_schema_v1_migration_preserves_content_without_inventing_evidence(stores):
+    import psycopg
+    from pathfinder.core.boundary_validation import canonical_checksum
+    store=stores[0]
+    (session,revision,_),snapshots=persisted_answer_session(store)
+    original={'status':'ready','answer_ids':['unrecoverable'],'confidence':0.75}
+    session['recommendation']=original
+    session['answers']={'current':'changed after recommendation'}
+    store.save_session(session,revision,'answers_submitted',{'assessment_id':session['assessment_id']})
+    with psycopg.connect(store.dsn) as conn:
+        before=conn.execute(f'SELECT snapshot_id,digest,document FROM {store.schema}.snapshots ORDER BY snapshot_id').fetchall()
+        for table in ('withdrawal_targets','withdrawals','results','profile_active'):
+            conn.execute(f'DROP TABLE {store.schema}.{table}')
+        conn.execute(f'UPDATE {store.schema}.schema_version SET version=1')
+    with pytest.raises(RuntimeError,match='migration missing'):
+        store.check_schema()
+    store.migrate(); store.check_schema()
+    record=stores[1].load_result(session['assessment_id'])
+    assert record['original_output']==original
+    assert record['binding_status']=='legacy_unbound'
+    assert record['answers'] is None and record['answer_revision'] is None
+    assert record['findings'] is None
+    assert store.active_generation_id()==store.load_session(session['assessment_id'])[2]
+    with psycopg.connect(store.dsn) as conn:
+        after=conn.execute(f'SELECT snapshot_id,digest,document FROM {store.schema}.snapshots ORDER BY snapshot_id').fetchall()
+    assert canonical_checksum(before)==canonical_checksum(after)
+    store.migrate()
+    assert stores[1].results_for_session(session['assessment_id'])==[record]
+
+
+def withdraw_in_process(dsn,schema,notice):
+    from pathfinder.core.repositories.boundary_store import PostgresBoundaryStore
+    return PostgresBoundaryStore(dsn,schema=schema).withdraw(notice,'separate-process administrator')
+
+
+def test_withdrawal_visible_across_processes_and_session_commit_rechecks(stores):
+    store=stores[0]; service=make_service(store); snapshots=snapshot_set()
+    service.activate_boundary_snapshots(snapshots)
+    stakeholder=snapshots[1]['payload']['stakeholder_type']; scenario=snapshots[1]['payload']['target_scenarios'][0]
+    # The service already has its generation in cache before the other process commits.
+    assert service.active_boundary is not None
+    with ProcessPoolExecutor(max_workers=1) as pool:
+        receipt=pool.submit(withdraw_in_process,store.dsn,store.schema,withdrawal_for(snapshots[0])).result(timeout=15)
+    assert receipt['created']
+    before=store.audit_count()
+    with pytest.raises(ValueError,match='withdrawn'):
+        service.create_session(stakeholder,scenario)
+    assert store.audit_count()==before
+    restarted=type(store)(store.dsn,schema=store.schema)
+    from pathfinder.core.boundary_lifecycle import runtime_input_set
+    assert not restarted.current_validity(runtime_input_set(snapshots,stakeholder))['valid']
+
+
+def test_withdrawal_audit_failure_leaves_no_partial_tombstones(stores,monkeypatch):
+    def fail(*args,**kwargs):
+        raise RuntimeError('withdrawal audit failure')
+    snapshots=snapshot_set(); notice=withdrawal_for(snapshots[0])
+    with monkeypatch.context() as patch:
+        patch.setattr(stores[0],'_append',fail)
+        with pytest.raises(RuntimeError,match='withdrawal audit failure'):
+            stores[0].withdraw(notice,'administrator')
+    from pathfinder.core.boundary_runtime import build_boundary_generation
+    stores[1].activate(snapshots,build_boundary_generation(snapshots))
+    assert stores[0].withdraw(notice,'administrator')['created']
+
+
+def test_publish_waits_for_withdrawal_commit_and_rejects_stale_work(stores,monkeypatch):
+    import threading
+    import time
+    import psycopg
+    from psycopg.conninfo import make_conninfo
+    from pathfinder.core.repositories.boundary_store import PostgresBoundaryStore
+    (session,revision,_),snapshots=persisted_answer_session(stores[0])
+    result=result_for(session,snapshots)
+    waiting_name='pf_publish_'+uuid.uuid4().hex
+    publisher=PostgresBoundaryStore(make_conninfo(stores[1].dsn,application_name=waiting_name),stores[1].schema)
+    transaction_open=threading.Event(); release=threading.Event()
+    append=stores[0]._append
+    def hold_commit(conn,*args,**kwargs):
+        append(conn,*args,**kwargs)
+        transaction_open.set()
+        if not release.wait(5):
+            raise RuntimeError('test withdrawal release timed out')
+    monkeypatch.setattr(stores[0],'_append',hold_commit)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        withdrawal=pool.submit(stores[0].withdraw,withdrawal_for(snapshots[0]),'administrator')
+        assert transaction_open.wait(5)
+        publication=pool.submit(publisher.publish_result,session,revision,result)
+        try:
+            deadline=time.monotonic()+5
+            with psycopg.connect(stores[1].dsn,autocommit=True) as observer:
+                while time.monotonic()<deadline:
+                    row=observer.execute("SELECT 1 FROM pg_stat_activity WHERE application_name=%s AND wait_event='advisory'",(waiting_name,)).fetchone()
+                    if row:
+                        break
+                    time.sleep(.01)
+                assert row, 'publisher did not wait on the lifecycle transaction lock'
+            assert not publication.done()
+        finally:
+            release.set()
+        assert withdrawal.result(timeout=5)['created']
+        with pytest.raises(ValueError,match='withdrawn'):
+            publication.result(timeout=5)
+    assert stores[1].load_result(session['assessment_id']) is None
+    assert not any(event['event_type']=='recommendation_generated' for event in stores[1].events_for_assessment(session['assessment_id']))
