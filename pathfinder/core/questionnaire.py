@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from pathfinder.core.exceptions import UnknownStakeholderTypeError, ValidationError
-from pathfinder.core.models import Questionnaire, QuestionType, StakeholderState
+from pathfinder.core.models import CapabilityFinding, Questionnaire, QuestionType, StakeholderState
 
 
 class QuestionnaireEngine:
@@ -29,6 +29,10 @@ class QuestionnaireEngine:
     def validate_answers(self, stakeholder_type: str, answers: dict[str, Any]) -> tuple[str, ...]:
         questionnaire = self.get(stakeholder_type)
         warnings: list[str] = []
+        if questionnaire.profile_id == "evidence-v2":
+            unknown = set(answers) - {q.question_id for q in questionnaire.questions}
+            if unknown:
+                raise ValidationError(f"unknown answer IDs: {sorted(unknown)}")
 
         for question in questionnaire.questions:
             value = answers.get(question.question_id)
@@ -41,7 +45,7 @@ class QuestionnaireEngine:
                 continue
 
             if question.question_type == QuestionType.NUMERIC:
-                if not isinstance(value, int):
+                if not isinstance(value, int) or (questionnaire.profile_id == "evidence-v2" and isinstance(value, bool)):
                     raise ValidationError(f"numeric answer required: {question.question_id}")
                 if question.min_value is not None and value < question.min_value:
                     raise ValidationError(f"answer below minimum: {question.question_id}")
@@ -85,6 +89,33 @@ class QuestionnaireEngine:
             if state_field == "regulatory_flags" and isinstance(value, list):
                 regulatory_flags.extend(value)
 
+        findings: dict[str, CapabilityFinding] = {}
+        if questionnaire.profile_id == "evidence-v2":
+            findings = {cap: CapabilityFinding(cap) for cap in questionnaire.capability_vocabulary}
+
+            def assert_finding(cap: str, judgment: str, answer_id: str) -> None:
+                if cap not in findings:
+                    raise ValidationError(f"unknown capability ID: {cap}")
+                previous = findings[cap]
+                if previous.judgment != "unknown" and judgment != "unknown" and previous.judgment != judgment:
+                    raise ValidationError(f"contradictory capability assertion: {cap}")
+                findings[cap] = CapabilityFinding(
+                    cap, judgment if previous.judgment == "unknown" else previous.judgment,
+                    "self_reported", tuple(sorted(set(previous.answer_ids + (answer_id,)))),
+                    previous.evidence_refs,
+                )
+
+            for question in questionnaire.questions:
+                value = answers.get(question.question_id)
+                if question.capability_id and value is not None:
+                    assert_finding(question.capability_id, {"yes": "present", "no": "absent", "unknown": "unknown"}[value], question.question_id)
+                state_field = question.state_field or question.question_id
+                if state_field in ("capabilities", "missing_capabilities") and isinstance(value, list):
+                    for cap in value:
+                        assert_finding(cap, "present" if state_field == "capabilities" else "absent", question.question_id)
+            capabilities = [cap for cap, finding in findings.items() if finding.judgment == "present"]
+            missing_capabilities = [cap for cap, finding in findings.items() if finding.judgment == "absent"]
+
         required_count = sum(1 for question in questionnaire.questions if question.required)
         answered_required = sum(
             1
@@ -110,4 +141,6 @@ class QuestionnaireEngine:
             confidence=round(confidence, 3),
             confidence_warnings=tuple(warnings),
             questionnaire_version=questionnaire.version,
+            capability_findings=findings,
+            profile_id=questionnaire.profile_id,
         )

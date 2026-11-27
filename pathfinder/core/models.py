@@ -23,6 +23,25 @@ class QuestionType(StrEnum):
     TEXT = "text"
 
 
+class TruthValue(StrEnum):
+    TRUE = "true"
+    FALSE = "false"
+    UNKNOWN = "unknown"
+
+    def __bool__(self) -> bool:
+        raise TypeError("truth values require an explicit comparison")
+
+
+@dataclass(frozen=True)
+class CapabilityFinding:
+    capability_id: str
+    judgment: str = "unknown"
+    source: str = "unanswered"
+    answer_ids: tuple[str, ...] = ()
+    evidence_refs: tuple[str, ...] = ()
+    verification_status: str = "unverified"
+
+
 class RuleType(StrEnum):
     ELIGIBILITY = "eligibility"
     EXCLUSION = "exclusion"
@@ -41,9 +60,13 @@ class Question:
     max_value: int | None = None
     maturity_dimension: str | None = None
     state_field: str | None = None
+    capability_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        if self.capability_id is None:
+            data.pop("capability_id")
+        return data
 
 
 @dataclass(frozen=True)
@@ -53,10 +76,15 @@ class Questionnaire:
     title: str
     target_scenarios: tuple[str, ...]
     questions: tuple[Question, ...]
+    profile_id: str = "legacy-v1"
+    capability_vocabulary: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["questions"] = [question.to_dict() for question in self.questions]
+        if self.profile_id == "legacy-v1":
+            data.pop("profile_id")
+            data.pop("capability_vocabulary")
         return data
 
 
@@ -74,9 +102,15 @@ class StakeholderState:
     questionnaire_version: str
     schema_version: str = SCHEMA_VERSION
     upstream_snapshot_version: str = DEMO_UPSTREAM_SNAPSHOT
+    capability_findings: dict[str, CapabilityFinding] = field(default_factory=dict)
+    profile_id: str = "legacy-v1"
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        if self.profile_id == "legacy-v1":
+            data.pop("capability_findings")
+            data.pop("profile_id")
+        return data
 
 
 @dataclass(frozen=True)

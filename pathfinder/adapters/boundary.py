@@ -1,6 +1,7 @@
 """Translate versioned WP boundary data into the existing domain model."""
 
 from pathfinder.core.models import Question, Questionnaire, QuestionType
+from pathfinder.core.contract_registry import EVIDENCE_PROFILE, LEGACY_PROFILE
 
 
 def questionnaire_from_snapshots(taxonomy: dict, questionnaire: dict) -> Questionnaire:
@@ -9,6 +10,8 @@ def questionnaire_from_snapshots(taxonomy: dict, questionnaire: dict) -> Questio
         raise ValueError("questionnaire taxonomy dependency does not match supplied snapshot")
     dimensions = {item["dimension_id"]: item["state_key"] for item in taxonomy["payload"]["dimensions"]}
     payload = questionnaire["payload"]
+    profile = {LEGACY_PROFILE.questionnaire_contract: LEGACY_PROFILE,
+               EVIDENCE_PROFILE.questionnaire_contract: EVIDENCE_PROFILE}[questionnaire["contract"]]
     questions = []
     for item in payload["questions"]:
         if item.get("visible_if") is not None:
@@ -21,6 +24,8 @@ def questionnaire_from_snapshots(taxonomy: dict, questionnaire: dict) -> Questio
             max_value=item.get("max_value"),
             maturity_dimension=dimensions[dimension] if dimension else None,
             state_field=item.get("state_field"),
+            capability_id=item.get("capability_id"),
         ))
     return Questionnaire(payload["stakeholder_type"], payload["version"], payload["title"],
-                         tuple(payload["target_scenarios"]), tuple(questions))
+                         tuple(payload["target_scenarios"]), tuple(questions), profile.profile_id,
+                         tuple(taxonomy["payload"].get("capability_vocabulary", ())))
