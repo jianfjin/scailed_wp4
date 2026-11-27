@@ -1,0 +1,374 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scailed.eu/contracts/envelope.v2.schema.json",
+  "title": "Pathfinder multi-major envelope and lifecycle control",
+  "description": "Common manifest wrapping every cross-work-package snapshot. derived_from identifies snapshot-level sources; entity-level provenance requires a separate entity reference.",
+  "type": "object",
+  "required": [
+    "contract",
+    "manifest",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "contract": {
+      "type": "string",
+      "enum": [
+        "pf.taxonomy.v1",
+        "pf.questionnaire.v1",
+        "pf.roadmap.v1",
+        "pf.rulebundle.v1",
+        "pf.feedback.v1",
+        "pf.questionnaire.v2",
+        "pf.rulebundle.v2",
+        "pf.withdrawal.v1"
+      ]
+    },
+    "manifest": {
+      "$ref": "#/$defs/manifest"
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "contract": {
+            "const": "pf.taxonomy.v1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "wp2-taxonomy.schema.json"
+          },
+          "manifest": {
+            "properties": {
+              "producer_wp": {
+                "const": "WP2"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "contract": {
+            "const": "pf.questionnaire.v1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "wp4-questionnaire.schema.json"
+          },
+          "manifest": {
+            "properties": {
+              "producer_wp": {
+                "const": "WP4"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "contract": {
+            "const": "pf.roadmap.v1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "wp3-roadmap.schema.json"
+          },
+          "manifest": {
+            "properties": {
+              "producer_wp": {
+                "const": "WP3"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "contract": {
+            "const": "pf.rulebundle.v1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "wp8-rulebundle.schema.json"
+          },
+          "manifest": {
+            "properties": {
+              "producer_wp": {
+                "const": "WP8"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "contract": {
+            "const": "pf.feedback.v1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "wp4-feedback.schema.json"
+          },
+          "manifest": {
+            "properties": {
+              "producer_wp": {
+                "const": "WP4"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "contract": {
+            "const": "pf.questionnaire.v2"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "wp4-questionnaire.v2.schema.json"
+          },
+          "manifest": {
+            "properties": {
+              "producer_wp": {
+                "const": "WP4"
+              },
+              "migration_notes": {
+                "minItems": 1
+              }
+            },
+            "required": [
+              "migration_notes"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "contract": {
+            "const": "pf.rulebundle.v2"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "wp8-rulebundle.v2.schema.json"
+          },
+          "manifest": {
+            "properties": {
+              "producer_wp": {
+                "const": "WP8"
+              },
+              "migration_notes": {
+                "minItems": 1
+              }
+            },
+            "required": [
+              "migration_notes"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "contract": {
+            "const": "pf.withdrawal.v1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "$ref": "withdrawal.schema.json"
+          },
+          "manifest": {
+            "properties": {}
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "manifest": {
+      "type": "object",
+      "required": [
+        "contract_version",
+        "snapshot_id",
+        "producer_wp",
+        "generated_at",
+        "generator",
+        "items_checksum",
+        "derived_from",
+        "dependencies"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "contract_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "snapshot_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "producer_wp": {
+          "type": "string",
+          "enum": [
+            "WP2",
+            "WP3",
+            "WP4",
+            "WP8"
+          ]
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "generator": {
+          "type": "object",
+          "required": [
+            "name",
+            "version"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "seed": {
+              "type": [
+                "integer",
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "supersedes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "items_checksum": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "dependencies": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "pf.taxonomy.v1",
+              "pf.roadmap.v1",
+              "pf.questionnaire.v1",
+              "pf.rulebundle.v1",
+              "pf.questionnaire.v2",
+              "pf.rulebundle.v2"
+            ]
+          },
+          "additionalProperties": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "migration_notes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "from_version",
+              "to_version",
+              "change"
+            ],
+            "properties": {
+              "from_version": {
+                "type": "string"
+              },
+              "to_version": {
+                "type": "string"
+              },
+              "change": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "derived_from": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The SCAILED deliverables/milestones this projection was extracted from (Part B objects, e.g. D2.1 stakeholder mapping, D3.1 landscape, MS3.1/D3.2 roadmap, T8.3.x outputs, D8.x).",
+          "items": {
+            "type": "object",
+            "required": [
+              "source",
+              "status"
+            ],
+            "properties": {
+              "source": {
+                "type": "string",
+                "pattern": "^(D[0-9]+\\.[0-9]+|WP[0-9]+/MS[0-9]+\\.[0-9]+|T[0-9]+\\.[0-9]+)",
+                "description": "Part B object id. Milestones carry a WP qualifier (WP3/MS3.1) because Part B numbers collide across work packages (WP1/MS3.1 is 'Project Completed', WP3/MS3.1 is 'Initial Strategic Roadmap')."
+              },
+              "section": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "approved",
+                  "draft",
+                  "forthcoming"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  }
+}

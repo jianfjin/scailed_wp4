@@ -1,0 +1,132 @@
+{
+  "contract": "pf.rulebundle.v2",
+  "manifest": {
+    "contract_version": "2.0.0",
+    "snapshot_id": "084a49cc-e963-5222-97ca-04aaa046491a",
+    "producer_wp": "WP8",
+    "generated_at": "2026-11-10T00:00:00Z",
+    "generator": {
+      "name": "contracts-builder",
+      "version": "1.0.0",
+      "seed": null
+    },
+    "supersedes": null,
+    "items_checksum": "sha256:ccb5c267aae4351078b645c599a41a36d415c3c96f2c3ba6034ab714c947efa7",
+    "derived_from": [
+      {
+        "source": "T8.2",
+        "status": "draft"
+      },
+      {
+        "source": "T8.3.2",
+        "status": "approved"
+      }
+    ],
+    "dependencies": {
+      "pf.taxonomy.v1": "136c7555-45e3-40dc-a9ac-6749cc516ef3",
+      "pf.roadmap.v1": "ed8b70ac-f2ff-4f22-85b1-eb395c2f16a1"
+    },
+    "migration_notes": [
+      {
+        "from_version": "1.0.0",
+        "to_version": "2.0.0",
+        "change": "Three-valued evaluation; synthetic rule examples pending source owner approval."
+      }
+    ]
+  },
+  "payload": {
+    "references": [
+      {
+        "ref_id": "pf:wp8:reg:ehdsr",
+        "instrument": "EHDSR",
+        "locator": "Art.9(2)",
+        "status": "in-force",
+        "source_doc_ref": "T8.3.1"
+      },
+      {
+        "ref_id": "pf:wp8:reg:gdpr",
+        "instrument": "GDPR",
+        "locator": "Art.9",
+        "status": "in-force",
+        "source_doc_ref": "T8.3.1"
+      },
+      {
+        "ref_id": "pf:wp8:reg:ai-act",
+        "instrument": "AI-Act",
+        "locator": "Annex III",
+        "status": "in-force",
+        "source_doc_ref": "T8.3.2"
+      },
+      {
+        "ref_id": "pf:wp8:reg:biotech-act",
+        "instrument": "Biotech-Act",
+        "status": "forthcoming",
+        "source_doc_ref": "T8.3.1"
+      }
+    ],
+    "rules": [
+      {
+        "rule_id": "pf:wp8:rule:processing-environment-example",
+        "rule_type": "exclusion",
+        "priority": 10,
+        "applies_to": [
+          "all"
+        ],
+        "status": "provisional",
+        "condition": {
+          "not": {
+            "field": "capabilities",
+            "op": "contains",
+            "value": "secure-processing"
+          }
+        },
+        "action": {
+          "title": "Review processing environment",
+          "text": "Synthetic example: confirm the processing environment before using this direction.",
+          "block": true
+        },
+        "compliance_refs": [
+          "pf:wp8:reg:ehdsr"
+        ],
+        "source_doc_ref": "D8.2 s.3",
+        "rule_version": "2.0.0",
+        "effective_from": "2025-12-09",
+        "effective_until": null
+      }
+    ],
+    "tests": [
+      {
+        "test_id": "positive",
+        "rule_id": "pf:wp8:rule:processing-environment-example",
+        "given": {
+          "capabilities": [
+            "secure-processing"
+          ]
+        },
+        "expect": {
+          "outcome": "not-triggered"
+        }
+      },
+      {
+        "test_id": "negative",
+        "rule_id": "pf:wp8:rule:processing-environment-example",
+        "given": {
+          "missing_capabilities": [
+            "secure-processing"
+          ]
+        },
+        "expect": {
+          "outcome": "blocked"
+        }
+      },
+      {
+        "test_id": "unanswered",
+        "rule_id": "pf:wp8:rule:processing-environment-example",
+        "given": {},
+        "expect": {
+          "outcome": "unknown"
+        }
+      }
+    ]
+  }
+}
