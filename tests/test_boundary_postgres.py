@@ -547,3 +547,25 @@ def test_service_answer_revision_and_withdrawal_are_rechecked_at_publication(sto
     assert history['result']['answers']==changed
     assert not history['current_validity']['valid']
     assert len([e for e in stores[0].events_for_assessment(aid) if e['event_type']=='recommendation_generated'])==1
+
+
+def test_questionnaire_withdrawal_preserves_other_sessions_in_same_generation(stores):
+    import copy
+    from test_assessment_revisions import snapshots
+    from pathfinder.core.boundary_validation import canonical_checksum
+    docs=snapshots(); q1=docs[1]; q2=copy.deepcopy(q1)
+    q2['manifest']['snapshot_id']=str(uuid.uuid4())
+    q2['payload']['stakeholder_type']='pf:wp2:stakeholder:health-data-infrastructure'
+    q2['payload']['target_scenarios']=['pf:wp2:scenario:secondary-use-readiness']
+    q2['manifest']['items_checksum']=canonical_checksum(q2['payload'])
+    warm=make_service(stores[0]); warm.activate_boundary_snapshots(docs+[q2])
+    create=lambda service: service.create_session(q2['payload']['stakeholder_type'],q2['payload']['target_scenarios'][0],profile_id='evidence-v2')
+    prior=create(warm)
+    stores[1].withdraw(withdrawal_for(q1),'administrator')
+    restarted=make_service(stores[1])
+    assert create(warm) and create(restarted)
+    answers={item['question_id']: 'yes' if item.get('capability_id') else 3 for item in q2['payload']['questions']}
+    restarted.submit_answers(prior['assessment_id'],answers)
+    assert warm.generate_recommendation(prior['assessment_id'])['current_validity']['valid']
+    with pytest.raises(ValueError,match='withdrawn'):
+        restarted.create_session(q1['payload']['stakeholder_type'],q1['payload']['target_scenarios'][0],profile_id='evidence-v2')

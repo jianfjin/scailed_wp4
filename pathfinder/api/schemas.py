@@ -276,3 +276,10 @@ class FhirBundle(BaseModel):
     resourceType: str = "Bundle"
     type: str
     entry: list[dict[str, Any]] = []
+
+
+class WithdrawalReceipt(BaseModel):
+    accepted: bool
+    created: bool
+    notice_id: str
+    lifecycle_revision: int

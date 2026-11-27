@@ -29,7 +29,7 @@ from pathfinder.api.middleware import (
     require_demo_token,
 )
 from pathfinder.core.repositories.connection import close_pool, init_pool
-from pathfinder.core.repositories.boundary_store import SessionConflict
+from pathfinder.core.repositories.boundary_store import SessionConflict, InputsWithdrawn, NoticeConflict
 from pathfinder.middleware.request_logger import (
     RequestLoggingMiddleware,
     get_logger,
@@ -52,6 +52,7 @@ from pathfinder.api.schemas import (
     RoadmapResponse,
     StakeholderStateResponse,
     StakeholderTypesResponse,
+    WithdrawalReceipt,
 )
 from pathfinder.adapters.upstream import UpstreamClient
 from pathfinder.core.exceptions import ValidationError as PathfinderValidationError
@@ -182,6 +183,23 @@ def _validation_error(detail: str) -> HTTPException:
     return HTTPException(status_code=400, detail=ApiError(error="VALIDATION_ERROR", detail=detail).model_dump())
 
 
+def _lifecycle_conflict(exc):
+    code = 'INPUTS_WITHDRAWN' if isinstance(exc, InputsWithdrawn) else 'NOTICE_IDENTITY_CONFLICT'
+    return HTTPException(status_code=409, detail=ApiError(error=code, detail=str(exc)).model_dump())
+
+
+@app.post('/v2/admin/withdrawals', response_model=WithdrawalReceipt,
+          responses={409: {'model': ApiErrorEnvelope, 'description': 'Withdrawal identity conflict'}})
+def withdraw_inputs(request: Request, body: dict, authorization: str | None = Depends(bearer_authorization)):
+    require_admin_token(authorization)
+    try:
+        return _get_service().withdraw_inputs(body, actor='authenticated_admin', **_audit_context(request))
+    except (InputsWithdrawn, NoticeConflict) as exc:
+        raise _lifecycle_conflict(exc) from exc
+    except ValueError as exc:
+        raise _validation_error(str(exc)) from exc
+
+
 def _rate_limited(detail: str) -> JSONResponse:
     return JSONResponse(
         status_code=429,
@@ -220,6 +238,8 @@ def questionnaire(stakeholder_type: str, authorization: str | None = Depends(bea
     svc = _get_service()
     try:
         return svc.get_questionnaire(stakeholder_type)
+    except (InputsWithdrawn, NoticeConflict) as exc:
+        raise _lifecycle_conflict(exc) from exc
     except psycopg.Error:
         raise
     except Exception as exc:
@@ -268,6 +288,8 @@ async def submit_answers(
     require_demo_token(authorization)
     try:
         return await asyncio.to_thread(_get_service().submit_answers, assessment_id, body.answers, **_audit_context(request))
+    except (InputsWithdrawn, NoticeConflict) as exc:
+        raise _lifecycle_conflict(exc) from exc
     except psycopg.Error:
         raise
     except KeyError as exc:
@@ -291,6 +313,8 @@ async def recommendations(
         return await _get_service().generate_recommendation_async(
             assessment_id, path_backend=path_backend, **_audit_context(request)
         )
+    except (InputsWithdrawn, NoticeConflict) as exc:
+        raise _lifecycle_conflict(exc) from exc
     except psycopg.Error:
         raise
     except KeyError as exc:
@@ -330,6 +354,8 @@ def report(
         raise _auth_error("invited demo token required")
     try:
         raw = _get_service().report(assessment_id, **_audit_context(request))
+    except (InputsWithdrawn, NoticeConflict) as exc:
+        raise _lifecycle_conflict(exc) from exc
     except psycopg.Error:
         raise
     except KeyError as exc:
@@ -376,6 +402,8 @@ def fhir_assessment_bundle(
             fhir_version=fhir_version,
             **_audit_context(request),
         )
+    except (InputsWithdrawn, NoticeConflict) as exc:
+        raise _lifecycle_conflict(exc) from exc
     except psycopg.Error:
         raise
     except KeyError as exc:

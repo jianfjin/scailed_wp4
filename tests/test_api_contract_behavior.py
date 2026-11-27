@@ -206,3 +206,17 @@ def test_no_active_generation_matches_documented_503(client, service, monkeypatc
     monkeypatch.setattr(service, "_boundary_store", SimpleNamespace(active_generation_id=lambda profile_id="legacy-v1": None))
     response = client.get(path.replace("{node_id}", "missing"), headers=DEMO)
     assert_error(response, path, "get", 503, "SERVER_ERROR")
+
+
+def test_withdrawal_intake_requires_admin_and_attested_scope(client):
+    from test_boundary_lifecycle import notice_for
+    from test_assessment_revisions import snapshots
+    notice=notice_for(snapshots()[0])
+    assert client.post('/v2/admin/withdrawals',json=notice).status_code==401
+    assert client.post('/v2/admin/withdrawals',json=notice,headers=DEMO).status_code==403
+    response=client.post('/v2/admin/withdrawals',json=notice,headers=ADMIN)
+    assert response.status_code==200, response.text
+    assert response.json()['created']
+    assert not client.post('/v2/admin/withdrawals',json=notice,headers=ADMIN).json()['created']
+    broken=copy.deepcopy(notice); broken['payload']['source_confirmation'].pop('reference')
+    assert client.post('/v2/admin/withdrawals',json=broken,headers=ADMIN).status_code==400

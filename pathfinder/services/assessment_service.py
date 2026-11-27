@@ -31,9 +31,9 @@ from pathfinder.core.graph import InMemoryRoadmapGraph
 from pathfinder.core.imports import import_structured_payload
 from pathfinder.core.models import ImportReport, Questionnaire, RoadmapEdge, RoadmapNode, StakeholderState
 from pathfinder.core.contract_registry import LEGACY_PROFILE, EVIDENCE_PROFILE, PROFILES
-from pathfinder.core.boundary_lifecycle import runtime_input_set, observe_validity
-from pathfinder.core.boundary_validation import canonical_checksum
-from pathfinder.core.repositories.boundary_store import SessionConflict, InputsWithdrawn
+from pathfinder.core.boundary_lifecycle import dependency_closure, identity, runtime_input_set, observe_validity
+from pathfinder.core.boundary_validation import canonical_checksum, validate_withdrawal_notice
+from pathfinder.core.repositories.boundary_store import SessionConflict, InputsWithdrawn, NoticeConflict
 from pathfinder.core.questionnaire import QuestionnaireEngine
 from pathfinder.core.recommend import build_recommendation
 from pathfinder.core.repositories import audit_repo, session_repo
@@ -115,6 +115,8 @@ class AssessmentService:
             else:
                 self.audit_log.append("boundary_snapshots_rejected", {"reason": "validation failed"}, ip=ip, user_agent=user_agent)
             raise
+        if generation.profile_id == EVIDENCE_PROFILE.profile_id and os.getenv('ENVIRONMENT', 'development').lower() == 'production' and not os.getenv('PATHFINDER_SEMANTIC_V2_APPROVAL_REF', '').strip():
+            raise ValueError('semantic_approval_required: record affected-WP RFC and consumer readiness before production activation')
         if self._boundary_store:
             try:
                 generation_id = self._boundary_store.activate(snapshots, generation, ip, user_agent)
@@ -129,6 +131,9 @@ class AssessmentService:
                     "questionnaire_ids": dict(generation.questionnaire_ids), "regulatory_status": generation.regulatory_status,
                     "warnings": list(generation.warnings)}
         with self._boundary_lock:
+            self._require_valid_inputs(dependency_closure(snapshots, [identity(doc) for doc in snapshots]))
+            for doc in snapshots:
+                self._check_memory_target(identity(doc))
             for snapshot_id, digest in generation.snapshot_hashes.items():
                 existing = self._boundary_snapshot_hashes.get(snapshot_id)
                 if existing is not None and existing != digest:
@@ -146,6 +151,39 @@ class AssessmentService:
         return {"accepted": True, "snapshot_ids": dict(generation.snapshot_ids),
                 "questionnaire_ids": dict(generation.questionnaire_ids),
                 "regulatory_status": generation.regulatory_status, "warnings": list(generation.warnings)}
+
+    def _check_memory_target(self, target):
+        known = [identity(doc) for docs in self._boundary_documents.values() for doc in docs]
+        known += [item for notice in self._withdrawals.values() for item in notice['payload']['targets']]
+        expected = {key: target[key] for key in ('contract', 'snapshot_id', 'producer_wp')}
+        if any(item['snapshot_id'] == target['snapshot_id'] and item != expected for item in known):
+            raise ValueError('snapshot target identity conflicts with contract or producer')
+
+    def withdraw_inputs(self, notice, actor, ip=None, user_agent=None):
+        errors = validate_withdrawal_notice(notice)
+        if errors:
+            raise ValueError('invalid withdrawal notice: ' + '; '.join(errors))
+        if not isinstance(actor, str) or not actor.strip():
+            raise ValueError('authenticated administrator identity is required')
+        if self._boundary_store:
+            return self._boundary_store.withdraw(notice, actor, ip, user_agent)
+        notice = deepcopy(notice)
+        notice_id = notice['payload']['notice_id']
+        with self._boundary_lock:
+            previous = self._withdrawals.get(notice_id)
+            if previous is not None:
+                if canonical_checksum(previous) != canonical_checksum(notice):
+                    raise NoticeConflict('withdrawal notice identity was already used for different content')
+                return {'accepted': True, 'created': False, 'notice_id': notice_id,
+                        'lifecycle_revision': self._lifecycle_revision}
+            for target in notice['payload']['targets']:
+                self._check_memory_target(target)
+            self.audit_log.append('boundary_inputs_withdrawn', {'notice_id': notice_id, 'actor': actor,
+                'targets': notice['payload']['targets'], 'source_confirmation': notice['payload']['source_confirmation']}, ip=ip, user_agent=user_agent)
+            self._withdrawals[notice_id] = notice
+            self._lifecycle_revision += 1
+            return {'accepted': True, 'created': True, 'notice_id': notice_id,
+                    'lifecycle_revision': self._lifecycle_revision}
 
     def _boundary_for_session(self, session):
         if self._boundary_store and session.get("boundary_generation_id"):
